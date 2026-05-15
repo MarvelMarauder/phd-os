@@ -1,0 +1,11 @@
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.folder == "100 Research/My Papers"
+    order:
+      - file.name
+      - stage
+      - status
+      - stream
