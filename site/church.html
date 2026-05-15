@@ -73,11 +73,7 @@ async function loadChurchTasks() {
   }
 
   try {
-    const [projects, tasks] = await Promise.all([
-      fetchProjects(),
-      fetchTasks('next 14 days')
-    ]);
-
+    const [projects, all] = await Promise.all([fetchProjects(), fetchTasks()]);
     setApiStatus('connected');
 
     // Find Church project and all children
@@ -87,21 +83,16 @@ async function loadChurchTasks() {
       return;
     }
 
-    const churchIds = new Set();
-    churchIds.add(churchProject.id);
+    const churchIds = new Set([churchProject.id]);
     for (const p of projects) {
       if (p.parent_id === churchProject.id) churchIds.add(p.id);
     }
 
     const projectNames = Object.fromEntries(projects.map(p => [p.id, p.name]));
 
-    const churchTasks = tasks
-      .filter(t => churchIds.has(t.project_id))
-      .sort((a, b) => {
-        const da = a.due?.date || '9999';
-        const db = b.due?.date || '9999';
-        return da.localeCompare(db);
-      });
+    const churchTasks = all
+      .filter(t => churchIds.has(t.project_id) && (isDueNow(t) || isDueWithin(t, 14)))
+      .sort((a, b) => (a.due?.date || '9999').localeCompare(b.due?.date || '9999'));
 
     if (!churchTasks.length) {
       el.innerHTML = '<li class="empty">Nothing due in the next 14 days.</li>';

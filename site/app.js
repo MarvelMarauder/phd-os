@@ -37,9 +37,8 @@ async function apiPost(path, body = null) {
   return r.status === 204 ? null : r.json();
 }
 
-async function fetchTasks(filter) {
-  const q = filter ? `?filter=${encodeURIComponent(filter)}` : '';
-  return apiGet(`/tasks${q}`);
+async function fetchTasks() {
+  return apiGet('/tasks');
 }
 
 async function closeTask(id) {
@@ -48,6 +47,29 @@ async function closeTask(id) {
 
 async function fetchProjects() {
   return apiGet('/projects');
+}
+
+// ── Date filtering helpers ────────────────────────────
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function daysFromNowStr(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+// Tasks due today or already overdue
+function isDueNow(t) {
+  return t.due && t.due.date <= todayStr();
+}
+
+// Tasks due strictly after today and within n days
+function isDueWithin(t, days) {
+  if (!t.due) return false;
+  const d = t.due.date;
+  return d > todayStr() && d <= daysFromNowStr(days);
 }
 
 // ── Helpers ───────────────────────────────────────────

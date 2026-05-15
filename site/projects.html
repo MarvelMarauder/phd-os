@@ -139,11 +139,7 @@ async function loadResearchTasks() {
   }
 
   try {
-    const [projects, tasks] = await Promise.all([
-      fetchProjects(),
-      fetchTasks('next 14 days')
-    ]);
-
+    const [projects, all] = await Promise.all([fetchProjects(), fetchTasks()]);
     setApiStatus('connected');
 
     const researchProject = projects.find(p => p.name === 'Research');
@@ -165,8 +161,8 @@ async function loadResearchTasks() {
 
     const projectNames = Object.fromEntries(projects.map(p => [p.id, p.name]));
 
-    const resTasks = tasks
-      .filter(t => researchIds.has(t.project_id))
+    const resTasks = all
+      .filter(t => researchIds.has(t.project_id) && (isDueNow(t) || isDueWithin(t, 14)))
       .sort((a, b) => (a.due?.date || '9999').localeCompare(b.due?.date || '9999'));
 
     if (!resTasks.length) {

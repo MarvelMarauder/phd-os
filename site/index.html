@@ -107,15 +107,11 @@ async function loadTasks() {
   }
 
   try {
-    const [today, next7] = await Promise.all([
-      fetchTasks('today'),
-      fetchTasks('next 7 days')
-    ]);
-
+    const all = await fetchTasks();
     setApiStatus('connected');
 
-    const todayIds = new Set(today.map(t => t.id));
-    const upcoming = next7.filter(t => !todayIds.has(t.id));
+    const today   = all.filter(t => isDueNow(t));
+    const upcoming = all.filter(t => isDueWithin(t, 7));
 
     renderTaskList('task-list', today, false);
     if (upcoming.length) {
