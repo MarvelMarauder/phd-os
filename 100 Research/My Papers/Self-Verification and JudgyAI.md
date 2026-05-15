@@ -8,6 +8,6 @@ co-authors:
   - Tabitha James
 target-journal:
 deadline:
-todoist-project:
+todoist-project: JAI-Self-Verification
 status: active
 ---

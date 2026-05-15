@@ -8,6 +8,6 @@ co-authors:
   - Amy Chaput
 target-journal:
 deadline:
-todoist-project:
+todoist-project: JAI-Self-Compassion
 status: active
 ---

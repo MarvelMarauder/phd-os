@@ -35,8 +35,7 @@
               "title": "Thoughts"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -109,7 +108,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Thoughts.md",
+                "file": "000 Dashboard/Home.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +118,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Thoughts"
+              "title": "Backlinks for Home"
             }
           },
           {
@@ -128,12 +127,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Thoughts.md",
+                "file": "000 Dashboard/Home.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Thoughts"
+              "title": "Outgoing links from Home"
             }
           },
           {
@@ -171,13 +170,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Thoughts.md",
+                "file": "000 Dashboard/Home.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Thoughts"
+              "title": "Outline of Home"
             }
           }
         ]
@@ -201,8 +200,15 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "02b4c6c0f0e15c2d",
+  "active": "774f6b95cf3fe2c9",
   "lastOpenFiles": [
+    "100 Research/My Papers/Self-Verification and JudgyAI.md",
+    "100 Research/My Papers/Self-Compassion and JudgyAI.md",
+    "100 Research/My Papers/Psychological Reactance and JudgyAI.md",
+    "100 Research/My Papers/Epistemic and Judgy AI.md",
+    "100 Research/My Papers/Emotional Similarity.md",
+    "100 Research/My Papers/AIC Disclosure.md",
+    "100 Research/My Papers/AI Companion Commentary.md",
     "000 Dashboard/Home.md",
     "Thoughts.md",
     "900 Templates/Template - Daily Note.md",
@@ -211,17 +217,10 @@
     "300 Church/Speaking Assignments/Speaking Assignments.md",
     "200 PhD Program/PhD Milestones.md",
     "000 Dashboard/PaperTracker.base",
-    "100 Research/My Papers/AI Companion Commentary.md",
     "000 Dashboard/Paper Tracker.base",
     "PaperTracker.base.md",
     "sdfd.md",
     "000 Dashboard/Paper Tracker.md",
-    "100 Research/My Papers/Self-Verification and JudgyAI.md",
-    "100 Research/My Papers/Self-Compassion and JudgyAI.md",
-    "100 Research/My Papers/Psychological Reactance and JudgyAI.md",
-    "100 Research/My Papers/Epistemic and Judgy AI.md",
-    "100 Research/My Papers/AIC Disclosure.md",
-    "100 Research/My Papers/Emotional Similarity.md",
     "900 Templates/Template - My Paper.md",
     "900 Templates/Template - Source Paper.md"
   ]

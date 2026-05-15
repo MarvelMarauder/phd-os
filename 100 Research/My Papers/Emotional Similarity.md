@@ -8,6 +8,6 @@ co-authors:
   - Paul Lowry
 target-journal:
 deadline:
-todoist-project:
+todoist-project: AIC-Emotion-Similarity
 status: active
 ---

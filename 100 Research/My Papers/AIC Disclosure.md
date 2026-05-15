@@ -7,6 +7,6 @@ co-authors:
   - Ramona Ionescu
 target-journal:
 deadline:
-todoist-project:
+todoist-project: AIC-Disclosure
 status: active
 ---
