@@ -6,4 +6,4 @@
 
 ## for me
 - start concentrating on the next week on getting the EMOS paper to Paul
-- 
+- send her the draft for the second summer paper and the reis and shaver 
