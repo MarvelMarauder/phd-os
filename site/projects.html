@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhD OS — Projects</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="nav"></nav>
+
+<main>
+  <p class="page-title">Projects</p>
+  <p class="page-sub">PhD program and long-running initiatives</p>
+
+  <section>
+    <h2>PhD Milestones</h2>
+    <ul class="milestone-list" id="milestones">
+      <!-- Update statuses here as you progress -->
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-active"></div>
+        <span class="milestone-name">Coursework</span>
+        <span class="milestone-date">Year 1–2</span>
+      </li>
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-future"></div>
+        <span class="milestone-name">Qualifying exam — written</span>
+        <span class="milestone-date"></span>
+      </li>
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-future"></div>
+        <span class="milestone-name">Qualifying exam — oral</span>
+        <span class="milestone-date"></span>
+      </li>
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-future"></div>
+        <span class="milestone-name">Dissertation prospectus</span>
+        <span class="milestone-date"></span>
+      </li>
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-future"></div>
+        <span class="milestone-name">ABD</span>
+        <span class="milestone-date"></span>
+      </li>
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-future"></div>
+        <span class="milestone-name">Dissertation proposal defense</span>
+        <span class="milestone-date"></span>
+      </li>
+      <li class="milestone-item">
+        <div class="milestone-indicator mi-future"></div>
+        <span class="milestone-name">Dissertation defense</span>
+        <span class="milestone-date"></span>
+      </li>
+    </ul>
+    <p style="font-size:12px;color:var(--text-subtle);margin-top:10px;">
+      Edit milestone statuses directly in projects.html (mi-done, mi-active, mi-future).
+    </p>
+  </section>
+
+  <section>
+    <h2>Research Streams</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;" id="research-streams">
+      <p class="loading">Loading…</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Upcoming Research Tasks</h2>
+    <ul class="task-list" id="research-tasks">
+      <li class="loading">Loading…</li>
+    </ul>
+  </section>
+</main>
+
+<div id="token-modal-placeholder"></div>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('nav').innerHTML = navHTML('projects');
+initSettings();
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Research streams from papers.json ────────────────
+async function loadStreams() {
+  const el = document.getElementById('research-streams');
+  try {
+    const data = await fetch('papers.json').then(r => r.json());
+    const active = data.papers.filter(p => p.status === 'active');
+
+    const streams = {};
+    for (const p of active) {
+      const s = p.stream || 'Other';
+      if (!streams[s]) streams[s] = [];
+      streams[s].push(p);
+    }
+
+    const streamOrder = ['AI Companions', 'JudgyAI'];
+    const cls = { 'AI Companions': 'stream-aic', 'JudgyAI': 'stream-jai' };
+    const sorted = [
+      ...streamOrder.filter(s => streams[s]),
+      ...Object.keys(streams).filter(s => !streamOrder.includes(s))
+    ];
+
+    el.innerHTML = sorted.map(name => {
+      const papers = streams[name];
+      const stages = papers.map(p =>
+        `<span class="stage-pill ${stageClass(p.stage)}" style="font-size:11px">${escHtml(p.stage)}</span>`
+      ).join(' ');
+      return `
+        <div class="paper-card ${cls[name] || ''}">
+          <div class="stream-heading" style="margin-bottom:8px">
+            <div class="stream-dot"></div>
+            <span class="stream-label">${escHtml(name)}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">
+            ${papers.length} paper${papers.length !== 1 ? 's' : ''}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${stages}</div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<p class="error">Could not load papers.json</p>';
+  }
+}
+
+// ── Research tasks from Todoist ───────────────────────
+async function loadResearchTasks() {
+  const el = document.getElementById('research-tasks');
+  if (!hasToken()) {
+    el.innerHTML = '<li class="empty">Connect Todoist to see tasks.</li>';
+    document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
+    showTokenModal(() => loadResearchTasks());
+    return;
+  }
+
+  try {
+    const [projects, tasks] = await Promise.all([
+      fetchProjects(),
+      fetchTasks('next 14 days')
+    ]);
+
+    setApiStatus('connected');
+
+    const researchProject = projects.find(p => p.name === 'Research');
+    if (!researchProject) {
+      el.innerHTML = '<li class="empty">No "Research" project found in Todoist.</li>';
+      return;
+    }
+
+    // Collect research project IDs (project + all descendants)
+    const researchIds = new Set();
+    const queue = [researchProject.id];
+    while (queue.length) {
+      const pid = queue.pop();
+      researchIds.add(pid);
+      for (const p of projects) {
+        if (p.parent_id === pid) queue.push(p.id);
+      }
+    }
+
+    const projectNames = Object.fromEntries(projects.map(p => [p.id, p.name]));
+
+    const resTasks = tasks
+      .filter(t => researchIds.has(t.project_id))
+      .sort((a, b) => (a.due?.date || '9999').localeCompare(b.due?.date || '9999'));
+
+    if (!resTasks.length) {
+      el.innerHTML = '<li class="empty">Nothing due in the next 14 days.</li>';
+      return;
+    }
+
+    el.innerHTML = resTasks.map(t => `
+      <li class="task-item">
+        <button class="task-check" data-id="${t.id}" aria-label="Complete"></button>
+        <div class="task-body">
+          <div class="task-name">${escHtml(t.content)}</div>
+          <div class="task-meta">${escHtml(projectNames[t.project_id] || '')}</div>
+        </div>
+        <span class="task-due">${t.due ? formatDue(t.due) : ''}</span>
+      </li>`).join('');
+
+    el.querySelectorAll('.task-check').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.classList.add('checked');
+        const nm = btn.closest('.task-item').querySelector('.task-name');
+        if (nm) nm.classList.add('done');
+        try { await closeTask(btn.dataset.id); } catch(e) {
+          btn.classList.remove('checked');
+          if (nm) nm.classList.remove('done');
+        }
+      });
+    });
+
+  } catch(e) {
+    setApiStatus('error');
+    el.innerHTML = e.message === 'bad_token'
+      ? '<li class="error">Invalid token — click ⚙ to reset.</li>'
+      : '<li class="error">Could not reach Todoist.</li>';
+  }
+}
+
+loadStreams();
+loadResearchTasks();
+</script>
+</body>
+</html>

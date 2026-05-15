@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhD OS — Church</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="nav"></nav>
+
+<main>
+  <p class="page-title">Church</p>
+  <p class="page-sub">Stake secretary responsibilities</p>
+
+  <section>
+    <h2>Recurring Commitments</h2>
+    <ul class="commitment-list">
+      <li class="commitment-item">
+        <span class="commitment-name">Presidency meeting agenda</span>
+        <span class="commitment-freq">Weekly</span>
+      </li>
+      <li class="commitment-item">
+        <span class="commitment-name">High council meeting agenda</span>
+        <span class="commitment-freq">Monthly</span>
+      </li>
+      <li class="commitment-item">
+        <span class="commitment-name">Stake council agenda</span>
+        <span class="commitment-freq">Monthly</span>
+      </li>
+      <li class="commitment-item">
+        <span class="commitment-name">Adult leadership agenda</span>
+        <span class="commitment-freq">Quarterly</span>
+      </li>
+      <li class="commitment-item">
+        <span class="commitment-name">Speaking assignments</span>
+        <span class="commitment-freq">Every 2 months · 3rd Sunday</span>
+      </li>
+      <li class="commitment-item">
+        <span class="commitment-name">Update stake calendar</span>
+        <span class="commitment-freq">Weekly</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Upcoming Church Tasks</h2>
+    <ul class="task-list" id="church-tasks">
+      <li class="loading">Loading…</li>
+    </ul>
+  </section>
+</main>
+
+<div id="token-modal-placeholder"></div>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('nav').innerHTML = navHTML('church');
+initSettings();
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadChurchTasks() {
+  const el = document.getElementById('church-tasks');
+  if (!hasToken()) {
+    el.innerHTML = '<li class="empty">Connect Todoist to see upcoming tasks.</li>';
+    document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
+    showTokenModal(() => loadChurchTasks());
+    return;
+  }
+
+  try {
+    const [projects, tasks] = await Promise.all([
+      fetchProjects(),
+      fetchTasks('next 14 days')
+    ]);
+
+    setApiStatus('connected');
+
+    // Find Church project and all children
+    const churchProject = projects.find(p => p.name === 'Church');
+    if (!churchProject) {
+      el.innerHTML = '<li class="empty">No "Church" project found in Todoist.</li>';
+      return;
+    }
+
+    const churchIds = new Set();
+    churchIds.add(churchProject.id);
+    for (const p of projects) {
+      if (p.parent_id === churchProject.id) churchIds.add(p.id);
+    }
+
+    const projectNames = Object.fromEntries(projects.map(p => [p.id, p.name]));
+
+    const churchTasks = tasks
+      .filter(t => churchIds.has(t.project_id))
+      .sort((a, b) => {
+        const da = a.due?.date || '9999';
+        const db = b.due?.date || '9999';
+        return da.localeCompare(db);
+      });
+
+    if (!churchTasks.length) {
+      el.innerHTML = '<li class="empty">Nothing due in the next 14 days.</li>';
+      return;
+    }
+
+    el.innerHTML = churchTasks.map(t => `
+      <li class="task-item" data-id="${t.id}">
+        <button class="task-check" data-id="${t.id}" aria-label="Complete"></button>
+        <div class="task-body">
+          <div class="task-name">${escHtml(t.content)}</div>
+          <div class="task-meta">${escHtml(projectNames[t.project_id] || '')}</div>
+        </div>
+        <span class="task-due">${t.due ? formatDue(t.due) : ''}</span>
+      </li>`).join('');
+
+    el.querySelectorAll('.task-check').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.classList.add('checked');
+        const nameEl = btn.closest('.task-item').querySelector('.task-name');
+        if (nameEl) nameEl.classList.add('done');
+        try { await closeTask(btn.dataset.id); } catch(e) {
+          btn.classList.remove('checked');
+          if (nameEl) nameEl.classList.remove('done');
+        }
+      });
+    });
+
+  } catch(e) {
+    setApiStatus('error');
+    el.innerHTML = e.message === 'bad_token'
+      ? '<li class="error">Invalid token — click ⚙ to reset.</li>'
+      : '<li class="error">Could not reach Todoist.</li>';
+  }
+}
+
+loadChurchTasks();
+</script>
+</body>
+</html>

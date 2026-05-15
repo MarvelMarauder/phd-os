@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "Thoughts.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Home"
+              "title": "Thoughts"
             }
           },
           {
@@ -108,7 +108,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "Thoughts.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Home"
+              "title": "Backlinks for Thoughts"
             }
           },
           {
@@ -127,12 +127,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "Thoughts.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Home"
+              "title": "Outgoing links from Thoughts"
             }
           },
           {
@@ -170,13 +170,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "Thoughts.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Home"
+              "title": "Outline of Thoughts"
             }
           }
         ]
@@ -202,6 +202,18 @@
   },
   "active": "774f6b95cf3fe2c9",
   "lastOpenFiles": [
+    "_site/recharge.json",
+    "_site/papers.json",
+    "_site/app.js",
+    "_site/recharge.html",
+    "_site/papers.html",
+    "_site/style.css",
+    "_site/projects.html",
+    "_site/index.html",
+    "_site/church.html",
+    "_site",
+    "site/recharge.html",
+    "000 Dashboard/Home.md",
     "100 Research/My Papers/Self-Verification and JudgyAI.md",
     "100 Research/My Papers/Self-Compassion and JudgyAI.md",
     "100 Research/My Papers/Psychological Reactance and JudgyAI.md",
@@ -209,15 +221,12 @@
     "100 Research/My Papers/Emotional Similarity.md",
     "100 Research/My Papers/AIC Disclosure.md",
     "100 Research/My Papers/AI Companion Commentary.md",
-    "000 Dashboard/Home.md",
     "Thoughts.md",
     "900 Templates/Template - Daily Note.md",
     "500 Recharge/Recharge List.md",
     "400 Personal/Personal.md",
     "300 Church/Speaking Assignments/Speaking Assignments.md",
     "200 PhD Program/PhD Milestones.md",
-    "000 Dashboard/PaperTracker.base",
-    "000 Dashboard/Paper Tracker.base",
     "PaperTracker.base.md",
     "sdfd.md",
     "000 Dashboard/Paper Tracker.md",

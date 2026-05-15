@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhD OS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="nav"></nav>
+
+<main>
+  <p class="page-title" id="date-display"></p>
+  <p class="page-sub" id="day-display"></p>
+
+  <section id="tasks-section">
+    <h2>Today</h2>
+    <ul class="task-list" id="task-list">
+      <li class="loading">Loading tasks…</li>
+    </ul>
+  </section>
+
+  <section id="upcoming-section">
+    <h2>Next 7 Days</h2>
+    <ul class="task-list" id="upcoming-list">
+      <li class="loading">Loading…</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Papers</h2>
+    <div id="papers-summary">
+      <p class="loading">Loading…</p>
+    </div>
+  </section>
+
+  <section id="recharge-section" style="display:none">
+    <h2>Recharge</h2>
+    <div class="recharge-spotlight" id="recharge-item"></div>
+  </section>
+</main>
+
+<div id="token-modal-placeholder"></div>
+
+<script src="app.js"></script>
+<script>
+// ── Nav ──────────────────────────────────────────────
+document.getElementById('nav').innerHTML = navHTML('home');
+initSettings();
+
+// ── Date header ──────────────────────────────────────
+const now = new Date();
+document.getElementById('date-display').textContent =
+  now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+document.getElementById('day-display').textContent =
+  now.toLocaleDateString('en-US', { weekday: 'long' });
+
+// ── Tasks ────────────────────────────────────────────
+function renderTaskList(containerId, tasks, showDue) {
+  const el = document.getElementById(containerId);
+  if (!tasks.length) {
+    el.innerHTML = '<li class="empty">Nothing here.</li>';
+    return;
+  }
+  // Sort by project name for grouping feel
+  tasks.sort((a, b) => (a.project_id || '').localeCompare(b.project_id || ''));
+  el.innerHTML = tasks.map(t => {
+    const due = showDue && t.due ? `<span class="task-due">${formatDue(t.due)}</span>` : '';
+    return `
+      <li class="task-item" data-id="${t.id}">
+        <button class="task-check" aria-label="Complete task" data-id="${t.id}"></button>
+        <div class="task-body">
+          <div class="task-name">${escHtml(t.content)}</div>
+          ${t.description ? `<div class="task-meta">${escHtml(t.description.slice(0,80))}</div>` : ''}
+        </div>
+        ${due}
+      </li>`;
+  }).join('');
+
+  el.querySelectorAll('.task-check').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.classList.add('checked');
+      const nameEl = btn.closest('.task-item').querySelector('.task-name');
+      if (nameEl) nameEl.classList.add('done');
+      try {
+        await closeTask(btn.dataset.id);
+      } catch (e) {
+        btn.classList.remove('checked');
+        if (nameEl) nameEl.classList.remove('done');
+      }
+    });
+  });
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadTasks() {
+  if (!hasToken()) {
+    document.getElementById('task-list').innerHTML =
+      '<li class="empty">Connect Todoist to see tasks.</li>';
+    document.getElementById('upcoming-list').innerHTML = '';
+    document.getElementById('upcoming-section').style.display = 'none';
+    return;
+  }
+
+  try {
+    const [today, next7] = await Promise.all([
+      fetchTasks('today'),
+      fetchTasks('next 7 days')
+    ]);
+
+    setApiStatus('connected');
+
+    const todayIds = new Set(today.map(t => t.id));
+    const upcoming = next7.filter(t => !todayIds.has(t.id));
+
+    renderTaskList('task-list', today, false);
+    if (upcoming.length) {
+      renderTaskList('upcoming-list', upcoming, true);
+    } else {
+      document.getElementById('upcoming-list').innerHTML =
+        '<li class="empty">Nothing else this week.</li>';
+    }
+  } catch(e) {
+    setApiStatus('error');
+    if (e.message === 'bad_token') {
+      document.getElementById('task-list').innerHTML =
+        '<li class="error">Invalid token — click ⚙ to reset.</li>';
+    } else {
+      document.getElementById('task-list').innerHTML =
+        '<li class="error">Could not reach Todoist. Check connection.</li>';
+    }
+    document.getElementById('upcoming-list').innerHTML = '';
+  }
+}
+
+// ── Papers summary ────────────────────────────────────
+async function loadPapers() {
+  const el = document.getElementById('papers-summary');
+  try {
+    const data = await fetch('papers.json').then(r => r.json());
+    const active = data.papers.filter(p => p.status === 'active');
+    if (!active.length) { el.innerHTML = '<p class="empty">No active papers.</p>'; return; }
+
+    el.innerHTML = active.map(p => {
+      const si = stageIndex(p.stage);
+      const steps = STAGES.map((_, i) => {
+        if (i < si)  return '<div class="progress-step past"></div>';
+        if (i === si) return '<div class="progress-step current"></div>';
+        return '<div class="progress-step"></div>';
+      }).join('');
+      return `
+        <div class="paper-card">
+          <div class="paper-header">
+            <span class="paper-title">${escHtml(p.title)}</span>
+            <span class="stage-pill ${stageClass(p.stage)}">${p.stage}</span>
+          </div>
+          <div class="paper-progress">${steps}</div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<p class="error">Could not load papers.json</p>';
+  }
+}
+
+// ── Recharge spotlight ────────────────────────────────
+async function loadRecharge() {
+  try {
+    const data = await fetch('recharge.json').then(r => r.json());
+    const items = data.sections.flatMap(s => s.items);
+    if (!items.length) return;
+    const pick = items[Math.floor(Math.random() * items.length)];
+    document.getElementById('recharge-item').textContent = pick;
+    document.getElementById('recharge-section').style.display = '';
+  } catch(e) { /* recharge list empty — skip */ }
+}
+
+// ── Init ──────────────────────────────────────────────
+if (!hasToken()) {
+  document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
+  showTokenModal(() => loadTasks());
+}
+
+loadTasks();
+loadPapers();
+loadRecharge();
+</script>
+</body>
+</html>

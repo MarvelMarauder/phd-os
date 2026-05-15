@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhD OS — Papers</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="nav"></nav>
+
+<main>
+  <p class="page-title">Papers</p>
+  <p class="page-sub">Active research pipeline</p>
+
+  <div id="papers-container">
+    <p class="loading">Loading…</p>
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('nav').innerHTML = navHTML('papers');
+initSettings();
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function authorList(authors) {
+  if (!authors || !authors.length) return '';
+  if (authors.length === 1) return authors[0];
+  return authors.slice(0, -1).join(', ') + ' & ' + authors[authors.length - 1];
+}
+
+async function loadPapers() {
+  const container = document.getElementById('papers-container');
+  try {
+    const data = await fetch('papers.json').then(r => r.json());
+    const active = data.papers.filter(p => p.status === 'active');
+
+    if (!active.length) {
+      container.innerHTML = '<p class="empty">No active papers.</p>';
+      return;
+    }
+
+    // Group by stream
+    const streams = {};
+    for (const p of active) {
+      const s = p.stream || 'Other';
+      if (!streams[s]) streams[s] = [];
+      streams[s].push(p);
+    }
+
+    // Sort papers within each stream by stage (earlier = higher priority view)
+    for (const s of Object.values(streams)) {
+      s.sort((a, b) => stageIndex(b.stage) - stageIndex(a.stage)); // further along first
+    }
+
+    const streamOrder = ['AI Companions', 'JudgyAI'];
+    const sortedStreams = [
+      ...streamOrder.filter(s => streams[s]),
+      ...Object.keys(streams).filter(s => !streamOrder.includes(s))
+    ];
+
+    const streamClass = {
+      'AI Companions': 'stream-aic',
+      'JudgyAI': 'stream-jai'
+    };
+
+    container.innerHTML = sortedStreams.map(streamName => {
+      const papers = streams[streamName];
+      const cls = streamClass[streamName] || '';
+
+      const cards = papers.map(p => {
+        const si = stageIndex(p.stage);
+        const steps = STAGES.map((s, i) => {
+          const cls = i < si ? 'past' : i === si ? 'current' : '';
+          return `<div class="progress-step${cls ? ' '+cls : ''}" title="${s}"></div>`;
+        }).join('');
+
+        const authors = authorList(p.co_authors);
+        const deadline = p.deadline && p.deadline !== 'None'
+          ? `<span style="color:var(--text-subtle)"> · Due ${p.deadline}</span>` : '';
+
+        return `
+          <div class="paper-card">
+            <div class="paper-header">
+              <span class="paper-title">${escHtml(p.title)}</span>
+              <span class="stage-pill ${stageClass(p.stage)}">${p.stage}</span>
+            </div>
+            <div class="paper-meta">${escHtml(authors)}${deadline}</div>
+            <div class="paper-progress">${steps}</div>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="stream-group ${cls}">
+          <div class="stream-heading">
+            <div class="stream-dot"></div>
+            <span class="stream-label">${escHtml(streamName)}</span>
+          </div>
+          ${cards}
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    container.innerHTML = '<p class="error">Could not load papers.json — check the build script ran.</p>';
+  }
+}
+
+loadPapers();
+
+// Stage legend
+const legendEl = document.createElement('div');
+legendEl.style.cssText = 'margin-top:32px;display:flex;flex-wrap:wrap;gap:6px;';
+legendEl.innerHTML = STAGES.map(s =>
+  `<span class="stage-pill ${stageClass(s)}" style="font-size:11px">${s}</span>`
+).join('');
+document.querySelector('main').appendChild(legendEl);
+</script>
+</body>
+</html>
