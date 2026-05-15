@@ -14,12 +14,36 @@
   <p class="page-title">Recharge</p>
   <p class="page-sub">Things worth doing for their own sake</p>
 
-  <div id="recharge-content">
-    <p class="loading">Loading…</p>
-  </div>
+  <!-- ── Deal me in ─────────────────────────────────── -->
+  <section>
+    <h2>Deal me in</h2>
+    <div class="rc-picker" id="rc-picker">
+      <div class="rc-chips" id="rc-chips"></div>
+      <div class="rc-card" id="rc-card">
+        <span class="rc-card-cat" id="rc-card-cat"></span>
+        <div class="rc-card-item" id="rc-card-item">Loading…</div>
+        <div class="rc-card-actions">
+          <button class="btn btn-ghost" id="rc-reroll">↻ Re-roll</button>
+          <button class="btn btn-primary" id="rc-log-pick">Log it</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Browse ─────────────────────────────────────── -->
+  <section>
+    <h2>Browse</h2>
+    <div id="rc-browse"></div>
+  </section>
+
+  <!-- ── Recent sessions ────────────────────────────── -->
+  <section>
+    <h2>Recent sessions</h2>
+    <div id="rc-recent"></div>
+  </section>
 
   <p style="font-size:12px;color:var(--text-subtle);margin-top:32px;">
-    Edit your lists in <code>500 Recharge/Recharge List.md</code> — changes appear after the next push to main.
+    Edit your lists in <code>500 Recharge/Recharge List.md</code> — changes appear after the next push.
   </p>
 </main>
 
@@ -28,42 +52,215 @@
 document.getElementById('nav').innerHTML = navHTML('recharge');
 initSettings();
 
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const LOG_KEY   = 'phd_recharge_log';
+let allData     = null;
+let activeFilter = null; // null = any category
+let currentPick  = null;
+
+// ── Log helpers ───────────────────────────────────────
+function getLog() {
+  try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; }
+  catch(e) { return []; }
 }
 
-async function loadRecharge() {
-  const el = document.getElementById('recharge-content');
-  try {
-    const data = await fetch('recharge.json').then(r => r.json());
-    const sections = data.sections.filter(s => s.items.length);
+function saveLog(log) {
+  localStorage.setItem(LOG_KEY, JSON.stringify(log.slice(0, 100)));
+}
 
-    if (!sections.length) {
-      el.innerHTML = `
-        <p class="empty">No recharge items yet.</p>
-        <p style="font-size:13px;color:var(--text-muted);margin-top:8px;line-height:1.6">
-          Open <strong>500 Recharge/Recharge List.md</strong> in Obsidian and add items under headings like:<br><br>
-          <code>## DS Games</code><br>
-          <code>- Breath of the Wild</code><br><br>
-          After the next push to main, they'll appear here.
-        </p>`;
-      return;
-    }
+function addToLog(item, category) {
+  const log = getLog();
+  log.unshift({ item, category, ts: new Date().toISOString() });
+  saveLog(log);
+  renderRecent();
+}
 
-    el.innerHTML = sections.map(s => `
-      <div class="recharge-section">
-        <div class="recharge-heading">${escHtml(s.title)}</div>
-        <ul class="recharge-items">
-          ${s.items.map(item => `<li>${escHtml(item)}</li>`).join('')}
-        </ul>
-      </div>`).join('');
+function removeFromLog(idx) {
+  const log = getLog();
+  log.splice(idx, 1);
+  saveLog(log);
+  renderRecent();
+}
 
-  } catch(e) {
-    el.innerHTML = '<p class="error">Could not load recharge.json</p>';
+function clearLog() {
+  localStorage.removeItem(LOG_KEY);
+  renderRecent();
+}
+
+// ── Pool ──────────────────────────────────────────────
+function getPool() {
+  if (!allData) return [];
+  const sections = activeFilter
+    ? allData.sections.filter(s => s.title === activeFilter)
+    : allData.sections;
+  return sections.flatMap(s => s.items.map(i => ({ item: i, category: s.title })));
+}
+
+// ── Deal me in ────────────────────────────────────────
+function renderPick() {
+  const pool = getPool();
+  const catEl  = document.getElementById('rc-card-cat');
+  const itemEl = document.getElementById('rc-card-item');
+  const logBtn = document.getElementById('rc-log-pick');
+
+  if (!pool.length) {
+    catEl.textContent  = '';
+    itemEl.textContent = 'Nothing in this category yet.';
+    logBtn.disabled = true;
+    currentPick = null;
+    return;
   }
+
+  // Animate out → swap → animate in
+  itemEl.classList.add('rc-item-exit');
+  setTimeout(() => {
+    currentPick = pool[Math.floor(Math.random() * pool.length)];
+    catEl.textContent  = currentPick.category;
+    itemEl.textContent = currentPick.item;
+    itemEl.classList.remove('rc-item-exit');
+    logBtn.textContent = 'Log it';
+    logBtn.disabled    = false;
+  }, 120);
 }
 
-loadRecharge();
+function renderChips() {
+  const el = document.getElementById('rc-chips');
+  if (!allData) return;
+  const options = [{ label: 'All', key: null }, ...allData.sections.map(s => ({ label: s.title, key: s.title }))];
+  el.innerHTML = options.map(o => `
+    <button class="rc-chip${o.key === activeFilter ? ' active' : ''}" data-key="${o.key ?? ''}">
+      ${escHtml(o.label)}
+    </button>`).join('');
+
+  el.querySelectorAll('.rc-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeFilter = btn.dataset.key || null;
+      renderChips();
+      renderPick();
+    });
+  });
+}
+
+// ── Browse ────────────────────────────────────────────
+function renderBrowse() {
+  const el = document.getElementById('rc-browse');
+  if (!allData) return;
+
+  const filled = allData.sections.filter(s => s.items.length);
+  if (!filled.length) {
+    el.innerHTML = `
+      <p class="empty">No activities yet.</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:8px;line-height:1.7">
+        Open <strong>500 Recharge/Recharge List.md</strong> in Obsidian and add items under headings:<br>
+        <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">## DS Games</code>
+        &nbsp;→&nbsp;
+        <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">- Stardew Valley</code>
+      </p>`;
+    return;
+  }
+
+  el.innerHTML = filled.map((s, i) => `
+    <details class="rc-accordion" ${i === 0 ? 'open' : ''}>
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">${escHtml(s.title)}</span>
+        <span class="rc-accordion-count">${s.items.length}</span>
+      </summary>
+      <ul class="rc-accordion-body">
+        ${s.items.map(item => `
+          <li class="rc-browse-item">
+            <span class="rc-browse-name">${escHtml(item)}</span>
+            <button class="rc-log-btn" data-item="${escHtml(item)}" data-cat="${escHtml(s.title)}">Log it</button>
+          </li>`).join('')}
+      </ul>
+    </details>`).join('');
+
+  el.querySelectorAll('.rc-log-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      addToLog(btn.dataset.item, btn.dataset.cat);
+      btn.textContent = 'Logged ✓';
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = 'Log it'; btn.disabled = false; }, 2000);
+    });
+  });
+}
+
+// ── Recent sessions ───────────────────────────────────
+function renderRecent() {
+  const el  = document.getElementById('rc-recent');
+  const log = getLog();
+
+  if (!log.length) {
+    el.innerHTML = '<p class="empty">Nothing logged yet — hit "Log it" after a session.</p>';
+    return;
+  }
+
+  const todayStr     = localDateStr(new Date());
+  const yesterdayStr = localDateStr(new Date(Date.now() - 86400000));
+
+  // Group by local date string
+  const groups = new Map();
+  log.forEach((entry, idx) => {
+    const d  = new Date(entry.ts);
+    const ds = localDateStr(d);
+    const label = ds === todayStr ? 'Today'
+      : ds === yesterdayStr ? 'Yesterday'
+      : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push({ ...entry, idx });
+  });
+
+  const rows = [...groups.entries()].map(([label, entries]) => `
+    <div class="rc-day-group">
+      <div class="rc-day-label">${escHtml(label)}</div>
+      <ul class="rc-entry-list">
+        ${entries.map(e => {
+          const t = new Date(e.ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          return `
+          <li class="rc-entry">
+            <span class="rc-entry-cat">${escHtml(e.category)}</span>
+            <span class="rc-entry-name">${escHtml(e.item)}</span>
+            <span class="rc-entry-time">${escHtml(t)}</span>
+            <button class="rc-remove-btn" data-idx="${e.idx}" aria-label="Remove">×</button>
+          </li>`;
+        }).join('')}
+      </ul>
+    </div>`).join('');
+
+  el.innerHTML = rows + `
+    <button class="rc-clear-btn" id="rc-clear">Clear all</button>`;
+
+  el.querySelectorAll('.rc-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => removeFromLog(parseInt(btn.dataset.idx)));
+  });
+
+  document.getElementById('rc-clear').addEventListener('click', () => {
+    if (confirm('Clear your entire recharge log?')) clearLog();
+  });
+}
+
+// ── Init ──────────────────────────────────────────────
+async function init() {
+  try {
+    allData = await fetch('recharge.json').then(r => r.json());
+    renderChips();
+    renderPick();
+    renderBrowse();
+  } catch(e) {
+    document.getElementById('rc-card-item').textContent = 'Could not load recharge.json';
+  }
+  renderRecent();
+
+  document.getElementById('rc-reroll').addEventListener('click', renderPick);
+
+  document.getElementById('rc-log-pick').addEventListener('click', () => {
+    if (!currentPick) return;
+    addToLog(currentPick.item, currentPick.category);
+    const btn = document.getElementById('rc-log-pick');
+    btn.textContent = 'Logged ✓';
+    btn.disabled = true;
+  });
+}
+
+init();
 </script>
 </body>
 </html>
