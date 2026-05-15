@@ -38,7 +38,8 @@ async function apiPost(path, body = null) {
 }
 
 async function fetchTasks() {
-  return apiGet('/tasks');
+  const data = await apiGet('/tasks');
+  return Array.isArray(data) ? data : (data.results || []);
 }
 
 async function closeTask(id) {
@@ -46,7 +47,8 @@ async function closeTask(id) {
 }
 
 async function fetchProjects() {
-  return apiGet('/projects');
+  const data = await apiGet('/projects');
+  return Array.isArray(data) ? data : (data.results || []);
 }
 
 // ── Date filtering helpers ────────────────────────────
@@ -60,22 +62,28 @@ function daysFromNowStr(n) {
   return d.toISOString().split('T')[0];
 }
 
+// Normalize "2026-05-20T16:00:00" or "2026-05-20" → "2026-05-20"
+function dueDate(t) {
+  return t.due ? t.due.date.split('T')[0] : null;
+}
+
 // Tasks due today or already overdue
 function isDueNow(t) {
-  return t.due && t.due.date <= todayStr();
+  const d = dueDate(t);
+  return d !== null && d <= todayStr();
 }
 
 // Tasks due strictly after today and within n days
 function isDueWithin(t, days) {
-  if (!t.due) return false;
-  const d = t.due.date;
+  const d = dueDate(t);
+  if (!d) return false;
   return d > todayStr() && d <= daysFromNowStr(days);
 }
 
 // ── Helpers ───────────────────────────────────────────
 function formatDue(due) {
   if (!due) return '';
-  const dateStr = due.date; // e.g. "2026-05-15"
+  const dateStr = due.date.split('T')[0]; // normalize datetime → date
   const d = new Date(dateStr + 'T12:00:00'); // noon local to avoid tz shift
   const today = new Date(); today.setHours(12,0,0,0);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
