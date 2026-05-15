@@ -5,7 +5,7 @@ const STAGES = [
   'data-collection', 'data-analysis', 'writeup', 'under-review', 'published'
 ];
 
-const TODOIST_BASE = 'https://api.todoist.com/rest/v2';
+const TODOIST_BASE = 'https://api.todoist.com/api/v1';
 
 // ── Token management ──────────────────────────────────
 function getToken()      { return localStorage.getItem('phd_todoist_token') || ''; }
