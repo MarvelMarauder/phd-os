@@ -38,7 +38,7 @@ async function apiPost(path, body = null) {
 }
 
 async function fetchTasks() {
-  const data = await apiGet('/tasks');
+  const data = await apiGet('/tasks?limit=200');
   return Array.isArray(data) ? data : (data.results || []);
 }
 
@@ -47,19 +47,23 @@ async function closeTask(id) {
 }
 
 async function fetchProjects() {
-  const data = await apiGet('/projects');
+  const data = await apiGet('/projects?limit=200');
   return Array.isArray(data) ? data : (data.results || []);
 }
 
 // ── Date filtering helpers ────────────────────────────
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return localDateStr(new Date());
 }
 
 function daysFromNowStr(n) {
   const d = new Date();
   d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 // Normalize "2026-05-20T16:00:00" or "2026-05-20" → "2026-05-20"
