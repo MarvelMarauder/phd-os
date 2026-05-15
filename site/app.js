@@ -309,11 +309,13 @@ function renderTaskList(containerId, tasks, allTasks, showDue, reminderMap) {
 // ── Standard nav HTML (call with current page key) ────
 function navHTML(active) {
   const pages = [
-    ['index.html', 'home', 'Home'],
-    ['papers.html', 'papers', 'Papers'],
-    ['church.html', 'church', 'Church'],
-    ['projects.html', 'projects', 'Projects'],
-    ['recharge.html', 'recharge', 'Recharge'],
+    ['index.html',   'home',     'Home'],
+    ['papers.html',  'papers',   'Papers'],
+    ['lit.html',     'lit',      'Lit'],
+    ['books.html',   'books',    'Books'],
+    ['projects.html','projects', 'Projects'],
+    ['church.html',  'church',   'Church'],
+    ['recharge.html','recharge', 'Recharge'],
   ];
   const links = pages.map(([href, key, label]) =>
     `<a href="${href}"${active === key ? ' class="active"' : ''}>${label}</a>`

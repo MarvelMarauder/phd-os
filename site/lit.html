@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhD OS — Literature</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="nav"></nav>
+
+<main>
+  <p class="page-title">Literature</p>
+  <p class="page-sub">Discover new papers · quick-add to your library · see connections</p>
+
+  <!-- ── Discover ────────────────────────────────────── -->
+  <section>
+    <h2>
+      Discover
+      <button class="lit-refresh-btn" id="discover-refresh" title="Refresh results">↻</button>
+    </h2>
+    <!--
+      EDIT YOUR DISCOVERY QUERIES HERE.
+      Each entry runs one Semantic Scholar search.
+      Add / remove objects to match your research streams.
+    -->
+    <div id="discover-area"></div>
+  </section>
+
+  <!-- ── Quick Add ──────────────────────────────────── -->
+  <section>
+    <h2>Quick Add</h2>
+    <div class="doi-form" id="doi-form">
+      <div class="doi-input-row">
+        <input class="doi-input" type="text" id="doi-input"
+               placeholder="Paste a DOI or URL (doi.org/…, dl.acm.org/…)…"
+               autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="doi-lookup-btn">Look up</button>
+      </div>
+      <div id="doi-status"></div>
+
+      <div class="doi-fields hidden" id="doi-fields">
+        <div class="form-row">
+          <div class="form-field" style="flex:3">
+            <label class="form-label">Title</label>
+            <input class="form-input" type="text" id="f-title">
+          </div>
+          <div class="form-field" style="flex:1">
+            <label class="form-label">Year</label>
+            <input class="form-input" type="text" id="f-year" style="max-width:90px">
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Authors <span class="form-hint">(comma-separated)</span></label>
+          <input class="form-input" type="text" id="f-authors">
+        </div>
+        <div class="form-row">
+          <div class="form-field" style="flex:2">
+            <label class="form-label">Journal / Venue</label>
+            <input class="form-input" type="text" id="f-journal">
+          </div>
+          <div class="form-field" style="flex:1">
+            <label class="form-label">Stream</label>
+            <select class="form-input" id="f-stream">
+              <option value="">— none —</option>
+              <option value="ai-companions">AI Companions</option>
+              <option value="judgy-ai">JudgyAI</option>
+              <option value="general-is">General IS</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Related working papers</label>
+          <div class="related-list" id="f-related"></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">
+            One-sentence thought
+            <span class="form-hint" id="thoughts-count">0 / 200</span>
+          </label>
+          <textarea class="form-input" id="f-thoughts" rows="2"
+                    maxlength="200"
+                    placeholder="Why does this paper matter to your work?"></textarea>
+        </div>
+
+        <div class="doi-actions">
+          <span class="doi-doi-display" id="f-doi-display"></span>
+          <button class="btn btn-primary" id="doi-copy-btn">Copy frontmatter</button>
+        </div>
+        <div class="doi-copy-hint">
+          Paste the copied YAML into a new note inside
+          <code>100 Research/Source Papers/</code> and push to main.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Your Library ───────────────────────────────── -->
+  <section>
+    <h2>Your Library <span class="section-count" id="lib-count"></span></h2>
+    <div class="rc-chips" id="lib-filters"></div>
+    <div id="lib-list"><p class="loading">Loading…</p></div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('nav').innerHTML = navHTML('lit');
+initSettings();
+
+// ─────────────────────────────────────────────────────
+//  EDIT YOUR DISCOVERY QUERIES HERE
+// ─────────────────────────────────────────────────────
+const DISCOVER_QUERIES = [
+  {
+    stream: 'ai-companions',
+    label:  'AI Companions',
+    query:  'AI companion social robot conversational agent human relationship',
+  },
+  {
+    stream: 'judgy-ai',
+    label:  'JudgyAI',
+    query:  'artificial intelligence judgment anthropomorphism moral evaluation human',
+  },
+];
+
+const STREAM_META = {
+  'ai-companions': { label: 'AI Companions', cls: 'stream-aic' },
+  'judgy-ai':      { label: 'JudgyAI',       cls: 'stream-jai' },
+  'general-is':    { label: 'General IS',    cls: 'stream-gis' },
+};
+
+const SS_BASE     = 'https://api.semanticscholar.org/graph/v1/paper/search';
+const SS_FIELDS   = 'title,authors,year,abstract,venue,externalIds,publicationDate';
+const SS_CACHE_MS = 30 * 60 * 1000; // 30 minutes
+
+// ── Discover ─────────────────────────────────────────
+
+function ssCache(key) {
+  try {
+    const raw = sessionStorage.getItem('ss_' + key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > SS_CACHE_MS) return null;
+    return data;
+  } catch(e) { return null; }
+}
+
+function ssCacheSet(key, data) {
+  try {
+    sessionStorage.setItem('ss_' + key, JSON.stringify({ ts: Date.now(), data }));
+  } catch(e) {}
+}
+
+async function fetchStream(q, bust) {
+  const key = q.stream;
+  if (!bust) {
+    const cached = ssCache(key);
+    if (cached) return cached;
+  }
+  const url = `${SS_BASE}?query=${encodeURIComponent(q.query)}&fields=${SS_FIELDS}&sort=publicationDate:desc&limit=8`;
+  const r = await fetch(url);
+  if (r.status === 429) throw new Error('rate_limited');
+  if (!r.ok) throw new Error(`ss_${r.status}`);
+  const data = await r.json();
+  const papers = (data.data || []).filter(p => p.title && p.year);
+  ssCacheSet(key, papers);
+  return papers;
+}
+
+function discoverCardHtml(p, streamCls) {
+  const doi   = p.externalIds?.DOI || '';
+  const href  = doi ? `https://doi.org/${doi}` : `https://www.semanticscholar.org/paper/${p.paperId}`;
+  const venue = p.venue || '';
+  const year  = p.year  || '';
+  const authors = (p.authors || []).slice(0, 3).map(a => {
+    const parts = (a.name || '').split(' ');
+    return parts.length > 1 ? parts[parts.length - 1] + ', ' + parts[0][0] + '.' : a.name;
+  }).join('; ') + ((p.authors || []).length > 3 ? ' et al.' : '');
+  const abstract = p.abstract
+    ? escHtml(p.abstract.replace(/<[^>]+>/g, '').trim()).slice(0, 280) + (p.abstract.length > 280 ? '…' : '')
+    : '';
+
+  return `
+    <div class="discover-card ${streamCls}">
+      <div class="discover-card-meta">${escHtml(venue)}${venue && year ? ' · ' : ''}${escHtml(String(year))}</div>
+      <a class="discover-card-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>
+      <div class="discover-card-authors">${escHtml(authors)}</div>
+      ${abstract ? `<p class="discover-card-abstract">${abstract}</p>` : ''}
+      <button class="discover-add-btn"
+              data-title="${escHtml(p.title)}"
+              data-authors="${escHtml((p.authors||[]).map(a=>a.name).join(', '))}"
+              data-journal="${escHtml(venue)}"
+              data-year="${escHtml(String(year))}"
+              data-doi="${escHtml(doi)}">
+        Add to library →
+      </button>
+    </div>`;
+}
+
+async function renderDiscover(bust = false) {
+  const area = document.getElementById('discover-area');
+  area.innerHTML = DISCOVER_QUERIES.map(q =>
+    `<div class="discover-stream">
+       <div class="discover-stream-hd ${(STREAM_META[q.stream]||{}).cls || ''}">
+         <div class="stream-dot"></div>
+         <span class="stream-label">${escHtml(q.label)}</span>
+       </div>
+       <div class="discover-cards" id="dc-${q.stream}">
+         <p class="loading">Fetching…</p>
+       </div>
+     </div>`
+  ).join('');
+
+  for (let i = 0; i < DISCOVER_QUERIES.length; i++) {
+    const q  = DISCOVER_QUERIES[i];
+    const el = document.getElementById('dc-' + q.stream);
+    const cls = (STREAM_META[q.stream]||{}).cls || '';
+    try {
+      if (i > 0) await new Promise(r => setTimeout(r, 600)); // be polite
+      const papers = await fetchStream(q, bust);
+      if (!papers.length) {
+        el.innerHTML = '<p class="empty">No results found.</p>';
+        continue;
+      }
+      el.innerHTML = papers.map(p => discoverCardHtml(p, cls)).join('');
+      el.querySelectorAll('.discover-add-btn').forEach(btn => {
+        btn.addEventListener('click', () => prefillForm({
+          title:   btn.dataset.title,
+          authors: btn.dataset.authors,
+          journal: btn.dataset.journal,
+          year:    btn.dataset.year,
+          doi:     btn.dataset.doi,
+        }));
+      });
+    } catch(e) {
+      el.innerHTML = e.message === 'rate_limited'
+        ? '<p class="error">Rate limited — wait a moment and refresh.</p>'
+        : '<p class="error">Could not reach Semantic Scholar.</p>';
+    }
+  }
+}
+
+document.getElementById('discover-refresh').addEventListener('click', () => renderDiscover(true));
+
+// ── DOI / Quick Add ──────────────────────────────────
+
+let activeDoi = '';
+let workingPapers = [];
+
+async function loadWorkingPapers() {
+  try {
+    const data = await fetch('papers.json').then(r => r.json());
+    workingPapers = (data.papers || []).filter(p => p.status === 'active').map(p => p.title);
+  } catch(e) { workingPapers = []; }
+  renderRelatedCheckboxes([]);
+}
+
+function renderRelatedCheckboxes(checked) {
+  const el = document.getElementById('f-related');
+  if (!workingPapers.length) {
+    el.innerHTML = '<span class="form-hint">No active working papers found.</span>';
+    return;
+  }
+  el.innerHTML = workingPapers.map(title => {
+    const id  = 'rel-' + title.replace(/\W+/g, '_');
+    const chk = checked.includes(title) ? ' checked' : '';
+    return `<label class="related-chip">
+      <input type="checkbox" value="${escHtml(title)}"${chk}>
+      ${escHtml(title)}
+    </label>`;
+  }).join('');
+}
+
+function extractDoi(raw) {
+  const m = raw.trim().match(/\b(10\.\d{4,}\/[^\s"'<>]+)/);
+  return m ? m[1] : null;
+}
+
+function stripXml(s) {
+  return (s || '').replace(/<[^>]+>/g, '').trim();
+}
+
+async function doiLookup() {
+  const raw = document.getElementById('doi-input').value;
+  const doi = extractDoi(raw);
+  const statusEl = document.getElementById('doi-status');
+  const fieldsEl = document.getElementById('doi-fields');
+
+  if (!doi) {
+    statusEl.innerHTML = '<p class="error" style="margin-top:6px">Could not find a DOI in that input.</p>';
+    return;
+  }
+
+  statusEl.innerHTML = '<p class="loading" style="margin-top:6px">Looking up…</p>';
+  fieldsEl.classList.add('hidden');
+
+  try {
+    const r = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
+    if (!r.ok) throw new Error('not_found');
+    const { message: m } = await r.json();
+
+    const title   = (m.title || [])[0] || '';
+    const authors = (m.author || []).map(a => [a.family, a.given].filter(Boolean).join(', ')).join('; ');
+    const journal = (m['container-title'] || [])[0] || (m['short-container-title'] || [])[0] || '';
+    const parts   = (m.published?.['date-parts'] || [[]])[0];
+    const year    = parts[0] ? String(parts[0]) : '';
+
+    prefillForm({ title, authors, journal, year, doi: m.DOI || doi });
+    statusEl.innerHTML = '';
+  } catch(e) {
+    statusEl.innerHTML = '<p class="error" style="margin-top:6px">DOI not found — try editing the fields manually.</p>';
+    // Still open the form so they can type manually
+    prefillForm({ title:'', authors:'', journal:'', year:'', doi });
+  }
+}
+
+function prefillForm({ title, authors, journal, year, doi }) {
+  document.getElementById('f-title').value   = title;
+  document.getElementById('f-authors').value = authors;
+  document.getElementById('f-journal').value = journal;
+  document.getElementById('f-year').value    = year;
+  document.getElementById('f-doi-display').textContent = doi ? `DOI: ${doi}` : '';
+  activeDoi = doi || '';
+  renderRelatedCheckboxes([]);
+  document.getElementById('doi-fields').classList.remove('hidden');
+  document.getElementById('doi-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('doi-lookup-btn').addEventListener('click', doiLookup);
+document.getElementById('doi-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doiLookup();
+});
+
+document.getElementById('f-thoughts').addEventListener('input', function() {
+  document.getElementById('thoughts-count').textContent = `${this.value.length} / 200`;
+});
+
+document.getElementById('doi-copy-btn').addEventListener('click', () => {
+  const title   = document.getElementById('f-title').value.trim();
+  const authors = document.getElementById('f-authors').value.trim()
+                    .split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  const journal = document.getElementById('f-journal').value.trim();
+  const year    = document.getElementById('f-year').value.trim();
+  const stream  = document.getElementById('f-stream').value;
+  const thoughts= document.getElementById('f-thoughts').value.trim();
+  const related = [...document.querySelectorAll('#f-related input:checked')].map(c => c.value);
+
+  const authorsYaml = authors.length
+    ? '\nauthors:\n' + authors.map(a => `  - ${a}`).join('\n')
+    : '\nauthors: []';
+  const relatedYaml = related.length
+    ? '\nrelated-papers:\n' + related.map(r => `  - "${r}"`).join('\n')
+    : '\nrelated-papers: []';
+
+  const yaml = `---
+title: "${title.replace(/"/g, '\\"')}"${authorsYaml}
+journal: "${journal}"
+year: ${year || 'null'}
+doi: ${activeDoi || 'null'}
+stream: ${stream || 'null'}${relatedYaml}
+thoughts: "${thoughts.replace(/"/g, '\\"')}"
+---
+`;
+
+  navigator.clipboard.writeText(yaml).then(() => {
+    const btn = document.getElementById('doi-copy-btn');
+    btn.textContent = 'Copied ✓';
+    btn.style.background = 'var(--accent)';
+    setTimeout(() => { btn.textContent = 'Copy frontmatter'; btn.style.background = ''; }, 2500);
+  });
+});
+
+// ── Library ───────────────────────────────────────────
+
+let libFilter = null;
+
+function streamPill(stream) {
+  if (!stream) return '';
+  const m = STREAM_META[stream];
+  if (!m) return `<span class="lit-stream-badge">${escHtml(stream)}</span>`;
+  return `<span class="lit-stream-badge ${m.cls}">${escHtml(m.label)}</span>`;
+}
+
+function renderLibFilters(papers) {
+  const el = document.getElementById('lib-filters');
+  const streams = [...new Set(papers.map(p => p.stream).filter(Boolean))];
+  if (!streams.length) { el.innerHTML = ''; return; }
+  const opts = [{ key: null, label: 'All' }, ...streams.map(s => ({ key: s, label: (STREAM_META[s]||{}).label || s }))];
+  el.innerHTML = opts.map(o =>
+    `<button class="rc-chip${o.key === libFilter ? ' active' : ''}" data-key="${o.key ?? ''}">${escHtml(o.label)}</button>`
+  ).join('');
+  el.querySelectorAll('.rc-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      libFilter = btn.dataset.key || null;
+      renderLibFilters(papers);
+      renderLib(papers);
+    });
+  });
+}
+
+function renderLib(papers) {
+  const el = document.getElementById('lib-list');
+  const visible = libFilter ? papers.filter(p => p.stream === libFilter) : papers;
+  document.getElementById('lib-count').textContent = papers.length || '';
+
+  if (!visible.length) {
+    el.innerHTML = papers.length
+      ? '<p class="empty">No papers in this stream yet.</p>'
+      : `<p class="empty">No papers yet — use Quick Add above, then push to main.</p>`;
+    return;
+  }
+
+  el.innerHTML = visible.map(p => {
+    const href = p.doi ? `https://doi.org/${p.doi}` : null;
+    const titleHtml = href
+      ? `<a class="lit-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
+      : `<span class="lit-title">${escHtml(p.title)}</span>`;
+    const authorsStr = (p.authors || []).slice(0, 4).join('; ') + (p.authors?.length > 4 ? ' et al.' : '');
+    const related = (p.related_papers || []);
+    const relatedHtml = related.length
+      ? `<div class="lit-related">
+           <span class="lit-related-label">Related to:</span>
+           ${related.map(r => `<span class="lit-related-chip">${escHtml(r)}</span>`).join('')}
+         </div>`
+      : '';
+
+    return `
+      <div class="lit-card">
+        <div class="lit-card-top">
+          ${streamPill(p.stream)}
+          <span class="lit-meta">${escHtml(p.journal || '')}${p.journal && p.year ? ' · ' : ''}${p.year || ''}</span>
+        </div>
+        ${titleHtml}
+        ${authorsStr ? `<div class="lit-authors">${escHtml(authorsStr)}</div>` : ''}
+        ${p.thoughts ? `<p class="lit-thoughts">${escHtml(p.thoughts)}</p>` : ''}
+        ${p.snippet  ? `<p class="lit-snippet">${escHtml(p.snippet)}</p>`   : ''}
+        ${relatedHtml}
+      </div>`;
+  }).join('');
+}
+
+async function loadLib() {
+  const el = document.getElementById('lib-list');
+  try {
+    const data = await fetch('lit.json').then(r => r.json());
+    const papers = data.papers || [];
+    renderLibFilters(papers);
+    renderLib(papers);
+  } catch(e) {
+    el.innerHTML = '<p class="error">Could not load lit.json</p>';
+  }
+}
+
+// ── Init ─────────────────────────────────────────────
+renderDiscover();
+loadWorkingPapers();
+loadLib();
+</script>
+</body>
+</html>

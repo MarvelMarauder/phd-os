@@ -44,6 +44,68 @@ def build_papers():
     return {"papers": papers}
 
 
+# ── Literature (read papers) ──────────────────────────────────────────────────
+
+def build_lit():
+    papers = []
+    for filepath in sorted(glob.glob("100 Research/Source Papers/*.md")):
+        if os.path.basename(filepath).startswith("_"):
+            continue
+        post = frontmatter.load(filepath)
+        body = post.content.strip()
+        snippet = body.split("\n\n")[0].strip() if body else ""
+        if len(snippet) > 300:
+            snippet = snippet[:300].rsplit(" ", 1)[0] + "…"
+        authors = post.get("authors", [])
+        if isinstance(authors, str):
+            authors = [a.strip() for a in authors.split(",") if a.strip()]
+        related = post.get("related-papers", [])
+        if isinstance(related, str):
+            related = [r.strip() for r in related.split(",") if r.strip()]
+        papers.append({
+            "title":          post.get("title") or os.path.splitext(os.path.basename(filepath))[0],
+            "authors":        authors,
+            "journal":        post.get("journal", ""),
+            "year":           post.get("year") or None,
+            "doi":            post.get("doi", ""),
+            "stream":         post.get("stream", ""),
+            "related_papers": related,
+            "thoughts":       post.get("thoughts", ""),
+            "snippet":        snippet,
+        })
+    papers.sort(key=lambda p: (-(p["year"] or 0), p["title"]))
+    return {"papers": papers}
+
+
+# ── Books ─────────────────────────────────────────────────────────────────────
+
+def build_books():
+    books = []
+    for filepath in sorted(glob.glob("400 Personal/Books/*.md")):
+        if os.path.basename(filepath).startswith("_"):
+            continue  # skip templates
+        post = frontmatter.load(filepath)
+        body = post.content.strip()
+        # First paragraph as snippet, capped at 280 chars
+        snippet = body.split("\n\n")[0].strip() if body else ""
+        if len(snippet) > 280:
+            snippet = snippet[:280].rsplit(" ", 1)[0] + "…"
+        tags = post.get("tags", [])
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+        books.append({
+            "title":    post.get("title") or os.path.splitext(os.path.basename(filepath))[0],
+            "author":   post.get("author", ""),
+            "status":   post.get("status", "want-to-read"),
+            "rating":   post.get("rating") or None,
+            "started":  str(post.get("started", "") or ""),
+            "finished": str(post.get("finished", "") or ""),
+            "tags":     tags,
+            "snippet":  snippet,
+        })
+    return {"books": books}
+
+
 # ── Recharge ──────────────────────────────────────────────────────────────────
 
 def build_recharge():
@@ -100,6 +162,18 @@ def main():
     with open(os.path.join(SITE_OUT, "papers.json"), "w", encoding="utf-8") as f:
         json.dump(papers_data, f, indent=2, ensure_ascii=False)
     print(f"papers.json: {len(papers_data['papers'])} papers")
+
+    # Write lit.json
+    lit_data = build_lit()
+    with open(os.path.join(SITE_OUT, "lit.json"), "w", encoding="utf-8") as f:
+        json.dump(lit_data, f, indent=2, ensure_ascii=False)
+    print(f"lit.json: {len(lit_data['papers'])} papers")
+
+    # Write books.json
+    books_data = build_books()
+    with open(os.path.join(SITE_OUT, "books.json"), "w", encoding="utf-8") as f:
+        json.dump(books_data, f, indent=2, ensure_ascii=False)
+    print(f"books.json: {len(books_data['books'])} books")
 
     # Write recharge.json
     recharge_data = build_recharge()

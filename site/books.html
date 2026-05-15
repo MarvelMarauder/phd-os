@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhD OS — Books</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="nav"></nav>
+
+<main>
+  <p class="page-title">Books</p>
+  <p class="page-sub">What I'm reading, have read, and want to read</p>
+
+  <!-- Currently Reading -->
+  <section id="reading-section" style="display:none">
+    <h2>Currently Reading</h2>
+    <div id="reading-list"></div>
+  </section>
+
+  <!-- Read -->
+  <section>
+    <h2>Read <span class="section-count" id="read-count"></span></h2>
+    <div id="read-list"><p class="loading">Loading…</p></div>
+  </section>
+
+  <!-- Want to Read -->
+  <section>
+    <h2>Want to Read <span class="section-count" id="want-count"></span></h2>
+    <div id="want-list"></div>
+  </section>
+
+  <p style="font-size:12px;color:var(--text-subtle);margin-top:32px;">
+    Add books in <code>400 Personal/Books/</code> — copy <code>_template.md</code> and fill in the frontmatter.
+    Changes appear after the next push.
+  </p>
+</main>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('nav').innerHTML = navHTML('books');
+initSettings();
+
+function ratingHtml(r) {
+  if (!r) return '';
+  const n = Math.round(Number(r));
+  return `<span class="book-rating" title="${n}/5">` +
+    Array.from({length: 5}, (_, i) =>
+      `<span class="rating-pip${i < n ? ' filled' : ''}"></span>`
+    ).join('') +
+    `</span>`;
+}
+
+function tagsHtml(tags) {
+  if (!tags || !tags.length) return '';
+  return tags.map(t => `<span class="book-tag">${escHtml(t)}</span>`).join('');
+}
+
+function formatBookDate(s) {
+  if (!s) return '';
+  const d = new Date(s + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function renderReading(books) {
+  const section = document.getElementById('reading-section');
+  const el      = document.getElementById('reading-list');
+  if (!books.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  el.innerHTML = books.map(b => `
+    <div class="book-card book-reading">
+      <div class="book-meta-row">
+        <span class="book-status-pill status-reading">Reading</span>
+        ${b.started ? `<span class="book-date">Started ${formatBookDate(b.started)}</span>` : ''}
+      </div>
+      <div class="book-title">${escHtml(b.title)}</div>
+      <div class="book-author">${escHtml(b.author)}</div>
+      ${b.snippet ? `<p class="book-snippet">${escHtml(b.snippet)}</p>` : ''}
+      <div class="book-tags">${tagsHtml(b.tags)}</div>
+    </div>`).join('');
+}
+
+function renderRead(books) {
+  const el = document.getElementById('read-list');
+  const countEl = document.getElementById('read-count');
+  countEl.textContent = books.length || '';
+  if (!books.length) {
+    el.innerHTML = '<p class="empty">No books marked as read yet.</p>';
+    return;
+  }
+  // Sort: most recently finished first, then alphabetical
+  books.sort((a, b) => (b.finished || '').localeCompare(a.finished || '') || a.title.localeCompare(b.title));
+  el.innerHTML = books.map(b => `
+    <div class="book-card">
+      <div class="book-meta-row">
+        ${ratingHtml(b.rating)}
+        ${b.finished ? `<span class="book-date">${formatBookDate(b.finished)}</span>` : ''}
+      </div>
+      <div class="book-title">${escHtml(b.title)}</div>
+      <div class="book-author">${escHtml(b.author)}</div>
+      ${b.snippet ? `<p class="book-snippet">${escHtml(b.snippet)}</p>` : ''}
+      <div class="book-tags">${tagsHtml(b.tags)}</div>
+    </div>`).join('');
+}
+
+function renderWant(books) {
+  const el = document.getElementById('want-list');
+  const countEl = document.getElementById('want-count');
+  countEl.textContent = books.length || '';
+  if (!books.length) {
+    el.innerHTML = '<p class="empty">Nothing in the queue yet.</p>';
+    return;
+  }
+  el.innerHTML = `<div class="book-want-list">` + books.map(b => `
+    <div class="book-want-item">
+      <div class="book-want-main">
+        <span class="book-title book-title-sm">${escHtml(b.title)}</span>
+        <span class="book-author">${escHtml(b.author)}</span>
+      </div>
+      <div class="book-tags">${tagsHtml(b.tags)}</div>
+    </div>`).join('') + `</div>`;
+}
+
+async function loadBooks() {
+  try {
+    const data = await fetch('books.json').then(r => r.json());
+    const books = data.books || [];
+    renderReading(books.filter(b => b.status === 'reading'));
+    renderRead(books.filter(b => b.status === 'read'));
+    renderWant(books.filter(b => b.status === 'want-to-read'));
+  } catch(e) {
+    document.getElementById('read-list').innerHTML = '<p class="error">Could not load books.json</p>';
+  }
+}
+
+loadBooks();
+</script>
+</body>
+</html>
