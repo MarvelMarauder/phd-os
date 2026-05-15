@@ -7,7 +7,7 @@
 > Todoist integration coming in Project 7. For now, write today's top 3 tasks here manually.
 
 ## 📄 Active Papers
-![[Paper Tracker.base]]
+![[PaperTracker.base]]
 
 ## ⛪ Church — Upcoming
 > Church recurring task view coming once Todoist is wired up.

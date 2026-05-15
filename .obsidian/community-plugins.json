@@ -1,5 +1,6 @@
 [
   "templater-obsidian",
   "homepage",
-  "dataview"
+  "dataview",
+  "obsidian-git"
 ]
