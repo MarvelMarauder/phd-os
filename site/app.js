@@ -89,6 +89,22 @@ function formatReminder(r) {
   return timePart ? `${label} ${timePart}` : label;
 }
 
+// Only show reminders that fire >2 hours before the task's due time.
+function reminderIsEarly(r, task) {
+  if (r.type === 'relative') {
+    return (r.minute_offset || 0) > 120;
+  }
+  // Absolute: need both reminder datetime and task due datetime
+  if (!r.due?.date || !task.due?.date) return false;
+  const reminderMs = new Date(r.due.date).getTime();
+  // If task due is date-only, treat as end-of-day noon (can't compare precisely)
+  const taskDateStr = task.due.date.includes('T')
+    ? task.due.date
+    : task.due.date + 'T12:00:00';
+  const taskMs = new Date(taskDateStr).getTime();
+  return (taskMs - reminderMs) > 120 * 60 * 1000;
+}
+
 // ── Date filtering helpers ────────────────────────────
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -244,10 +260,11 @@ function renderTaskList(containerId, tasks, allTasks, showDue, reminderMap) {
           </li>`).join('')}
       </ul>` : '';
 
-    const reminders = reminderMap ? (reminderMap[t.id] || []) : [];
+    const reminders = (reminderMap ? (reminderMap[t.id] || []) : [])
+      .filter(r => reminderIsEarly(r, t));
     const reminderHtml = reminders.length
       ? reminders.map(r =>
-          `<span class="task-reminder" title="Reminder">🔔 ${escHtml(formatReminder(r))}</span>`
+          `<span class="task-reminder">🔔 ${escHtml(formatReminder(r))}</span>`
         ).join('')
       : '';
 
