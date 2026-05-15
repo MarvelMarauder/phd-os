@@ -56,47 +56,6 @@ document.getElementById('date-display').textContent =
 document.getElementById('day-display').textContent =
   now.toLocaleDateString('en-US', { weekday: 'long' });
 
-// ── Tasks ────────────────────────────────────────────
-function renderTaskList(containerId, tasks, showDue) {
-  const el = document.getElementById(containerId);
-  if (!tasks.length) {
-    el.innerHTML = '<li class="empty">Nothing here.</li>';
-    return;
-  }
-  // Sort by project name for grouping feel
-  tasks.sort((a, b) => (a.project_id || '').localeCompare(b.project_id || ''));
-  el.innerHTML = tasks.map(t => {
-    const due = showDue && t.due ? `<span class="task-due">${formatDue(t.due)}</span>` : '';
-    return `
-      <li class="task-item" data-id="${t.id}">
-        <button class="task-check" aria-label="Complete task" data-id="${t.id}"></button>
-        <div class="task-body">
-          <div class="task-name">${escHtml(t.content)}</div>
-          ${t.description ? `<div class="task-meta">${escHtml(t.description.slice(0,80))}</div>` : ''}
-        </div>
-        ${due}
-      </li>`;
-  }).join('');
-
-  el.querySelectorAll('.task-check').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      btn.classList.add('checked');
-      const nameEl = btn.closest('.task-item').querySelector('.task-name');
-      if (nameEl) nameEl.classList.add('done');
-      try {
-        await closeTask(btn.dataset.id);
-      } catch (e) {
-        btn.classList.remove('checked');
-        if (nameEl) nameEl.classList.remove('done');
-      }
-    });
-  });
-}
-
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 async function loadTasks() {
   if (!hasToken()) {
     document.getElementById('task-list').innerHTML =
@@ -107,15 +66,16 @@ async function loadTasks() {
   }
 
   try {
-    const all = await fetchTasks();
+    const [all, reminders] = await Promise.all([fetchTasks(), fetchReminders()]);
     setApiStatus('connected');
+    const reminderMap = buildReminderMap(reminders);
 
-    const today   = all.filter(t => isDueNow(t));
+    const today    = all.filter(t => isDueNow(t));
     const upcoming = all.filter(t => isDueWithin(t, 7));
 
-    renderTaskList('task-list', today, false);
+    renderTaskList('task-list', today, all, false, reminderMap);
     if (upcoming.length) {
-      renderTaskList('upcoming-list', upcoming, true);
+      renderTaskList('upcoming-list', upcoming, all, true, reminderMap);
     } else {
       document.getElementById('upcoming-list').innerHTML =
         '<li class="empty">Nothing else this week.</li>';

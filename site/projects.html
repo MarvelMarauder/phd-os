@@ -81,10 +81,6 @@
 document.getElementById('nav').innerHTML = navHTML('projects');
 initSettings();
 
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 // ── Research streams from papers.json ────────────────
 async function loadStreams() {
   const el = document.getElementById('research-streams');
@@ -139,8 +135,9 @@ async function loadResearchTasks() {
   }
 
   try {
-    const [projects, all] = await Promise.all([fetchProjects(), fetchTasks()]);
+    const [projects, all, reminders] = await Promise.all([fetchProjects(), fetchTasks(), fetchReminders()]);
     setApiStatus('connected');
+    const reminderMap = buildReminderMap(reminders);
 
     const researchProject = projects.find(p => p.name === 'Research');
     if (!researchProject) {
@@ -170,27 +167,7 @@ async function loadResearchTasks() {
       return;
     }
 
-    el.innerHTML = resTasks.map(t => `
-      <li class="task-item">
-        <button class="task-check" data-id="${t.id}" aria-label="Complete"></button>
-        <div class="task-body">
-          <div class="task-name">${escHtml(t.content)}</div>
-          <div class="task-meta">${escHtml(projectNames[t.project_id] || '')}</div>
-        </div>
-        <span class="task-due">${t.due ? formatDue(t.due) : ''}</span>
-      </li>`).join('');
-
-    el.querySelectorAll('.task-check').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.classList.add('checked');
-        const nm = btn.closest('.task-item').querySelector('.task-name');
-        if (nm) nm.classList.add('done');
-        try { await closeTask(btn.dataset.id); } catch(e) {
-          btn.classList.remove('checked');
-          if (nm) nm.classList.remove('done');
-        }
-      });
-    });
+    renderTaskList('research-tasks', resTasks, all, true, reminderMap);
 
   } catch(e) {
     setApiStatus('error');

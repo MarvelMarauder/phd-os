@@ -51,6 +51,44 @@ async function fetchProjects() {
   return Array.isArray(data) ? data : (data.results || []);
 }
 
+async function fetchReminders() {
+  try {
+    const data = await apiGet('/reminders?limit=200');
+    return Array.isArray(data) ? data : (data.results || []);
+  } catch(e) {
+    return []; // reminders not available on this plan
+  }
+}
+
+// Build task_id → reminders[] map from a reminders array
+function buildReminderMap(reminders) {
+  const map = {};
+  for (const r of reminders) {
+    (map[r.item_id] = map[r.item_id] || []).push(r);
+  }
+  return map;
+}
+
+function formatReminder(r) {
+  if (r.type === 'relative') {
+    const m = r.minute_offset || 0;
+    if (m === 0) return 'At due time';
+    if (m < 60) return `${m}m before`;
+    const h = Math.floor(m / 60), rem = m % 60;
+    return rem ? `${h}h ${rem}m before` : `${h}h before`;
+  }
+  // absolute
+  if (!r.due?.date) return 'Reminder set';
+  const dateStr = r.due.date.split('T')[0];
+  const timePart = r.due.date.includes('T') ? r.due.date.split('T')[1].slice(0,5) : null;
+  const d = new Date(dateStr + 'T12:00:00');
+  const today = new Date(); today.setHours(12,0,0,0);
+  const label = d.toDateString() === today.toDateString()
+    ? 'Today'
+    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return timePart ? `${label} ${timePart}` : label;
+}
+
 // ── Date filtering helpers ────────────────────────────
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -163,6 +201,92 @@ function tokenModalHTML() {
     </div>
   </div>
 </div>`;
+}
+
+// ── Shared utilities ──────────────────────────────────
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Render a task list with subtask support.
+// tasks       = filtered list to display (e.g. due today/this week)
+// allTasks    = full task list, used to resolve children
+// showDue     = whether to append a due-date badge
+// reminderMap = optional task_id → reminders[] from buildReminderMap()
+function renderTaskList(containerId, tasks, allTasks, showDue, reminderMap) {
+  const el = document.getElementById(containerId);
+  if (!tasks.length) {
+    el.innerHTML = '<li class="empty">Nothing here.</li>';
+    return;
+  }
+
+  // Build childMap from the complete task list
+  const childMap = {};
+  for (const t of (allTasks || [])) {
+    if (t.parent_id) {
+      (childMap[t.parent_id] = childMap[t.parent_id] || []).push(t);
+    }
+  }
+
+  // Only show tasks whose parent is not also in the visible list
+  const taskIds = new Set(tasks.map(t => t.id));
+  const topLevel = tasks.filter(t => !t.parent_id || !taskIds.has(t.parent_id));
+
+  el.innerHTML = topLevel.map(t => {
+    const due = showDue && t.due ? `<span class="task-due">${formatDue(t.due)}</span>` : '';
+    const children = childMap[t.id] || [];
+    const subtasksHtml = children.length ? `
+      <ul class="subtask-list">
+        ${children.map(c => `
+          <li class="subtask-item">
+            <button class="subtask-check" data-id="${c.id}" aria-label="Complete subtask"></button>
+            <span class="subtask-name">${escHtml(c.content)}</span>
+          </li>`).join('')}
+      </ul>` : '';
+
+    const reminders = reminderMap ? (reminderMap[t.id] || []) : [];
+    const reminderHtml = reminders.length
+      ? reminders.map(r =>
+          `<span class="task-reminder" title="Reminder">🔔 ${escHtml(formatReminder(r))}</span>`
+        ).join('')
+      : '';
+
+    return `
+      <li class="task-item" data-id="${t.id}">
+        <button class="task-check" data-id="${t.id}" aria-label="Complete task"></button>
+        <div class="task-body">
+          <div class="task-name">${escHtml(t.content)}</div>
+          ${t.description ? `<div class="task-meta">${escHtml(t.description.slice(0,80))}</div>` : ''}
+          ${reminderHtml}
+          ${subtasksHtml}
+        </div>
+        ${due}
+      </li>`;
+  }).join('');
+
+  el.querySelectorAll('.task-check').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.classList.add('checked');
+      const nameEl = btn.closest('.task-item').querySelector('.task-name');
+      if (nameEl) nameEl.classList.add('done');
+      try { await closeTask(btn.dataset.id); } catch(e) {
+        btn.classList.remove('checked');
+        if (nameEl) nameEl.classList.remove('done');
+      }
+    });
+  });
+
+  el.querySelectorAll('.subtask-check').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.classList.add('checked');
+      const nameEl = btn.closest('.subtask-item').querySelector('.subtask-name');
+      if (nameEl) nameEl.classList.add('done');
+      try { await closeTask(btn.dataset.id); } catch(e) {
+        btn.classList.remove('checked');
+        if (nameEl) nameEl.classList.remove('done');
+      }
+    });
+  });
 }
 
 // ── Standard nav HTML (call with current page key) ────

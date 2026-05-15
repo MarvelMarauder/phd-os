@@ -59,10 +59,6 @@
 document.getElementById('nav').innerHTML = navHTML('church');
 initSettings();
 
-function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 async function loadChurchTasks() {
   const el = document.getElementById('church-tasks');
   if (!hasToken()) {
@@ -73,8 +69,9 @@ async function loadChurchTasks() {
   }
 
   try {
-    const [projects, all] = await Promise.all([fetchProjects(), fetchTasks()]);
+    const [projects, all, reminders] = await Promise.all([fetchProjects(), fetchTasks(), fetchReminders()]);
     setApiStatus('connected');
+    const reminderMap = buildReminderMap(reminders);
 
     // Find Church project and all children
     const churchProject = projects.find(p => p.name === 'Church');
@@ -99,27 +96,7 @@ async function loadChurchTasks() {
       return;
     }
 
-    el.innerHTML = churchTasks.map(t => `
-      <li class="task-item" data-id="${t.id}">
-        <button class="task-check" data-id="${t.id}" aria-label="Complete"></button>
-        <div class="task-body">
-          <div class="task-name">${escHtml(t.content)}</div>
-          <div class="task-meta">${escHtml(projectNames[t.project_id] || '')}</div>
-        </div>
-        <span class="task-due">${t.due ? formatDue(t.due) : ''}</span>
-      </li>`).join('');
-
-    el.querySelectorAll('.task-check').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.classList.add('checked');
-        const nameEl = btn.closest('.task-item').querySelector('.task-name');
-        if (nameEl) nameEl.classList.add('done');
-        try { await closeTask(btn.dataset.id); } catch(e) {
-          btn.classList.remove('checked');
-          if (nameEl) nameEl.classList.remove('done');
-        }
-      });
-    });
+    renderTaskList('church-tasks', churchTasks, all, true, reminderMap);
 
   } catch(e) {
     setApiStatus('error');
