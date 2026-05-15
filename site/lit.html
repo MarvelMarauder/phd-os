@@ -109,21 +109,8 @@
 document.getElementById('nav').innerHTML = navHTML('lit');
 initSettings();
 
-// ─────────────────────────────────────────────────────
-//  EDIT YOUR DISCOVERY QUERIES HERE
-// ─────────────────────────────────────────────────────
-const DISCOVER_QUERIES = [
-  {
-    stream: 'ai-companions',
-    label:  'AI Companions',
-    query:  'AI companion social robot conversational agent human relationship',
-  },
-  {
-    stream: 'judgy-ai',
-    label:  'JudgyAI',
-    query:  'artificial intelligence judgment anthropomorphism moral evaluation human',
-  },
-];
+// Edit discovery queries in build_dashboard.py → DISCOVER_QUERIES
+// Results refresh every time you push to main.
 
 const STREAM_META = {
   'ai-companions': { label: 'AI Companions', cls: 'stream-aic' },
@@ -131,55 +118,22 @@ const STREAM_META = {
   'general-is':    { label: 'General IS',    cls: 'stream-gis' },
 };
 
-const SS_BASE     = 'https://api.semanticscholar.org/graph/v1/paper/search';
-const SS_FIELDS   = 'title,authors,year,abstract,venue,externalIds,publicationDate';
-const SS_CACHE_MS = 30 * 60 * 1000; // 30 minutes
-
-// ── Discover ─────────────────────────────────────────
-
-function ssCache(key) {
-  try {
-    const raw = sessionStorage.getItem('ss_' + key);
-    if (!raw) return null;
-    const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts > SS_CACHE_MS) return null;
-    return data;
-  } catch(e) { return null; }
-}
-
-function ssCacheSet(key, data) {
-  try {
-    sessionStorage.setItem('ss_' + key, JSON.stringify({ ts: Date.now(), data }));
-  } catch(e) {}
-}
-
-async function fetchStream(q, bust) {
-  const key = q.stream;
-  if (!bust) {
-    const cached = ssCache(key);
-    if (cached) return cached;
-  }
-  const url = `${SS_BASE}?query=${encodeURIComponent(q.query)}&fields=${SS_FIELDS}&sort=publicationDate:desc&limit=8`;
-  const r = await fetch(url);
-  if (r.status === 429) throw new Error('rate_limited');
-  if (!r.ok) throw new Error(`ss_${r.status}`);
-  const data = await r.json();
-  const papers = (data.data || []).filter(p => p.title && p.year);
-  ssCacheSet(key, papers);
-  return papers;
-}
+// ── Discover (loads discover.json built server-side) ──
 
 function discoverCardHtml(p, streamCls) {
-  const doi   = p.externalIds?.DOI || '';
-  const href  = doi ? `https://doi.org/${doi}` : `https://www.semanticscholar.org/paper/${p.paperId}`;
+  const doi   = (p.externalIds || {}).DOI || '';
+  const href  = doi
+    ? `https://doi.org/${doi}`
+    : `https://www.semanticscholar.org/paper/${p.paperId || ''}`;
   const venue = p.venue || '';
   const year  = p.year  || '';
   const authors = (p.authors || []).slice(0, 3).map(a => {
     const parts = (a.name || '').split(' ');
-    return parts.length > 1 ? parts[parts.length - 1] + ', ' + parts[0][0] + '.' : a.name;
-  }).join('; ') + ((p.authors || []).length > 3 ? ' et al.' : '');
+    return parts.length > 1 ? parts[parts.length-1] + ', ' + parts[0][0] + '.' : a.name;
+  }).join('; ') + ((p.authors||[]).length > 3 ? ' et al.' : '');
   const abstract = p.abstract
-    ? escHtml(p.abstract.replace(/<[^>]+>/g, '').trim()).slice(0, 280) + (p.abstract.length > 280 ? '…' : '')
+    ? escHtml(p.abstract.replace(/<[^>]+>/g, '').trim().slice(0, 280))
+      + (p.abstract.length > 280 ? '…' : '')
     : '';
 
   return `
@@ -189,60 +143,65 @@ function discoverCardHtml(p, streamCls) {
       <div class="discover-card-authors">${escHtml(authors)}</div>
       ${abstract ? `<p class="discover-card-abstract">${abstract}</p>` : ''}
       <button class="discover-add-btn"
-              data-title="${escHtml(p.title)}"
-              data-authors="${escHtml((p.authors||[]).map(a=>a.name).join(', '))}"
-              data-journal="${escHtml(venue)}"
-              data-year="${escHtml(String(year))}"
-              data-doi="${escHtml(doi)}">
-        Add to library →
-      </button>
+        data-title="${escHtml(p.title)}"
+        data-authors="${escHtml((p.authors||[]).map(a=>a.name).join(', '))}"
+        data-journal="${escHtml(venue)}"
+        data-year="${escHtml(String(year))}"
+        data-doi="${escHtml(doi)}">Add to library →</button>
     </div>`;
 }
 
-async function renderDiscover(bust = false) {
+async function loadDiscover() {
   const area = document.getElementById('discover-area');
-  area.innerHTML = DISCOVER_QUERIES.map(q =>
-    `<div class="discover-stream">
-       <div class="discover-stream-hd ${(STREAM_META[q.stream]||{}).cls || ''}">
-         <div class="stream-dot"></div>
-         <span class="stream-label">${escHtml(q.label)}</span>
-       </div>
-       <div class="discover-cards" id="dc-${q.stream}">
-         <p class="loading">Fetching…</p>
-       </div>
-     </div>`
-  ).join('');
+  try {
+    const data = await fetch(`discover.json?t=${Date.now()}`).then(r => r.json());
+    const { streams = [], fetched_at } = data;
 
-  for (let i = 0; i < DISCOVER_QUERIES.length; i++) {
-    const q  = DISCOVER_QUERIES[i];
-    const el = document.getElementById('dc-' + q.stream);
-    const cls = (STREAM_META[q.stream]||{}).cls || '';
-    try {
-      if (i > 0) await new Promise(r => setTimeout(r, 600)); // be polite
-      const papers = await fetchStream(q, bust);
-      if (!papers.length) {
-        el.innerHTML = '<p class="empty">No results found.</p>';
-        continue;
-      }
-      el.innerHTML = papers.map(p => discoverCardHtml(p, cls)).join('');
-      el.querySelectorAll('.discover-add-btn').forEach(btn => {
-        btn.addEventListener('click', () => prefillForm({
-          title:   btn.dataset.title,
-          authors: btn.dataset.authors,
-          journal: btn.dataset.journal,
-          year:    btn.dataset.year,
-          doi:     btn.dataset.doi,
-        }));
-      });
-    } catch(e) {
-      el.innerHTML = e.message === 'rate_limited'
-        ? '<p class="error">Rate limited — wait a moment and refresh.</p>'
-        : '<p class="error">Could not reach Semantic Scholar.</p>';
+    // Show timestamp
+    if (fetched_at) {
+      const d = new Date(fetched_at);
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      document.getElementById('discover-refresh').title = `Last fetched: ${label} UTC`;
     }
+
+    if (!streams.length) {
+      area.innerHTML = '<p class="empty">No discovery results — check build logs.</p>';
+      return;
+    }
+
+    area.innerHTML = streams.map(s => {
+      const meta = STREAM_META[s.stream] || {};
+      const cls  = meta.cls || '';
+      const cards = s.papers.length
+        ? s.papers.map(p => discoverCardHtml(p, cls)).join('')
+        : '<p class="empty">No results for this stream.</p>';
+      return `
+        <div class="discover-stream">
+          <div class="discover-stream-hd ${cls}">
+            <div class="stream-dot"></div>
+            <span class="stream-label">${escHtml(s.label)}</span>
+          </div>
+          <div class="discover-cards">${cards}</div>
+        </div>`;
+    }).join('');
+
+    area.querySelectorAll('.discover-add-btn').forEach(btn => {
+      btn.addEventListener('click', () => prefillForm({
+        title:   btn.dataset.title,
+        authors: btn.dataset.authors,
+        journal: btn.dataset.journal,
+        year:    btn.dataset.year,
+        doi:     btn.dataset.doi,
+      }));
+    });
+
+  } catch(e) {
+    area.innerHTML = '<p class="error">Could not load discover.json — push to main to generate it.</p>';
   }
 }
 
-document.getElementById('discover-refresh').addEventListener('click', () => renderDiscover(true));
+document.getElementById('discover-refresh').addEventListener('click', loadDiscover);
 
 // ── DOI / Quick Add ──────────────────────────────────
 
@@ -454,7 +413,7 @@ async function loadLib() {
 }
 
 // ── Init ─────────────────────────────────────────────
-renderDiscover();
+loadDiscover();
 loadWorkingPapers();
 loadLib();
 </script>
