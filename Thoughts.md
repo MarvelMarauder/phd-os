@@ -11,4 +11,4 @@
 - start working on the vignettes
 - start working on the IRB
 - start looking at the scales and the appendix
-- look at the judgyAI stuff to do 
+- look at the judgyAI stuff to do  
