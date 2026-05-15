@@ -7,3 +7,8 @@
 ## for me
 - start concentrating on the next week on getting the EMOS paper to Paul
 - send her the draft for the second summer paper and the reis and shaver 
+- resend her the emotional similarity paper (methods changed)
+- start working on the vignettes
+- start working on the IRB
+- start looking at the scales and the appendix
+- look at the judgyAI stuff to do 
