@@ -188,6 +188,7 @@
   },
   "active": "31b7ab9bd353d7c0",
   "lastOpenFiles": [
+    "scripts/model/Modelfile.built",
     "site/docs.html",
     "scripts/setup.sh",
     "scripts/com.phd-os.pipeline.plist",
@@ -206,7 +207,6 @@
     "site/library.html",
     "100 Research/Source Papers/Teacher's Corner - Testing Measurement Invariance of Second-Order Factor Models.md",
     "500 Recharge/Recharge List.md",
-    "site/lit.html",
     "Thoughts.md",
     "000 Dashboard/Home.md",
     "100 Research/My Papers/Self-Verification and JudgyAI.md",
