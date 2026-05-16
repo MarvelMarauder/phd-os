@@ -311,7 +311,8 @@ function navHTML(active) {
   const pages = [
     ['index.html',   'home',     'Home'],
     ['papers.html',  'papers',   'Papers'],
-    ['lit.html',     'lit',      'Lit'],
+    ['lit.html',     'lit',      'Discover'],
+    ['library.html', 'library',  'Library'],
     ['books.html',   'books',    'Books'],
     ['projects.html','projects', 'Projects'],
     ['church.html',  'church',   'Church'],

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PhD OS — Literature</title>
+  <title>PhD OS — Discover</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,95 +11,15 @@
 <nav id="nav"></nav>
 
 <main>
-  <p class="page-title">Literature</p>
-  <p class="page-sub">Discover new papers · quick-add to your library · see connections</p>
+  <p class="page-title">Discover</p>
+  <p class="page-sub">Recent & trending papers from top IS journals · hover a title for details · papers already in your library are hidden</p>
 
-  <!-- ── Quick Add ──────────────────────────────────── -->
-  <section>
-    <h2>Quick Add</h2>
-    <div class="doi-form" id="doi-form">
-      <div class="doi-input-row">
-        <input class="doi-input" type="text" id="doi-input"
-               placeholder="Paste a DOI or URL (doi.org/…, dl.acm.org/…)…"
-               autocomplete="off" spellcheck="false">
-        <button class="btn btn-primary" id="doi-lookup-btn">Look up</button>
-      </div>
-      <div id="doi-status"></div>
-
-      <div class="doi-fields hidden" id="doi-fields">
-        <div class="form-row">
-          <div class="form-field" style="flex:3">
-            <label class="form-label">Title</label>
-            <input class="form-input" type="text" id="f-title">
-          </div>
-          <div class="form-field" style="flex:1">
-            <label class="form-label">Year</label>
-            <input class="form-input" type="text" id="f-year" style="max-width:90px">
-          </div>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Authors <span class="form-hint">(semicolon-separated: Last, First; Last2, First2)</span></label>
-          <input class="form-input" type="text" id="f-authors" placeholder="Smith, John; Doe, Jane">
-        </div>
-        <div class="form-row">
-          <div class="form-field" style="flex:2">
-            <label class="form-label">Journal / Venue</label>
-            <input class="form-input" type="text" id="f-journal">
-          </div>
-          <div class="form-field" style="flex:1">
-            <label class="form-label">Stream</label>
-            <select class="form-input" id="f-stream">
-              <option value="">— none —</option>
-              <option value="ai-companions">AI Companions</option>
-              <option value="judgy-ai">JudgyAI</option>
-              <option value="general-is">General IS</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Topic <span class="form-hint">(specific concept — e.g. social presence, trust, anthropomorphism)</span></label>
-          <input class="form-input" type="text" id="f-topic" placeholder="anthropomorphism">
-        </div>
-        <div class="form-field">
-          <label class="form-label">Related working papers</label>
-          <div class="related-list" id="f-related"></div>
-        </div>
-        <div class="form-field">
-          <label class="form-label">
-            One-sentence thought
-            <span class="form-hint" id="thoughts-count">0 / 200</span>
-          </label>
-          <textarea class="form-input" id="f-thoughts" rows="2"
-                    maxlength="200"
-                    placeholder="Why does this paper matter to your work?"></textarea>
-        </div>
-
-        <div class="doi-actions">
-          <span class="doi-doi-display" id="f-doi-display"></span>
-          <button class="btn btn-primary" id="doi-copy-btn">Copy frontmatter</button>
-        </div>
-        <div class="doi-copy-hint">
-          Paste the copied YAML into a new note inside
-          <code>100 Research/Source Papers/</code> and push to main.
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Discover ────────────────────────────────────── -->
   <section>
     <h2>
-      Discover
+      Papers
       <button class="lit-refresh-btn" id="discover-refresh" title="Refresh results">↻</button>
     </h2>
     <div id="discover-area"></div>
-  </section>
-
-  <!-- ── Your Library ───────────────────────────────── -->
-  <section>
-    <h2>Your Library <span class="section-count" id="lib-count"></span></h2>
-    <div class="rc-chips" id="lib-filters"></div>
-    <div id="lib-list"><p class="loading">Loading…</p></div>
   </section>
 </main>
 
@@ -108,131 +28,25 @@
 document.getElementById('nav').innerHTML = navHTML('lit');
 initSettings();
 
-// Edit discovery queries in build_dashboard.py → DISCOVER_QUERIES
-// Results refresh every time you push to main.
-
 const STREAM_META = {
   'ai-companions': { label: 'AI Companions', cls: 'stream-aic' },
   'judgy-ai':      { label: 'JudgyAI',       cls: 'stream-jai' },
   'general-is':    { label: 'General IS',    cls: 'stream-gis' },
 };
 
-// ── Discover (loads discover.json built server-side) ──
+// ── Library DOI filter ────────────────────────────────
+let libraryDois = new Set();
 
-function discoverCardHtml(p, cardCls) {
-  const doi     = p.doi || '';
-  const href    = doi ? `https://doi.org/${doi}` : '';
-  const journal = p.journal || '';
-  const abbrev  = p.journal_abbrev || '';
-  const year    = p.year || '';
-  const cites   = p.cited_by_count;
-
-  const authors = (p.authors || []).slice(0, 3).map(name => {
-    const parts = name.split(' ');
-    return parts.length > 1 ? parts[parts.length - 1] + ', ' + parts[0][0] + '.' : name;
-  }).join('; ') + ((p.authors || []).length > 3 ? ' et al.' : '');
-
-  const dateDisplay = p.pub_date
-    ? new Date(p.pub_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    : (year ? String(year) : '');
-
-  const journalBadge = abbrev
-    ? `<span class="discover-journal-badge">${escHtml(abbrev)}</span>`
-    : (journal ? `<span class="discover-journal-badge">${escHtml(journal.slice(0, 24))}</span>` : '');
-
-  const citeBadge = cites > 0
-    ? `<span class="discover-cite-badge">${cites} cites</span>` : '';
-
-  const titleEl = href
-    ? `<a class="discover-card-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
-    : `<span class="discover-card-title">${escHtml(p.title)}</span>`;
-
-  return `
-    <div class="discover-card ${cardCls}">
-      <div class="discover-card-meta">
-        ${journalBadge}${citeBadge}
-        ${dateDisplay ? `<span class="discover-card-date">${escHtml(dateDisplay)}</span>` : ''}
-      </div>
-      ${titleEl}
-      <div class="discover-card-authors">${escHtml(authors)}</div>
-      <div class="discover-card-actions">
-        <button class="discover-add-btn"
-          data-title="${escHtml(p.title)}"
-          data-authors="${escHtml((p.authors || []).join('; '))}"
-          data-journal="${escHtml(journal)}"
-          data-year="${escHtml(String(year))}"
-          data-doi="${escHtml(doi)}">Add to library →</button>
-        <button class="disc-todoist-btn"
-          data-title="${escHtml(p.title)}"
-          data-doi="${escHtml(doi)}">Save to Readings</button>
-      </div>
-    </div>`;
-}
-
-async function loadDiscover() {
-  const area = document.getElementById('discover-area');
+async function loadLibraryDois() {
   try {
-    const data = await fetch(`discover.json?t=${Date.now()}`).then(r => r.json());
-    const { sections = [], fetched_at } = data;
-
-    if (fetched_at) {
-      const d = new Date(fetched_at);
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                  + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      document.getElementById('discover-refresh').title = `Last fetched: ${label} UTC`;
-    }
-
-    if (!sections.length) {
-      area.innerHTML = '<p class="empty">No discovery results — check build logs.</p>';
-      return;
-    }
-
-    area.innerHTML = sections.map(s => {
-      let headerCls, cardCls;
-      if (s.type === 'stream') {
-        const meta = STREAM_META[s.stream] || {};
-        headerCls = meta.cls || '';
-        cardCls   = meta.cls || '';
-      } else {
-        headerCls = `disc-${s.type}`;
-        cardCls   = `disc-${s.type}`;
-      }
-      const cards = s.papers.length
-        ? s.papers.map(p => discoverCardHtml(p, cardCls)).join('')
-        : '<p class="empty">No results.</p>';
-      return `
-        <div class="discover-stream">
-          <div class="discover-stream-hd ${headerCls}">
-            <div class="stream-dot"></div>
-            <span class="stream-label">${escHtml(s.label)}</span>
-          </div>
-          <div class="discover-cards">${cards}</div>
-        </div>`;
-    }).join('');
-
-    area.querySelectorAll('.discover-add-btn').forEach(btn => {
-      btn.addEventListener('click', () => prefillForm({
-        title:   btn.dataset.title,
-        authors: btn.dataset.authors,
-        journal: btn.dataset.journal,
-        year:    btn.dataset.year,
-        doi:     btn.dataset.doi,
-      }));
-    });
-
-    area.querySelectorAll('.disc-todoist-btn').forEach(btn => {
-      btn.addEventListener('click', () => saveToReadings(btn, btn.dataset.title, btn.dataset.doi));
-    });
-
-  } catch(e) {
-    area.innerHTML = '<p class="error">Could not load discover.json — push to main to generate it.</p>';
-  }
+    const data = await fetch('lit.json').then(r => r.json());
+    libraryDois = new Set(
+      (data.papers || []).map(p => (p.doi || '').toLowerCase().trim()).filter(Boolean)
+    );
+  } catch(e) { /* silent — just don't filter */ }
 }
-
-document.getElementById('discover-refresh').addEventListener('click', loadDiscover);
 
 // ── Todoist — Save to Readings ───────────────────────
-
 let _readingsProjectId = null;
 
 async function getReadingsProjectId() {
@@ -260,233 +74,139 @@ async function saveToReadings(btn, title, doi) {
   } catch(e) {
     btn.disabled = false;
     if (e.message === 'bad_token') {
-      btn.textContent = 'Save to Readings';
+      btn.textContent = '+ Readings';
       showTokenModal(async () => saveToReadings(btn, title, doi));
     } else if (e.message === 'no_project') {
-      btn.textContent = '"Readings" not found';
+      btn.textContent = 'Project not found';
     } else {
       btn.textContent = 'Failed — retry';
     }
   }
 }
 
-// ── DOI / Quick Add ──────────────────────────────────
+// ── Compact discover card ─────────────────────────────
+function discoverCardHtml(p, cardCls) {
+  const doi     = p.doi || '';
+  const href    = doi ? `https://doi.org/${doi}` : '';
+  const journal = p.journal || '';
+  const abbrev  = p.journal_abbrev || '';
+  const year    = p.year || '';
+  const cites   = p.cited_by_count;
 
-let activeDoi = '';
-let workingPapers = [];
+  const authors = (p.authors || []).slice(0, 4).map(name => {
+    const parts = name.split(' ');
+    return parts.length > 1 ? parts[parts.length - 1] + ', ' + parts[0][0] + '.' : name;
+  }).join('; ') + ((p.authors || []).length > 4 ? ' et al.' : '');
 
-async function loadWorkingPapers() {
-  try {
-    const data = await fetch('papers.json').then(r => r.json());
-    workingPapers = (data.papers || []).filter(p => p.status === 'active').map(p => p.title);
-  } catch(e) { workingPapers = []; }
-  renderRelatedCheckboxes([]);
-}
+  const dateDisplay = p.pub_date
+    ? new Date(p.pub_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : (year ? String(year) : '');
 
-function renderRelatedCheckboxes(checked) {
-  const el = document.getElementById('f-related');
-  if (!workingPapers.length) {
-    el.innerHTML = '<span class="form-hint">No active working papers found.</span>';
-    return;
-  }
-  el.innerHTML = workingPapers.map(title => {
-    const id  = 'rel-' + title.replace(/\W+/g, '_');
-    const chk = checked.includes(title) ? ' checked' : '';
-    return `<label class="related-chip">
-      <input type="checkbox" value="${escHtml(title)}"${chk}>
-      ${escHtml(title)}
-    </label>`;
-  }).join('');
-}
+  const journalBadge = abbrev
+    ? `<span class="discover-journal-badge">${escHtml(abbrev)}</span>`
+    : (journal ? `<span class="discover-journal-badge">${escHtml(journal.slice(0, 24))}</span>` : '');
 
-function extractDoi(raw) {
-  const m = raw.trim().match(/\b(10\.\d{4,}\/[^\s"'<>]+)/);
-  return m ? m[1] : null;
-}
+  const citeBadge = cites > 0
+    ? `<span class="discover-cite-badge">${cites} cites</span>` : '';
 
-function stripXml(s) {
-  return (s || '').replace(/<[^>]+>/g, '').trim();
-}
+  const abstract = p.abstract
+    ? escHtml(p.abstract.trim().slice(0, 260)) + (p.abstract.length > 260 ? '…' : '')
+    : '';
 
-async function doiLookup() {
-  const raw = document.getElementById('doi-input').value;
-  const doi = extractDoi(raw);
-  const statusEl = document.getElementById('doi-status');
-  const fieldsEl = document.getElementById('doi-fields');
+  const titleEl = href
+    ? `<a class="discover-card-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
+    : `<span class="discover-card-title">${escHtml(p.title)}</span>`;
 
-  if (!doi) {
-    statusEl.innerHTML = '<p class="error" style="margin-top:6px">Could not find a DOI in that input.</p>';
-    return;
-  }
-
-  statusEl.innerHTML = '<p class="loading" style="margin-top:6px">Looking up…</p>';
-  fieldsEl.classList.add('hidden');
-
-  try {
-    const r = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
-    if (!r.ok) throw new Error('not_found');
-    const { message: m } = await r.json();
-
-    const title   = (m.title || [])[0] || '';
-    const authors = (m.author || []).map(a => [a.family, a.given].filter(Boolean).join(', ')).join('; ');
-    const journal = (m['container-title'] || [])[0] || (m['short-container-title'] || [])[0] || '';
-    const parts   = (m.published?.['date-parts'] || [[]])[0];
-    const year    = parts[0] ? String(parts[0]) : '';
-
-    prefillForm({ title, authors, journal, year, doi: m.DOI || doi });
-    statusEl.innerHTML = '';
-  } catch(e) {
-    statusEl.innerHTML = '<p class="error" style="margin-top:6px">DOI not found — try editing the fields manually.</p>';
-    // Still open the form so they can type manually
-    prefillForm({ title:'', authors:'', journal:'', year:'', doi });
-  }
-}
-
-function prefillForm({ title, authors, journal, year, doi, topic = '' }) {
-  document.getElementById('f-title').value   = title;
-  document.getElementById('f-authors').value = authors;
-  document.getElementById('f-journal').value = journal;
-  document.getElementById('f-year').value    = year;
-  document.getElementById('f-topic').value   = topic;
-  document.getElementById('f-doi-display').textContent = doi ? `DOI: ${doi}` : '';
-  activeDoi = doi || '';
-  renderRelatedCheckboxes([]);
-  document.getElementById('doi-fields').classList.remove('hidden');
-  document.getElementById('doi-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-document.getElementById('doi-lookup-btn').addEventListener('click', doiLookup);
-document.getElementById('doi-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doiLookup();
-});
-
-document.getElementById('f-thoughts').addEventListener('input', function() {
-  document.getElementById('thoughts-count').textContent = `${this.value.length} / 200`;
-});
-
-document.getElementById('doi-copy-btn').addEventListener('click', () => {
-  const title   = document.getElementById('f-title').value.trim();
-  const authors = document.getElementById('f-authors').value.trim()
-                    .split(';').map(s => s.trim()).filter(Boolean);
-  const journal = document.getElementById('f-journal').value.trim();
-  const year    = document.getElementById('f-year').value.trim();
-  const stream  = document.getElementById('f-stream').value;
-  const topic   = document.getElementById('f-topic').value.trim();
-  const thoughts= document.getElementById('f-thoughts').value.trim();
-  const related = [...document.querySelectorAll('#f-related input:checked')].map(c => c.value);
-
-  const authorsYaml = authors.length
-    ? '\nauthors:\n' + authors.map(a => `  - ${a}`).join('\n')
-    : '\nauthors: []';
-  const relatedYaml = related.length
-    ? '\nrelated-papers:\n' + related.map(r => `  - "${r}"`).join('\n')
-    : '\nrelated-papers: []';
-
-  const yaml = `---
-title: "${title.replace(/"/g, '\\"')}"${authorsYaml}
-journal: "${journal}"
-year: ${year || 'null'}
-doi: ${activeDoi || 'null'}
-stream: ${stream || 'null'}
-topic: "${topic.replace(/"/g, '\\"')}"${relatedYaml}
-thoughts: "${thoughts.replace(/"/g, '\\"')}"
----
-`;
-
-  navigator.clipboard.writeText(yaml).then(() => {
-    const btn = document.getElementById('doi-copy-btn');
-    btn.textContent = 'Copied ✓';
-    btn.style.background = 'var(--accent)';
-    setTimeout(() => { btn.textContent = 'Copy frontmatter'; btn.style.background = ''; }, 2500);
+  // URL for → Library button (takes user to library.html with form pre-filled)
+  const libParams = new URLSearchParams({
+    title:   p.title,
+    authors: (p.authors || []).join('; '),
+    journal: journal,
+    year:    String(year),
+    doi:     doi,
   });
-});
 
-// ── Library ───────────────────────────────────────────
-
-let libFilter = null;
-
-function streamPill(stream) {
-  if (!stream) return '';
-  const m = STREAM_META[stream];
-  if (!m) return `<span class="lit-stream-badge">${escHtml(stream)}</span>`;
-  return `<span class="lit-stream-badge ${m.cls}">${escHtml(m.label)}</span>`;
+  return `
+    <div class="discover-card ${cardCls}">
+      <div class="disc-popup">
+        <div class="discover-card-meta">${journalBadge}${citeBadge}${dateDisplay ? `<span class="discover-card-date">${escHtml(dateDisplay)}</span>` : ''}</div>
+        ${authors ? `<div class="discover-card-authors">${escHtml(authors)}</div>` : ''}
+        ${abstract ? `<p class="discover-card-abstract">${abstract}</p>` : ''}
+      </div>
+      <div class="disc-title-wrap">${titleEl}</div>
+      <div class="discover-card-actions">
+        <a class="discover-add-btn" href="library.html?${escHtml(libParams.toString())}">→ Library</a>
+        <button class="disc-todoist-btn"
+          data-title="${escHtml(p.title)}"
+          data-doi="${escHtml(doi)}">+ Readings</button>
+      </div>
+    </div>`;
 }
 
-function renderLibFilters(papers) {
-  const el = document.getElementById('lib-filters');
-  const streams = [...new Set(papers.map(p => p.stream).filter(Boolean))];
-  if (!streams.length) { el.innerHTML = ''; return; }
-  const opts = [{ key: null, label: 'All' }, ...streams.map(s => ({ key: s, label: (STREAM_META[s]||{}).label || s }))];
-  el.innerHTML = opts.map(o =>
-    `<button class="rc-chip${o.key === libFilter ? ' active' : ''}" data-key="${o.key ?? ''}">${escHtml(o.label)}</button>`
-  ).join('');
-  el.querySelectorAll('.rc-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      libFilter = btn.dataset.key || null;
-      renderLibFilters(papers);
-      renderLib(papers);
+async function loadDiscover() {
+  const area = document.getElementById('discover-area');
+  area.innerHTML = '<p class="loading">Loading…</p>';
+  try {
+    const data = await fetch(`discover.json?t=${Date.now()}`).then(r => r.json());
+    const { sections = [], fetched_at } = data;
+
+    if (fetched_at) {
+      const d = new Date(fetched_at);
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      document.getElementById('discover-refresh').title = `Last fetched: ${label} UTC`;
+    }
+
+    if (!sections.length) {
+      area.innerHTML = '<p class="empty">No discovery results — check build logs.</p>';
+      return;
+    }
+
+    area.innerHTML = sections.map(s => {
+      let headerCls, cardCls;
+      if (s.type === 'stream') {
+        const meta = STREAM_META[s.stream] || {};
+        headerCls = meta.cls || '';
+        cardCls   = meta.cls || '';
+      } else {
+        headerCls = `disc-${s.type}`;
+        cardCls   = `disc-${s.type}`;
+      }
+
+      // Filter papers already in library (matched by DOI)
+      const papers = s.papers.filter(p => {
+        const doi = (p.doi || '').toLowerCase().trim();
+        return !doi || !libraryDois.has(doi);
+      });
+
+      const cards = papers.length
+        ? papers.map(p => discoverCardHtml(p, cardCls)).join('')
+        : '<p class="empty">All found papers are already in your library.</p>';
+
+      return `
+        <div class="discover-stream">
+          <div class="discover-stream-hd ${headerCls}">
+            <div class="stream-dot"></div>
+            <span class="stream-label">${escHtml(s.label)}</span>
+            <span class="section-count">${papers.length}</span>
+          </div>
+          <div class="discover-cards">${cards}</div>
+        </div>`;
+    }).join('');
+
+    area.querySelectorAll('.disc-todoist-btn').forEach(btn => {
+      btn.addEventListener('click', () => saveToReadings(btn, btn.dataset.title, btn.dataset.doi));
     });
-  });
-}
 
-function renderLib(papers) {
-  const el = document.getElementById('lib-list');
-  const visible = libFilter ? papers.filter(p => p.stream === libFilter) : papers;
-  document.getElementById('lib-count').textContent = papers.length || '';
-
-  if (!visible.length) {
-    el.innerHTML = papers.length
-      ? '<p class="empty">No papers in this stream yet.</p>'
-      : `<p class="empty">No papers yet — use Quick Add above, then push to main.</p>`;
-    return;
-  }
-
-  el.innerHTML = visible.map(p => {
-    const href = p.doi ? `https://doi.org/${p.doi}` : null;
-    const titleHtml = href
-      ? `<a class="lit-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
-      : `<span class="lit-title">${escHtml(p.title)}</span>`;
-    const authorsStr = (p.authors || []).slice(0, 4).join('; ') + (p.authors?.length > 4 ? ' et al.' : '');
-    const related = (p.related_papers || []);
-    const relatedHtml = related.length
-      ? `<div class="lit-related">
-           <span class="lit-related-label">Related to:</span>
-           ${related.map(r => `<span class="lit-related-chip">${escHtml(r)}</span>`).join('')}
-         </div>`
-      : '';
-
-    return `
-      <div class="lit-card">
-        <div class="lit-card-top">
-          ${streamPill(p.stream)}
-          ${p.topic ? `<span class="lit-topic-pill">${escHtml(p.topic)}</span>` : ''}
-          <span class="lit-meta">${escHtml(p.journal || '')}${p.journal && p.year ? ' · ' : ''}${p.year || ''}</span>
-        </div>
-        ${titleHtml}
-        ${authorsStr ? `<div class="lit-authors">${escHtml(authorsStr)}</div>` : ''}
-        ${p.thoughts ? `<p class="lit-thoughts">${escHtml(p.thoughts)}</p>` : ''}
-        ${p.snippet  ? `<p class="lit-snippet">${escHtml(p.snippet)}</p>`   : ''}
-        ${relatedHtml}
-      </div>`;
-  }).join('');
-}
-
-async function loadLib() {
-  const el = document.getElementById('lib-list');
-  try {
-    const data = await fetch('lit.json').then(r => r.json());
-    const papers = data.papers || [];
-    renderLibFilters(papers);
-    renderLib(papers);
   } catch(e) {
-    el.innerHTML = '<p class="error">Could not load lit.json</p>';
+    area.innerHTML = '<p class="error">Could not load discover.json — push to main to generate it.</p>';
   }
 }
 
-// ── Init ─────────────────────────────────────────────
-loadDiscover();
-loadWorkingPapers();
-loadLib();
+document.getElementById('discover-refresh').addEventListener('click', loadDiscover);
+
+// Load library DOIs first, then render (so filtering is applied on first paint)
+loadLibraryDois().then(loadDiscover);
 </script>
 </body>
 </html>
