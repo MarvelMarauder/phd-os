@@ -1021,11 +1021,52 @@ details[open] .rc-accordion-hd {
 .discover-card.stream-gis { border-left: 3px solid var(--accent); }
 
 .discover-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+
+.discover-journal-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid color-mix(in srgb, var(--blue) 20%, var(--border));
+  flex-shrink: 0;
+}
+
+.discover-cite-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 20%, var(--border));
+  flex-shrink: 0;
+}
+
+.discover-card-date {
   font-size: 11px;
   color: var(--text-subtle);
-  margin-bottom: 4px;
-  font-weight: 500;
+  margin-left: auto;
 }
+
+/* Section type: journals (recent issues) */
+.disc-journals .stream-dot  { background: var(--accent); }
+.disc-journals .stream-label { color: var(--accent); }
+.discover-card.disc-journals { border-left: 3px solid var(--accent); }
+
+/* Section type: trending (most cited) */
+.disc-trending .stream-dot  { background: var(--gold); }
+.disc-trending .stream-label { color: var(--gold); }
+.discover-card.disc-trending { border-left: 3px solid var(--gold); }
 
 .discover-card-title {
   display: block;

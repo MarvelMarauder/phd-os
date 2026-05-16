@@ -124,32 +124,51 @@ const STREAM_META = {
 
 // ── Discover (loads discover.json built server-side) ──
 
-function discoverCardHtml(p, streamCls) {
-  const doi   = (p.externalIds || {}).DOI || '';
-  const href  = doi
-    ? `https://doi.org/${doi}`
-    : `https://www.semanticscholar.org/paper/${p.paperId || ''}`;
-  const venue = p.venue || '';
-  const year  = p.year  || '';
-  const authors = (p.authors || []).slice(0, 3).map(a => {
-    const parts = (a.name || '').split(' ');
-    return parts.length > 1 ? parts[parts.length-1] + ', ' + parts[0][0] + '.' : a.name;
-  }).join('; ') + ((p.authors||[]).length > 3 ? ' et al.' : '');
+function discoverCardHtml(p, cardCls) {
+  const doi     = p.doi || '';
+  const href    = doi ? `https://doi.org/${doi}` : '';
+  const journal = p.journal || '';
+  const abbrev  = p.journal_abbrev || '';
+  const year    = p.year || '';
+  const cites   = p.cited_by_count;
+
+  const authors = (p.authors || []).slice(0, 3).map(name => {
+    const parts = name.split(' ');
+    return parts.length > 1 ? parts[parts.length - 1] + ', ' + parts[0][0] + '.' : name;
+  }).join('; ') + ((p.authors || []).length > 3 ? ' et al.' : '');
+
   const abstract = p.abstract
-    ? escHtml(p.abstract.replace(/<[^>]+>/g, '').trim().slice(0, 280))
-      + (p.abstract.length > 280 ? '…' : '')
+    ? escHtml(p.abstract.trim().slice(0, 280)) + (p.abstract.length > 280 ? '…' : '')
     : '';
 
+  const dateDisplay = p.pub_date
+    ? new Date(p.pub_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : (year ? String(year) : '');
+
+  const journalBadge = abbrev
+    ? `<span class="discover-journal-badge">${escHtml(abbrev)}</span>`
+    : (journal ? `<span class="discover-journal-badge">${escHtml(journal.slice(0, 24))}</span>` : '');
+
+  const citeBadge = cites > 0
+    ? `<span class="discover-cite-badge">${cites} cites</span>` : '';
+
+  const titleEl = href
+    ? `<a class="discover-card-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
+    : `<span class="discover-card-title">${escHtml(p.title)}</span>`;
+
   return `
-    <div class="discover-card ${streamCls}">
-      <div class="discover-card-meta">${escHtml(venue)}${venue && year ? ' · ' : ''}${escHtml(String(year))}</div>
-      <a class="discover-card-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>
+    <div class="discover-card ${cardCls}">
+      <div class="discover-card-meta">
+        ${journalBadge}${citeBadge}
+        ${dateDisplay ? `<span class="discover-card-date">${escHtml(dateDisplay)}</span>` : ''}
+      </div>
+      ${titleEl}
       <div class="discover-card-authors">${escHtml(authors)}</div>
       ${abstract ? `<p class="discover-card-abstract">${abstract}</p>` : ''}
       <button class="discover-add-btn"
         data-title="${escHtml(p.title)}"
-        data-authors="${escHtml((p.authors||[]).map(a=>a.name).join('; '))}"
-        data-journal="${escHtml(venue)}"
+        data-authors="${escHtml((p.authors || []).join('; '))}"
+        data-journal="${escHtml(journal)}"
         data-year="${escHtml(String(year))}"
         data-doi="${escHtml(doi)}">Add to library →</button>
     </div>`;
@@ -159,9 +178,8 @@ async function loadDiscover() {
   const area = document.getElementById('discover-area');
   try {
     const data = await fetch(`discover.json?t=${Date.now()}`).then(r => r.json());
-    const { streams = [], fetched_at } = data;
+    const { sections = [], fetched_at } = data;
 
-    // Show timestamp
     if (fetched_at) {
       const d = new Date(fetched_at);
       const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -169,20 +187,27 @@ async function loadDiscover() {
       document.getElementById('discover-refresh').title = `Last fetched: ${label} UTC`;
     }
 
-    if (!streams.length) {
+    if (!sections.length) {
       area.innerHTML = '<p class="empty">No discovery results — check build logs.</p>';
       return;
     }
 
-    area.innerHTML = streams.map(s => {
-      const meta = STREAM_META[s.stream] || {};
-      const cls  = meta.cls || '';
+    area.innerHTML = sections.map(s => {
+      let headerCls, cardCls;
+      if (s.type === 'stream') {
+        const meta = STREAM_META[s.stream] || {};
+        headerCls = meta.cls || '';
+        cardCls   = meta.cls || '';
+      } else {
+        headerCls = `disc-${s.type}`;
+        cardCls   = `disc-${s.type}`;
+      }
       const cards = s.papers.length
-        ? s.papers.map(p => discoverCardHtml(p, cls)).join('')
-        : '<p class="empty">No results for this stream.</p>';
+        ? s.papers.map(p => discoverCardHtml(p, cardCls)).join('')
+        : '<p class="empty">No results.</p>';
       return `
         <div class="discover-stream">
-          <div class="discover-stream-hd ${cls}">
+          <div class="discover-stream-hd ${headerCls}">
             <div class="stream-dot"></div>
             <span class="stream-label">${escHtml(s.label)}</span>
           </div>

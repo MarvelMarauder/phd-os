@@ -12,25 +12,55 @@ import shutil
 import time
 import urllib.request
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import frontmatter
 
 SITE_SRC = "site"
 SITE_OUT = "_site"
 
-# ── Discovery queries (edit these to tune your paper feed) ────────────────────
-DISCOVER_QUERIES = [
-    {
-        "stream": "ai-companions",
-        "label":  "AI Companions",
-        "query":  "AI companion",          # keep short — S2 uses AND for every word
-    },
-    {
-        "stream": "judgy-ai",
-        "label":  "JudgyAI",
-        "query":  "algorithmic judgment",
-    },
+# ── Discovery config ──────────────────────────────────────────────────────────
+
+# ISSNs for the 11 top IS journals
+IS_ISSNS = [
+    "0167-9236",  # DSS
+    "0960-085X",  # EJIS
+    "0378-7206",  # I&M
+    "1471-7727",  # I&O
+    "1350-1917",  # ISJ
+    "1047-7047",  # ISR
+    "0268-3962",  # JIT
+    "0742-1222",  # JMIS
+    "1536-9323",  # JAIS
+    "0963-8687",  # JSIS
+    "0276-7783",  # MISQ
 ]
+
+JOURNAL_ABBREVS = {
+    "decision support systems": "DSS",
+    "european journal of information systems": "EJIS",
+    "information and management": "I&M",
+    "information & management": "I&M",
+    "information and organization": "I&O",
+    "information & organization": "I&O",
+    "information systems journal": "ISJ",
+    "information systems research": "ISR",
+    "journal of information technology": "JIT",
+    "journal of management information systems": "JMIS",
+    "journal of the association for information systems": "JAIS",
+    "journal of strategic information systems": "JSIS",
+    "mis quarterly": "MISQ",
+    "management information systems quarterly": "MISQ",
+}
+
+# Per-stream keyword searches (edit freely)
+STREAM_SEARCHES = [
+    {"stream": "ai-companions", "label": "AI Companions", "query": "AI companion"},
+    {"stream": "judgy-ai",      "label": "JudgyAI",       "query": "algorithmic judgment"},
+]
+
+OA_FIELDS  = "display_name,doi,authorships,publication_date,primary_location,abstract_inverted_index,cited_by_count"
+OA_MAILTO  = "mailto=2taylorbullock@gmail.com"
+OA_BASE    = "https://api.openalex.org/works"
 
 STAGES = [
     "ideation", "lit-search", "fleshing-out", "method",
@@ -160,29 +190,117 @@ def build_recharge():
     return {"sections": sections}
 
 
-# ── Discovery (Semantic Scholar, server-side to avoid CORS) ──────────────────
+# ── Discovery (OpenAlex, server-side) ────────────────────────────────────────
+
+def reconstruct_abstract(inv_index):
+    if not inv_index:
+        return ""
+    pos_word = []
+    for word, positions in inv_index.items():
+        for p in positions:
+            pos_word.append((p, word))
+    pos_word.sort()
+    return " ".join(w for _, w in pos_word)
+
+
+def _journal_abbrev(source_name):
+    return JOURNAL_ABBREVS.get((source_name or "").lower().strip(), "")
+
+
+def _oa_paper(p):
+    src     = (p.get("primary_location") or {}).get("source") or {}
+    journal = src.get("display_name", "")
+    doi_raw = p.get("doi") or ""
+    doi     = doi_raw.replace("https://doi.org/", "").replace("http://doi.org/", "")
+    authors = [
+        a["author"]["display_name"]
+        for a in (p.get("authorships") or [])
+        if a.get("author", {}).get("display_name")
+    ][:6]
+    abstract_raw = reconstruct_abstract(p.get("abstract_inverted_index"))
+    abstract = (abstract_raw[:400].rsplit(" ", 1)[0] + "…") if len(abstract_raw) > 400 else abstract_raw
+    pub_date = p.get("publication_date", "")
+    return {
+        "title":          p.get("display_name", ""),
+        "doi":            doi,
+        "authors":        authors,
+        "year":           int(pub_date[:4]) if pub_date else None,
+        "pub_date":       pub_date,
+        "journal":        journal,
+        "journal_abbrev": _journal_abbrev(journal),
+        "abstract":       abstract,
+        "cited_by_count": p.get("cited_by_count", 0),
+    }
+
+
+def _oa_get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "PhD-OS/1.0"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read().decode())
+
+
+def _oa_journal_papers(sort, per_page, days_back, label):
+    issn_filter = "|".join(IS_ISSNS)
+    cutoff      = (datetime.now(timezone.utc) - timedelta(days=days_back)).strftime("%Y-%m-%d")
+    url = (f"{OA_BASE}?filter=primary_location.source.issn:{issn_filter}"
+           f",from_publication_date:{cutoff}"
+           f"&sort={sort}&per_page={per_page}"
+           f"&select={OA_FIELDS}&{OA_MAILTO}")
+    try:
+        data   = _oa_get(url)
+        papers = [_oa_paper(p) for p in data.get("results", []) if p.get("display_name")]
+        print(f"  discover/{label}: {len(papers)} papers")
+        return papers
+    except Exception as e:
+        print(f"  WARNING: OpenAlex fetch failed ({label}): {e}")
+        return []
+
+
+def _oa_stream_papers(query, label):
+    url = (f"{OA_BASE}?search={urllib.parse.quote(query)}"
+           f"&sort=publication_date:desc&per_page=8"
+           f"&select={OA_FIELDS}&{OA_MAILTO}")
+    try:
+        data   = _oa_get(url)
+        papers = [_oa_paper(p) for p in data.get("results", []) if p.get("display_name")]
+        print(f"  discover/{label}: {len(papers)} papers")
+        return papers
+    except Exception as e:
+        print(f"  WARNING: OpenAlex fetch failed ({label}): {e}")
+        return []
+
 
 def build_discover():
-    SS = "https://api.semanticscholar.org/graph/v1/paper/search"
-    FIELDS = "title,authors,year,abstract,venue,externalIds,publicationDate"
-    streams = []
-    for i, q in enumerate(DISCOVER_QUERIES):
-        if i > 0:
-            time.sleep(1.5)  # stay well within 100 req/5 min
-        url = (f"{SS}?query={urllib.parse.quote(q['query'])}"
-               f"&fields={FIELDS}&sort=publicationDate:desc&limit=8")
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "PhD-OS/1.0"})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                data = json.loads(r.read().decode())
-            papers = [p for p in data.get("data", []) if p.get("title") and p.get("year")]
-            print(f"  discover/{q['stream']}: {len(papers)} papers")
-        except Exception as e:
-            print(f"  WARNING: discover fetch failed for {q['stream']}: {e}")
-            papers = []
-        streams.append({"stream": q["stream"], "label": q["label"], "papers": papers})
+    sections = []
+
+    # Recent issues from IS journals (last 6 months, newest first)
+    sections.append({
+        "type":   "journals",
+        "label":  "Recent Issues — IS Journals",
+        "papers": _oa_journal_papers("publication_date:desc", 25, 180, "recent-issues"),
+    })
+
+    time.sleep(1)
+
+    # Most-cited papers from IS journals in the last 12 months
+    sections.append({
+        "type":   "trending",
+        "label":  "Trending This Year",
+        "papers": _oa_journal_papers("cited_by_count:desc", 10, 365, "trending"),
+    })
+
+    # Per-stream keyword searches
+    for s in STREAM_SEARCHES:
+        time.sleep(1)
+        sections.append({
+            "type":   "stream",
+            "stream": s["stream"],
+            "label":  s["label"],
+            "papers": _oa_stream_papers(s["query"], s["stream"]),
+        })
+
     return {
-        "streams": streams,
+        "sections":   sections,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -210,7 +328,7 @@ def main():
     print(f"papers.json: {len(papers_data['papers'])} papers")
 
     # Write discover.json
-    print("Fetching discovery papers from Semantic Scholar…")
+    print("Fetching discovery papers from OpenAlex…")
     discover_data = build_discover()
     with open(os.path.join(SITE_OUT, "discover.json"), "w", encoding="utf-8") as f:
         json.dump(discover_data, f, indent=2, ensure_ascii=False)
