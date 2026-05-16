@@ -1,7 +1,7 @@
 """
 PhD OS Email Pipeline — headless background runner.
 
-Reads emails from Outlook 'LLM Queue' via AppleScript (no network auth needed),
+Reads emails from Apple Mail 'LLM Queue' via AppleScript,
 parses with a local Ollama model, and appends proposed tasks to the queue file.
 Run automatically via LaunchAgent; review and approve with review_tasks.py.
 
@@ -15,7 +15,6 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 import urllib.request
 from datetime import datetime, timezone
 
@@ -28,7 +27,7 @@ LOG_FILE    = "/tmp/phd_os_pipeline.log"
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
-        log("ERROR: Config not found. Run setup first.")
+        log("ERROR: Config not found at ~/.phd_os_config.json — run setup.sh first.")
         sys.exit(1)
     with open(CONFIG_FILE) as f:
         return json.load(f)
@@ -45,108 +44,136 @@ def log(msg):
         pass
 
 
-# ── AppleScript / Outlook ─────────────────────────────────────────────────────
+# ── AppleScript helpers ───────────────────────────────────────────────────────
 
 def run_as(script):
     r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
     return r.stdout.strip(), r.returncode
 
 
-def outlook_running():
-    out, _ = run_as('tell application "System Events" to return (name of processes) contains "Microsoft Outlook"')
+def run_as_file(path):
+    r = subprocess.run(["osascript", path], capture_output=True, text=True)
+    return r.stdout.strip(), r.returncode
+
+
+# ── Apple Mail ────────────────────────────────────────────────────────────────
+
+def mail_running():
+    out, _ = run_as('tell application "System Events" to return (name of processes) contains "Mail"')
     return out.strip() == "true"
 
 
-def ensure_outlook_open():
-    if outlook_running():
+def ensure_mail_open():
+    if mail_running():
         return True
-    log("Outlook not running — launching it...")
-    subprocess.run(["open", "-a", "Microsoft Outlook"])
-    # Wait for Outlook to fully load and sync before we try to read folders
+    log("Apple Mail not running — launching it...")
+    subprocess.run(["open", "-a", "Mail"])
     import time
-    for i in range(18):   # up to 90 seconds
+    for _ in range(12):
         time.sleep(5)
-        if outlook_running():
-            time.sleep(10)  # extra settle time for folder sync
-            log("Outlook ready.")
+        if mail_running():
+            time.sleep(6)  # let accounts sync
+            log("Apple Mail ready.")
             return True
-    log("WARNING: Outlook did not launch in time — skipping this run.")
+    log("WARNING: Apple Mail did not launch in time — skipping this run.")
     return False
 
 
+# Fetches all messages from LLM Queue, writes each body to /tmp/phd_email_<id>.txt,
+# saves PDF attachments to /tmp/phd_att_<id>_<name>.pdf,
+# and returns tab-delimited lines: id \t subject \t sender \t date \t pipe-separated-pdf-names
 FETCH_SCRIPT = """\
-tell application "Microsoft Outlook"
-    try
-        set theAccount to first exchange account
-        set queueFolder to mail folder "LLM Queue" of theAccount
-        set theMessages to messages of queueFolder
-        if (count of theMessages) is 0 then return "EMPTY"
-        set output to ""
-        repeat with msg in theMessages
-            set msgId to (id of msg) as string
-            -- Write body to temp file to avoid delimiter escaping issues
-            set bodyPath to "/tmp/phd_email_" & msgId & ".txt"
+tell application "Mail"
+    -- Find LLM Queue mailbox across all accounts
+    set queueMailbox to missing value
+    repeat with acct in every account
+        try
+            set queueMailbox to mailbox "LLM Queue" of acct
+            exit repeat
+        end try
+    end repeat
+    if queueMailbox is missing value then
+        return "ERROR:LLM Queue not found in any Mail account"
+    end if
+
+    set theMessages to messages of queueMailbox
+    if (count of theMessages) is 0 then return "EMPTY"
+
+    set output to ""
+    repeat with msg in theMessages
+        set msgId to (id of msg) as string
+
+        -- Write body to temp file
+        set bodyPath to "/tmp/phd_email_" & msgId & ".txt"
+        try
+            set bodyText to content of msg
+            set fRef to open for access POSIX file bodyPath with write permission
+            set eof of fRef to 0
+            write bodyText to fRef as \xc2\xabclass utf8\xc2\xbb
+            close access fRef
+        on error
+            do shell script "touch " & quoted form of bodyPath
+        end try
+
+        -- Save any PDF attachments
+        set pdfNames to ""
+        try
+            repeat with att in mail attachments of msg
+                set attName to name of att
+                if attName ends with ".pdf" then
+                    set attPath to "/tmp/phd_att_" & msgId & "_" & attName
+                    save att in POSIX file attPath
+                    set pdfNames to pdfNames & attName & "|"
+                end if
+            end repeat
+        end try
+
+        set output to output & msgId & "\t" & (subject of msg) & "\t" \\
+            & (sender of msg) & "\t" & ((date received of msg) as string) \\
+            & "\t" & pdfNames & "\n"
+    end repeat
+    return output
+end tell
+"""
+
+# Moves all messages from LLM Queue → LLM Processed in one batch.
+# Run after all emails have been processed and queued.
+MOVE_ALL_SCRIPT = """\
+tell application "Mail"
+    set queueMailbox to missing value
+    set destMailbox to missing value
+    repeat with acct in every account
+        try
+            set queueMailbox to mailbox "LLM Queue" of acct
             try
-                set bodyText to plain text content of msg
-                set fRef to open for access POSIX file bodyPath with write permission
-                set eof of fRef to 0
-                write bodyText to fRef as \xc2\xabclass utf8\xc2\xbb
-                close access fRef
-            on error
-                do shell script "touch " & quoted form of bodyPath
+                set destMailbox to mailbox "LLM Processed" of acct
             end try
-            set hasAtt to (count of attachments of msg) > 0
-            set attStr to "0"
-            if hasAtt then set attStr to "1"
-            set output to output & msgId & "\t" & (subject of msg) & "\t" \\
-                & (address of sender of msg) & "\t" \\
-                & ((time received of msg) as string) & "\t" & attStr & "\n"
-        end repeat
-        return output
-    on error errMsg
-        return "ERROR:" & errMsg
-    end try
+            exit repeat
+        end try
+    end repeat
+    if queueMailbox is missing value then return "ERROR:no queue"
+    if destMailbox is missing value then return "ERROR:no processed folder — create it in Apple Mail"
+    set theMessages to messages of queueMailbox
+    repeat with msg in theMessages
+        move msg to destMailbox
+    end repeat
+    return "OK:" & (count of theMessages) as string
 end tell
 """
 
 
-def move_msg_script(msg_id, dest_folder):
-    return f"""\
-tell application "Microsoft Outlook"
-    try
-        set theAccount to first exchange account
-        set destFolder to mail folder "{dest_folder}" of theAccount
-        set msg to message id {msg_id}
-        move msg to destFolder
-    on error
-    end try
-end tell
-"""
+def fetch_emails(queue_folder):
+    """Read emails from Apple Mail LLM Queue. Returns list of email dicts."""
+    # Write fetch script to temp file to avoid shell quoting issues
+    import tempfile, os
+    script_path = "/tmp/phd_fetch.applescript"
+    with open(script_path, "w") as f:
+        f.write(FETCH_SCRIPT.replace("LLM Queue", queue_folder))
 
+    raw, code = run_as_file(script_path)
 
-def save_attachments_script(msg_id, tmp_dir):
-    return f"""\
-tell application "Microsoft Outlook"
-    try
-        set msg to message id {msg_id}
-        set atts to attachments of msg
-        repeat with att in atts
-            set attName to name of att
-            if attName ends with ".pdf" then
-                set savePath to "{tmp_dir}/" & attName
-                save att in POSIX file savePath
-            end if
-        end repeat
-    on error
-    end try
-end tell
-"""
-
-
-def fetch_outlook_emails(queue_folder, processed_folder):
-    raw, code = run_as(FETCH_SCRIPT)
-    if code != 0 or raw.startswith("ERROR:"):
-        log(f"AppleScript error: {raw}")
+    if raw.startswith("ERROR:"):
+        log(f"AppleScript error: {raw[6:]}")
         return []
     if raw == "EMPTY" or not raw.strip():
         log("LLM Queue is empty.")
@@ -157,7 +184,7 @@ def fetch_outlook_emails(queue_folder, processed_folder):
         parts = line.split("\t")
         if len(parts) < 5:
             continue
-        msg_id, subject, sender, date_str, has_att = parts[0], parts[1], parts[2], parts[3], parts[4]
+        msg_id, subject, sender, date_str, pdf_names_raw = parts[0], parts[1], parts[2], parts[3], parts[4]
 
         # Read body from temp file
         body_path = f"/tmp/phd_email_{msg_id}.txt"
@@ -168,14 +195,15 @@ def fetch_outlook_emails(queue_folder, processed_folder):
         except FileNotFoundError:
             body = ""
 
-        # Save PDF attachments if any
+        # Read any saved PDF text
         pdf_texts = []
-        if has_att == "1":
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                run_as(save_attachments_script(msg_id, tmp_dir))
-                for fname in os.listdir(tmp_dir):
-                    if fname.lower().endswith(".pdf"):
-                        pdf_texts.append(extract_pdf_text(os.path.join(tmp_dir, fname)))
+        for pdf_name in filter(None, pdf_names_raw.split("|")):
+            att_path = f"/tmp/phd_att_{msg_id}_{pdf_name}"
+            pdf_texts.append(extract_pdf_text(att_path))
+            try:
+                os.remove(att_path)
+            except FileNotFoundError:
+                pass
 
         emails.append({
             "id":      msg_id,
@@ -189,8 +217,13 @@ def fetch_outlook_emails(queue_folder, processed_folder):
     return emails
 
 
-def move_to_processed(msg_id, processed_folder):
-    run_as(move_msg_script(msg_id, processed_folder))
+def move_all_to_processed(processed_folder):
+    script = MOVE_ALL_SCRIPT.replace("LLM Processed", processed_folder)
+    script_path = "/tmp/phd_move.applescript"
+    with open(script_path, "w") as f:
+        f.write(script)
+    out, _ = run_as_file(script_path)
+    return out
 
 
 # ── PDF extraction ────────────────────────────────────────────────────────────
@@ -236,10 +269,10 @@ Return ONLY a JSON object, no markdown fences, no extra text:
 
 Rules:
 - Only create tasks for real action items. Ignore FYI-only content.
-- For attached papers or links to papers: task = "Read: [title or description]", project_hint = "readings"
+- For attached papers or links to papers: task = "Read: [title]", project_hint = "readings"
 - priority: 1=urgent (hard deadline soon), 2=high, 3=normal, 4=low
 - If no action items exist, return {"summary": "...", "todos": []}
-- Keep tasks specific enough to be actionable without rereading the email\
+- Tasks should be specific enough to act on without rereading the email\
 """
 
 
@@ -304,33 +337,32 @@ def save_queue(q):
 
 def main():
     cfg = load_config()
-    model       = cfg.get("ollama_model", "llama3.2:3b")
-    ollama_url  = cfg.get("ollama_url", "http://localhost:11434/api/generate")
+    model            = cfg.get("ollama_model", "llama3.2:3b")
+    ollama_url       = cfg.get("ollama_url", "http://localhost:11434/api/generate")
     queue_folder     = cfg.get("outlook_queue_folder", "LLM Queue")
     processed_folder = cfg.get("outlook_processed_folder", "LLM Processed")
 
     log(f"Starting pipeline run (model: {model})")
 
-    if not ensure_outlook_open():
+    if not ensure_mail_open():
         return
 
-    emails = fetch_outlook_emails(queue_folder, processed_folder)
+    emails = fetch_emails(queue_folder)
     if not emails:
-        log("Nothing to process.")
         return
 
-    log(f"Found {len(emails)} email(s) in {queue_folder!r}")
+    log(f"Found {len(emails)} email(s) in '{queue_folder}'")
 
-    queue = load_queue()
+    queue       = load_queue()
     batch_emails = []
+    parse_errors = 0
 
     for email in emails:
         log(f"  Parsing: {email['subject']}")
         result = parse_email(email, model, ollama_url)
         if result is None:
-            log(f"  WARNING: Could not parse response for '{email['subject']}' — skipping.")
-            # Still move it so it doesn't block the queue
-            move_to_processed(email["id"], processed_folder)
+            log(f"  WARNING: Could not parse LLM response for '{email['subject']}'")
+            parse_errors += 1
             continue
 
         batch_emails.append({
@@ -340,8 +372,15 @@ def main():
             "summary": result.get("summary", ""),
             "todos":   result.get("todos", []),
         })
-        move_to_processed(email["id"], processed_folder)
-        log(f"  → {len(result.get('todos', []))} task(s) queued, moved to {processed_folder!r}")
+        n = len(result.get("todos", []))
+        log(f"  → {n} task(s) proposed")
+
+    # Move all emails to Processed in one batch
+    move_result = move_all_to_processed(processed_folder)
+    if move_result.startswith("ERROR:"):
+        log(f"  WARNING: Could not move emails: {move_result[6:]}")
+    else:
+        log(f"  Moved emails to '{processed_folder}'")
 
     if batch_emails:
         queue["batches"].append({
@@ -351,6 +390,8 @@ def main():
         save_queue(queue)
         total = sum(len(e["todos"]) for e in batch_emails)
         log(f"Queued {total} task(s) across {len(batch_emails)} email(s). Run review_tasks.py to approve.")
+    elif parse_errors:
+        log(f"No tasks queued ({parse_errors} parse error(s)).")
     else:
         log("No tasks generated this run.")
 

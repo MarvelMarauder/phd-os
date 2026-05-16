@@ -224,8 +224,12 @@ dismissed:
       <li>Install and load the LaunchAgent (runs every 2 hours)</li>
     </ul>
 
-    <h3>Step 3 — Set up Outlook folders and rules</h3>
-    <p>In Outlook, create two folders: <strong>LLM Queue</strong> and <strong>LLM Processed</strong>. Then set up rules to move emails you want parsed into LLM Queue. Suggested rule tiers:</p>
+    <h3>Step 3 — Add your university account to Apple Mail</h3>
+    <p>The pipeline reads emails via Apple Mail's AppleScript API (the new Outlook for Mac removed AppleScript support). You don't need to use Apple Mail as your main client — just add the account so it syncs in the background.</p>
+    <p>Go to <strong>System Settings → Internet Accounts → Add Account → Microsoft Exchange</strong> and sign in with your university credentials. Once connected, your Outlook folders (including LLM Queue) will be visible in Apple Mail.</p>
+
+    <h3>Step 4 — Set up folders and rules in Outlook</h3>
+    <p>Create two folders in Outlook: <strong>LLM Queue</strong> and <strong>LLM Processed</strong>. They will automatically sync to Apple Mail. Then set up rules in Outlook to move emails you want parsed into LLM Queue. Suggested rule tiers:</p>
     <ul>
       <li><strong>Tier 1 (senders):</strong> advisor, committee members, department admin → always route to LLM Queue</li>
       <li><strong>Tier 2 (keywords):</strong> subject contains "deadline", "action required", "review", "submit" → route to LLM Queue</li>
@@ -347,7 +351,7 @@ OUTPUT:
     <p>Make sure Ollama is running: <code>ollama serve</code> in a terminal, or check that the Ollama menu bar app is active. Then verify the model exists: <code>ollama list</code> should show <code>phd-email-parser</code>. If not, run <code>bash scripts/model/build_model.sh</code> again.</p>
 
     <h3>Email pipeline: AppleScript permission errors</h3>
-    <p>macOS requires explicit permission for scripts to control apps. Go to <strong>System Settings → Privacy &amp; Security → Automation</strong> and make sure Terminal (or whichever app you use to run the pipeline) has permission to control Microsoft Outlook.</p>
+    <p>macOS requires explicit permission for scripts to control apps. Go to <strong>System Settings → Privacy &amp; Security → Automation</strong> and make sure Terminal (or whichever app you use to run the pipeline) has permission to control <strong>Mail</strong>. You may also see a one-time permission dialog the first time the script runs — click Allow.</p>
   </article>
 
 </div>
