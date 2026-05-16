@@ -128,29 +128,67 @@ def build_lit():
 
 # ── Books ─────────────────────────────────────────────────────────────────────
 
+def _fetch_ol_cover(title, author):
+    try:
+        q = urllib.parse.quote(f"{title} {author}".strip())
+        url = f"https://openlibrary.org/search.json?q={q}&fields=cover_i&limit=1"
+        req = urllib.request.Request(url, headers={"User-Agent": "PhD-OS/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read().decode())
+        cover_i = ((data.get("docs") or [{}])[0]).get("cover_i")
+        if cover_i:
+            return f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg"
+    except Exception:
+        pass
+    return ""
+
+
+def _book_date(val):
+    if not val or val is False:
+        return ""
+    if val is True:
+        return "yes"   # started/finished but no date recorded
+    return str(val).strip()
+
+
 def build_books():
     books = []
     for filepath in sorted(glob.glob("400 Personal/Books/*.md")):
         if os.path.basename(filepath).startswith("_"):
-            continue  # skip templates
+            continue
         post = frontmatter.load(filepath)
         body = post.content.strip()
-        # First paragraph as snippet, capped at 280 chars
         snippet = body.split("\n\n")[0].strip() if body else ""
         if len(snippet) > 280:
             snippet = snippet[:280].rsplit(" ", 1)[0] + "…"
         tags = post.get("tags", [])
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(",") if t.strip()]
+
+        title  = post.get("title") or os.path.splitext(os.path.basename(filepath))[0]
+        author = post.get("author", "")
+
+        # Cover: explicit cover_url > ISBN shortcut > Open Library search
+        cover_url = str(post.get("cover_url", "") or "").strip()
+        isbn      = str(post.get("isbn", "") or "").strip()
+        if not cover_url and isbn:
+            cover_url = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
+        elif not cover_url:
+            cover_url = _fetch_ol_cover(title, author)
+            if cover_url:
+                time.sleep(0.3)  # polite to Open Library
+
         books.append({
-            "title":    post.get("title") or os.path.splitext(os.path.basename(filepath))[0],
-            "author":   post.get("author", ""),
-            "status":   post.get("status", "want-to-read"),
-            "rating":   post.get("rating") or None,
-            "started":  str(post.get("started", "") or ""),
-            "finished": str(post.get("finished", "") or ""),
-            "tags":     tags,
-            "snippet":  snippet,
+            "title":     title,
+            "author":    author,
+            "status":    post.get("status", "want-to-read"),
+            "rating":    post.get("rating") or None,
+            "started":   _book_date(post.get("started")),
+            "finished":  _book_date(post.get("finished")),
+            "tags":      tags,
+            "snippet":   snippet,
+            "isbn":      isbn,
+            "cover_url": cover_url,
         })
     return {"books": books}
 

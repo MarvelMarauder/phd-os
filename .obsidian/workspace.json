@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "100 Research/Source Papers/_template.md",
+                "file": "400 Personal/Books/John Dies at the End.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "_template"
+              "title": "John Dies at the End"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "100 Research/Source Papers/_template.md",
+                "file": "400 Personal/Books/John Dies at the End.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for _template"
+              "title": "Backlinks for John Dies at the End"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "100 Research/Source Papers/_template.md",
+                "file": "400 Personal/Books/John Dies at the End.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from _template"
+              "title": "Outgoing links from John Dies at the End"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "100 Research/Source Papers/_template.md",
+                "file": "400 Personal/Books/John Dies at the End.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of _template"
+              "title": "Outline of John Dies at the End"
             }
           }
         ]
@@ -188,14 +188,15 @@
   },
   "active": "5f00b1d136c6608c",
   "lastOpenFiles": [
+    "400 Personal/Books/_template.md",
+    "400 Personal/Books/John Dies at the End.md",
     "100 Research/Source Papers/_dismissed.md",
+    "100 Research/Source Papers/_template.md",
     "site/library.html",
     "100 Research/Source Papers/Teacher's Corner - Testing Measurement Invariance of Second-Order Factor Models.md",
-    "100 Research/Source Papers/_template.md",
     "500 Recharge/Recharge List.md",
     "site/lit.html",
     "site/books.html",
-    "400 Personal/Books/_template.md",
     "400 Personal/Books",
     "Thoughts.md",
     "_site/recharge.json",

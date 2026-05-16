@@ -12,30 +12,25 @@
 
 <main>
   <p class="page-title">Books</p>
-  <p class="page-sub">What I'm reading, have read, and want to read</p>
+  <p class="page-sub">What I'm reading, have read, and want to read · hover a cover for details</p>
 
   <!-- Currently Reading -->
   <section id="reading-section" style="display:none">
     <h2>Currently Reading</h2>
-    <div id="reading-list"></div>
+    <div class="bookshelf-grid" id="reading-grid"></div>
   </section>
 
-  <!-- Read -->
+  <!-- Finished -->
   <section>
-    <h2>Read <span class="section-count" id="read-count"></span></h2>
-    <div id="read-list"><p class="loading">Loading…</p></div>
+    <h2>Finished <span class="section-count" id="read-count"></span></h2>
+    <div class="bookshelf-grid" id="read-grid"><p class="loading">Loading…</p></div>
   </section>
 
   <!-- Want to Read -->
-  <section>
+  <section id="want-section" style="display:none">
     <h2>Want to Read <span class="section-count" id="want-count"></span></h2>
-    <div id="want-list"></div>
+    <div class="bookshelf-grid" id="want-grid"></div>
   </section>
-
-  <p style="font-size:12px;color:var(--text-subtle);margin-top:32px;">
-    Add books in <code>400 Personal/Books/</code> — copy <code>_template.md</code> and fill in the frontmatter.
-    Changes appear after the next push.
-  </p>
 </main>
 
 <script src="app.js"></script>
@@ -43,95 +38,128 @@
 document.getElementById('nav').innerHTML = navHTML('books');
 initSettings();
 
-function ratingHtml(r) {
-  if (!r) return '';
-  const n = Math.round(Number(r));
-  return `<span class="book-rating" title="${n}/5">` +
-    Array.from({length: 5}, (_, i) =>
-      `<span class="rating-pip${i < n ? ' filled' : ''}"></span>`
-    ).join('') +
-    `</span>`;
+const COVER_COLORS = [
+  '#b04820','#2a7a50','#2c5fa0','#7040a8','#c07808',
+  '#c0392b','#16a085','#8e44ad','#2980b9','#e67e22',
+  '#27ae60','#d35400','#1a5276','#884ea0','#b7950b',
+];
+
+function placeholderColor(title) {
+  let h = 0;
+  for (const c of (title || '')) h = ((h * 31) + c.charCodeAt(0)) >>> 0;
+  return COVER_COLORS[h % COVER_COLORS.length];
 }
 
-function tagsHtml(tags) {
-  if (!tags || !tags.length) return '';
-  return tags.map(t => `<span class="book-tag">${escHtml(t)}</span>`).join('');
+function ratingDots(r) {
+  if (!r) return '';
+  const n = Math.round(Number(r));
+  return `<div class="book-spine-rating">` +
+    Array.from({length: 5}, (_, i) =>
+      `<span class="rating-pip${i < n ? ' filled' : ''}"></span>`
+    ).join('') + `</div>`;
 }
 
 function formatBookDate(s) {
-  if (!s) return '';
+  if (!s || s === 'yes') return '';
   const d = new Date(s + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
-function renderReading(books) {
-  const section = document.getElementById('reading-section');
-  const el      = document.getElementById('reading-list');
-  if (!books.length) { section.style.display = 'none'; return; }
-  section.style.display = '';
-  el.innerHTML = books.map(b => `
-    <div class="book-card book-reading">
-      <div class="book-meta-row">
-        <span class="book-status-pill status-reading">Reading</span>
-        ${b.started ? `<span class="book-date">Started ${formatBookDate(b.started)}</span>` : ''}
+function bookSpineHtml(b, opts = {}) {
+  const isCurrently = b.status === 'currently-reading' || b.status === 'reading';
+  const startedStr  = formatBookDate(b.started);
+  const finishedStr = formatBookDate(b.finished);
+  const color       = placeholderColor(b.title);
+  const initial     = (b.title || '?')[0].toUpperCase();
+
+  const coverInner = b.cover_url
+    ? `<img class="book-cover-img" src="${escHtml(b.cover_url)}"
+           alt="${escHtml(b.title)}" data-title="${escHtml(b.title)}">`
+    : `<div class="book-cover-placeholder" style="background:${color}">${initial}</div>`;
+
+  const popupMeta = [
+    b.started === 'yes' && !startedStr ? '<div class="book-popup-date">Currently reading</div>' : '',
+    startedStr  ? `<div class="book-popup-date">Started ${startedStr}</div>` : '',
+    finishedStr ? `<div class="book-popup-date">Finished ${finishedStr}</div>` : '',
+  ].filter(Boolean).join('');
+
+  const popupTags = (b.tags || []).length
+    ? `<div class="book-tags">${b.tags.map(t => `<span class="book-tag">${escHtml(t)}</span>`).join('')}</div>`
+    : '';
+
+  return `
+    <div class="book-spine${isCurrently ? ' book-spine-current' : ''}">
+      <div class="book-cover-wrap">
+        ${coverInner}
+        <div class="book-popup">
+          <div class="book-popup-title">${escHtml(b.title)}</div>
+          <div class="book-popup-author">${escHtml(b.author)}</div>
+          ${opts.showRating && b.rating ? `<div class="book-popup-rating">${ratingDots(b.rating)}</div>` : ''}
+          ${popupMeta}
+          ${b.snippet ? `<p class="book-popup-snippet">${escHtml(b.snippet)}</p>` : ''}
+          ${popupTags}
+        </div>
       </div>
-      <div class="book-title">${escHtml(b.title)}</div>
-      <div class="book-author">${escHtml(b.author)}</div>
-      ${b.snippet ? `<p class="book-snippet">${escHtml(b.snippet)}</p>` : ''}
-      <div class="book-tags">${tagsHtml(b.tags)}</div>
-    </div>`).join('');
+      <div class="book-spine-meta">
+        <div class="book-spine-title">${escHtml(b.title)}</div>
+        ${opts.showRating ? ratingDots(b.rating) : ''}
+      </div>
+    </div>`;
 }
 
-function renderRead(books) {
-  const el = document.getElementById('read-list');
-  const countEl = document.getElementById('read-count');
-  countEl.textContent = books.length || '';
-  if (!books.length) {
-    el.innerHTML = '<p class="empty">No books marked as read yet.</p>';
-    return;
-  }
-  // Sort: most recently finished first, then alphabetical
-  books.sort((a, b) => (b.finished || '').localeCompare(a.finished || '') || a.title.localeCompare(b.title));
-  el.innerHTML = books.map(b => `
-    <div class="book-card">
-      <div class="book-meta-row">
-        ${ratingHtml(b.rating)}
-        ${b.finished ? `<span class="book-date">${formatBookDate(b.finished)}</span>` : ''}
-      </div>
-      <div class="book-title">${escHtml(b.title)}</div>
-      <div class="book-author">${escHtml(b.author)}</div>
-      ${b.snippet ? `<p class="book-snippet">${escHtml(b.snippet)}</p>` : ''}
-      <div class="book-tags">${tagsHtml(b.tags)}</div>
-    </div>`).join('');
-}
+function renderGrid(gridId, books, opts = {}) {
+  const el = document.getElementById(gridId);
+  if (!books.length) { el.innerHTML = '<p class="empty">Nothing here yet.</p>'; return; }
+  el.innerHTML = books.map(b => bookSpineHtml(b, opts)).join('');
 
-function renderWant(books) {
-  const el = document.getElementById('want-list');
-  const countEl = document.getElementById('want-count');
-  countEl.textContent = books.length || '';
-  if (!books.length) {
-    el.innerHTML = '<p class="empty">Nothing in the queue yet.</p>';
-    return;
-  }
-  el.innerHTML = `<div class="book-want-list">` + books.map(b => `
-    <div class="book-want-item">
-      <div class="book-want-main">
-        <span class="book-title book-title-sm">${escHtml(b.title)}</span>
-        <span class="book-author">${escHtml(b.author)}</span>
-      </div>
-      <div class="book-tags">${tagsHtml(b.tags)}</div>
-    </div>`).join('') + `</div>`;
+  // Wire up cover image error → fallback to placeholder
+  el.querySelectorAll('.book-cover-img').forEach(img => {
+    img.addEventListener('error', function() {
+      const color = placeholderColor(this.dataset.title);
+      const ph = document.createElement('div');
+      ph.className = 'book-cover-placeholder';
+      ph.style.background = color;
+      ph.textContent = (this.dataset.title || '?')[0].toUpperCase();
+      this.replaceWith(ph);
+    });
+  });
 }
 
 async function loadBooks() {
   try {
-    const data = await fetch('books.json').then(r => r.json());
+    const data  = await fetch('books.json').then(r => r.json());
     const books = data.books || [];
-    renderReading(books.filter(b => b.status === 'reading'));
-    renderRead(books.filter(b => b.status === 'read'));
-    renderWant(books.filter(b => b.status === 'want-to-read'));
+
+    const reading  = books.filter(b => b.status === 'currently-reading' || b.status === 'reading');
+    const finished = books.filter(b => b.status === 'read' || b.status === 'finished');
+    const want     = books.filter(b => b.status === 'want-to-read');
+
+    // Currently Reading
+    const readingSection = document.getElementById('reading-section');
+    if (reading.length) {
+      readingSection.style.display = '';
+      renderGrid('reading-grid', reading);
+    }
+
+    // Finished
+    finished.sort((a, b) => (b.finished || '').localeCompare(a.finished || '') || a.title.localeCompare(b.title));
+    document.getElementById('read-count').textContent = finished.length || '';
+    if (finished.length) {
+      renderGrid('read-grid', finished, { showRating: true });
+    } else {
+      document.getElementById('read-grid').innerHTML = '<p class="empty">No finished books yet.</p>';
+    }
+
+    // Want to Read
+    const wantSection = document.getElementById('want-section');
+    document.getElementById('want-count').textContent = want.length || '';
+    if (want.length) {
+      wantSection.style.display = '';
+      renderGrid('want-grid', want);
+    }
+
   } catch(e) {
-    document.getElementById('read-list').innerHTML = '<p class="error">Could not load books.json</p>';
+    document.getElementById('read-grid').innerHTML = '<p class="error">Could not load books.json</p>';
   }
 }
 

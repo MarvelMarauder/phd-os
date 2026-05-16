@@ -3,6 +3,8 @@
     "aliases": "aliases",
     "cssclasses": "multitext",
     "tags": "tags",
-    "co-authors": "multitext"
+    "co-authors": "multitext",
+    "started": "checkbox",
+    "finished": "checkbox"
   }
 }

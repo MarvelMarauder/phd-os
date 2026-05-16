@@ -5,6 +5,8 @@ status: want-to-read
 rating: 
 started: 
 finished: 
+isbn: 
+cover_url: 
 tags: [fiction, nonfiction, self-help, psychology, research, history, biography]
 ---
 
