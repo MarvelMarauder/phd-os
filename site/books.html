@@ -44,6 +44,15 @@ const COVER_COLORS = [
   '#27ae60','#d35400','#1a5276','#884ea0','#b7950b',
 ];
 
+// Only allow http/https URLs in src attributes — blocks javascript: and data: schemes.
+function safeSrc(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? url : '';
+  } catch { return ''; }
+}
+
 function placeholderColor(title) {
   let h = 0;
   for (const c of (title || '')) h = ((h * 31) + c.charCodeAt(0)) >>> 0;
@@ -72,8 +81,9 @@ function bookSpineHtml(b, opts = {}) {
   const color       = placeholderColor(b.title);
   const initial     = (b.title || '?')[0].toUpperCase();
 
-  const coverInner = b.cover_url
-    ? `<img class="book-cover-img" src="${escHtml(b.cover_url)}"
+  const safeUrl = safeSrc(b.cover_url);
+  const coverInner = safeUrl
+    ? `<img class="book-cover-img" src="${escHtml(safeUrl)}"
            alt="${escHtml(b.title)}" data-title="${escHtml(b.title)}">`
     : `<div class="book-cover-placeholder" style="background:${color}">${initial}</div>`;
 

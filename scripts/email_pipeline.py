@@ -24,6 +24,7 @@ Audit:  /tmp/phd_os_audit.log
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -74,16 +75,30 @@ def audit(event, detail=""):
 
 # ── Folder guard ──────────────────────────────────────────────────────────────
 
+SAFE_FOLDER_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9 _-]{0,62}[A-Za-z0-9]$|^[A-Za-z0-9]$')
+FORBIDDEN_FOLDERS = {
+    "inbox", "sent", "sent items", "drafts", "deleted items",
+    "trash", "junk", "junk e-mail", "archive", "all mail",
+    "spam", "outbox", "flagged", "notes",
+}
+
 def assert_safe_folder_name(name, label):
-    """Refuse to operate on a folder with a suspicious name."""
+    """
+    Validates folder names before embedding them in AppleScript strings.
+    Only letters, digits, spaces, hyphens, and underscores are allowed.
+    This prevents AppleScript injection via a crafted config value.
+    """
     name = name.strip()
     if not name:
         log(f"ERROR: {label} folder name is empty — refusing to run.")
         sys.exit(1)
-    forbidden = {"inbox", "sent", "sent items", "drafts", "deleted items",
-                 "trash", "junk", "junk e-mail", "archive", "all mail", ""}
-    if name.lower() in forbidden:
-        log(f"ERROR: {label} folder name '{name}' looks like a system folder — refusing to run.")
+    if not SAFE_FOLDER_RE.match(name):
+        log(f"ERROR: {label} folder name '{name}' contains invalid characters.")
+        log("       Only letters, numbers, spaces, hyphens, and underscores are allowed.")
+        log("       This prevents AppleScript injection. Edit ~/.phd_os_config.json.")
+        sys.exit(1)
+    if name.lower() in FORBIDDEN_FOLDERS:
+        log(f"ERROR: {label} folder name '{name}' is a system folder — refusing to run.")
         log("       Set a custom name in ~/.phd_os_config.json (e.g. 'LLM Queue').")
         sys.exit(1)
 
@@ -125,10 +140,11 @@ def ensure_mail_open():
 def build_fetch_script(queue_folder, max_emails):
     """
     Fetches up to max_emails messages from queue_folder ONLY.
-    Writes each body to /tmp/phd_email_<id>.txt (no shell execution inside AppleScript).
+    Writes each body to the secure temp directory (mode 700).
     Returns tab-delimited lines: id \\t subject \\t sender \\t date \\t pipe-separated-pdf-names
+    Folder name is regex-validated before this is called.
     """
-    # Folder name is validated before this is called; embed it safely.
+    tmp = _secure_tmp
     return f"""\
 tell application "Mail"
     -- SCOPE GUARD: only operate on the explicitly configured folder
@@ -136,9 +152,10 @@ tell application "Mail"
     set queueMailbox to missing value
     repeat with acct in every account
         try
-            set mb to mailbox targetName of acct
+            set mb to first mailbox of acct whose name is targetName
             set queueMailbox to mb
             exit repeat
+        on error
         end try
     end repeat
     if queueMailbox is missing value then
@@ -158,16 +175,15 @@ tell application "Mail"
         set msg to item i of allMessages
         set msgId to (id of msg) as string
 
-        -- Write body to temp file using AppleScript file I/O only (no shell)
-        set bodyPath to "/tmp/phd_email_" & msgId & ".txt"
+        -- Write body to private temp dir (mode 700 — only current user can read)
+        set bodyPath to "{tmp}/" & msgId & ".txt"
         try
             set bodyText to content of msg
             set fRef to open for access POSIX file bodyPath with write permission
             set eof of fRef to 0
-            write bodyText to fRef as \xc2\xabclass utf8\xc2\xbb
+            write bodyText to fRef as «class utf8»
             close access fRef
         on error
-            -- If body write fails, create empty file via file I/O only
             try
                 set fRef to open for access POSIX file bodyPath with write permission
                 set eof of fRef to 0
@@ -175,22 +191,20 @@ tell application "Mail"
             end try
         end try
 
-        -- Save PDF attachments using AppleScript file I/O only (no shell)
+        -- Save PDF attachments to private temp dir
         set pdfNames to ""
         try
             repeat with att in mail attachments of msg
                 set attName to name of att
                 if attName ends with ".pdf" then
-                    set attPath to "/tmp/phd_att_" & msgId & "_" & attName
+                    set attPath to "{tmp}/att_" & msgId & "_" & attName
                     save att in POSIX file attPath
                     set pdfNames to pdfNames & attName & "|"
                 end if
             end repeat
         end try
 
-        set output to output & msgId & "\\t" & (subject of msg) & "\\t" \\
-            & (sender of msg) & "\\t" & ((date received of msg) as string) \\
-            & "\\t" & pdfNames & "\\n"
+        set output to output & msgId & tab & (subject of msg) & tab & (sender of msg) & tab & ((date received of msg) as string) & tab & pdfNames & return
     end repeat
     return output
 end tell
@@ -212,11 +226,12 @@ tell application "Mail"
     set dstMailbox to missing value
     repeat with acct in every account
         try
-            set srcMailbox to mailbox srcName of acct
+            set srcMailbox to first mailbox of acct whose name is srcName
             try
-                set dstMailbox to mailbox dstName of acct
+                set dstMailbox to first mailbox of acct whose name is dstName
             end try
             exit repeat
+        on error
         end try
     end repeat
 
@@ -235,12 +250,22 @@ end tell
 
 # ── Email fetching ────────────────────────────────────────────────────────────
 
-# Temp files created this run — cleaned up in finally block
-_temp_files = []
+# Private temp directory — mode 700 so other users on the machine cannot read
+# email bodies or attachment content written here.
+_secure_tmp = None
+_temp_files  = []
+
+
+def make_secure_tmp():
+    """Create a private temp directory readable only by the current user."""
+    global _secure_tmp
+    _secure_tmp = tempfile.mkdtemp(prefix="phd_os_")
+    os.chmod(_secure_tmp, stat.S_IRWXU)   # rwx------
+    return _secure_tmp
 
 
 def fetch_emails(queue_folder, max_emails, dry_run):
-    script_path = "/tmp/phd_fetch.applescript"
+    script_path = os.path.join(_secure_tmp, "fetch.applescript")
     _temp_files.append(script_path)
 
     with open(script_path, "w") as f:
@@ -259,7 +284,7 @@ def fetch_emails(queue_folder, max_emails, dry_run):
         return []
 
     emails = []
-    for line in raw.strip().splitlines():
+    for line in raw.strip().splitlines():  # splitlines() handles \r, \n, \r\n
         parts = line.split("\t")
         if len(parts) < 5:
             continue
@@ -267,7 +292,7 @@ def fetch_emails(queue_folder, max_emails, dry_run):
             parts[0], parts[1], parts[2], parts[3], parts[4]
         )
 
-        body_path = f"/tmp/phd_email_{msg_id}.txt"
+        body_path = os.path.join(_secure_tmp, f"{msg_id}.txt")
         _temp_files.append(body_path)
         try:
             with open(body_path, encoding="utf-8", errors="replace") as f:
@@ -277,7 +302,7 @@ def fetch_emails(queue_folder, max_emails, dry_run):
 
         pdf_texts = []
         for pdf_name in filter(None, pdf_names_raw.split("|")):
-            att_path = f"/tmp/phd_att_{msg_id}_{pdf_name}"
+            att_path = os.path.join(_secure_tmp, f"att_{msg_id}_{pdf_name}")
             _temp_files.append(att_path)
             pdf_texts.append(extract_pdf_text(att_path))
 
@@ -298,7 +323,7 @@ def move_all_to_processed(queue_folder, processed_folder, dry_run):
     if dry_run:
         log("  [dry-run] Would move emails to LLM Processed — skipped.")
         return
-    script_path = "/tmp/phd_move.applescript"
+    script_path = os.path.join(_secure_tmp, "move.applescript")
     _temp_files.append(script_path)
     with open(script_path, "w") as f:
         f.write(build_move_script(queue_folder, processed_folder))
@@ -318,6 +343,12 @@ def cleanup_temp_files():
             os.remove(path)
         except FileNotFoundError:
             pass
+    # Remove the secure temp directory itself
+    if _secure_tmp and os.path.isdir(_secure_tmp):
+        try:
+            os.rmdir(_secure_tmp)
+        except OSError:
+            pass  # non-empty means cleanup above missed something; leave it
 
 
 # ── PDF extraction ────────────────────────────────────────────────────────────
@@ -417,8 +448,13 @@ def load_queue():
 
 
 def save_queue(q):
-    with open(QUEUE_FILE, "w") as f:
+    # Write to a temp file then atomically rename — prevents corruption on crash.
+    # Also ensures the queue file stays 600 (owner-only).
+    tmp_path = QUEUE_FILE + ".tmp"
+    with open(tmp_path, "w") as f:
         json.dump(q, f, indent=2, ensure_ascii=False)
+    os.chmod(tmp_path, stat.S_IRUSR | stat.S_IWUSR)
+    os.replace(tmp_path, QUEUE_FILE)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -443,6 +479,8 @@ def main():
     audit("RUN_START", f"model={model} queue={queue_folder} max={max_emails} dry_run={dry_run}")
 
     try:
+        make_secure_tmp()
+
         if not ensure_mail_open():
             return
 

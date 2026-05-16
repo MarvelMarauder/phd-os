@@ -9,6 +9,7 @@ Usage: python3 scripts/review_tasks.py
 
 import json
 import os
+import stat
 import sys
 import urllib.request
 from datetime import datetime
@@ -38,8 +39,11 @@ def load_queue():
 
 
 def save_queue(q):
-    with open(QUEUE_FILE, "w") as f:
+    tmp_path = QUEUE_FILE + ".tmp"
+    with open(tmp_path, "w") as f:
         json.dump(q, f, indent=2, ensure_ascii=False)
+    os.chmod(tmp_path, stat.S_IRUSR | stat.S_IWUSR)
+    os.replace(tmp_path, QUEUE_FILE)
 
 
 # ── Todoist ───────────────────────────────────────────────────────────────────

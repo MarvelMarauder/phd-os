@@ -47,6 +47,7 @@
       <div class="docs-sidebar-label">Reference</div>
       <a href="#build-script">Build Script</a>
       <a href="#frontmatter">Frontmatter Reference</a>
+      <a href="#security">Security &amp; Protections</a>
       <a href="#troubleshooting">Troubleshooting</a>
     </div>
   </aside>
@@ -197,7 +198,7 @@ dismissed:
     <!-- ── Email Pipeline ──────────────────── -->
     <h2 id="pipeline-overview">Email Pipeline — Overview</h2>
     <p>The email pipeline reads emails from a designated Outlook folder, runs them through a local LLM (Ollama), and accumulates proposed to-do items in a queue file. You review and approve the queue whenever you want — the pipeline runs automatically every two hours in the background.</p>
-    <p>All processing is local. Emails never leave your Mac. The only data that leaves is the task text you explicitly approve, which goes to Todoist.</p>
+    <p>All processing is local. Emails never leave your Mac. The only data that leaves is the task text you explicitly approve, which goes to Todoist. See <a href="#security">Security &amp; Protections</a> for a full breakdown of what the pipeline can and cannot do.</p>
     <h3>How it works</h3>
     <ol>
       <li>Create a folder called <strong>LLM Queue</strong> in Outlook. Set up rules to forward emails you want processed into it.</li>
@@ -329,6 +330,73 @@ OUTPUT:
         <tr><td>Books</td><td><code>title</code>, <code>status</code></td><td><code>author</code>, <code>rating</code>, <code>started</code>, <code>finished</code>, <code>isbn</code>, <code>cover_url</code>, <code>tags</code></td></tr>
       </tbody>
     </table>
+
+    <h2 id="security">Security &amp; Protections</h2>
+    <p>PhD OS runs with elevated trust on your Mac — it can control Apple Mail via AppleScript and write to Todoist. The following protections limit what it can actually do.</p>
+
+    <h3>macOS automation permission scope</h3>
+    <p>When macOS asks whether Terminal/Python can control Mail, that permission is broad — it technically allows any script to read or send any email. The email pipeline limits itself well below that ceiling:</p>
+    <ul>
+      <li>Reads <strong>only</strong> from the folder named in <code>outlook_queue_folder</code> (default: LLM Queue)</li>
+      <li>Moves <strong>only</strong> to the folder named in <code>outlook_processed_folder</code> (default: LLM Processed)</li>
+      <li>Never sends email, never deletes email, never reads Inbox or any other folder</li>
+      <li>Never accesses Contacts, Calendar, or any other app</li>
+    </ul>
+    <div class="docs-callout warn">The permission macOS shows you is intentionally broad — Apple does not offer per-folder granularity. The limitations above are enforced by the script, not by the OS.</div>
+
+    <h3>AppleScript injection prevention</h3>
+    <p>Folder names from <code>~/.phd_os_config.json</code> are embedded into AppleScript strings at runtime. A crafted folder name could escape the string and execute arbitrary AppleScript.</p>
+    <p>The pipeline prevents this with a strict regex before touching anything: folder names may only contain <strong>letters, digits, spaces, hyphens, and underscores</strong>. Any other character causes the script to exit with an error before any AppleScript runs. Common system folder names (Inbox, Sent, Drafts, Trash, etc.) are also blocked.</p>
+
+    <h3>Dry-run and no-move modes</h3>
+    <p>You can always verify what the pipeline would do before it does anything:</p>
+    <pre><code># Read and parse emails, print proposed tasks — write nothing, move nothing
+python3 scripts/email_pipeline.py --dry-run
+
+# Process and queue tasks, but leave emails in LLM Queue
+python3 scripts/email_pipeline.py --no-move</code></pre>
+
+    <h3>Human approval before any Todoist write</h3>
+    <p>The pipeline never creates Todoist tasks automatically. Every proposed task goes through <code>review_tasks.py</code>, which shows you each task individually (approve / edit / skip), then prints a final summary of everything about to be created and asks for confirmation before making a single API call.</p>
+
+    <h3>Private temp directory</h3>
+    <p>Email bodies and PDF attachments are written to a private temp directory created at the start of each pipeline run with mode <code>700</code> (readable only by you). The directory and all its files are deleted in a <code>finally</code> block that runs even if the script crashes. Other users on the same machine cannot read your email content while the pipeline is running.</p>
+
+    <h3>Config file permissions</h3>
+    <p><code>~/.phd_os_config.json</code> contains your Todoist API token. <code>setup.sh</code> creates it with mode <code>600</code> (owner read/write only). If you create or edit the file manually, verify the permissions with:</p>
+    <pre><code>ls -l ~/.phd_os_config.json
+# Should show: -rw------- (600)</code></pre>
+    <p>If it shows anything else: <code>chmod 600 ~/.phd_os_config.json</code></p>
+
+    <h3>Token not echoed during setup</h3>
+    <p><code>setup.sh</code> uses <code>read -s</code> when prompting for the Todoist token, so it is never displayed on screen. The token is passed to Python via an environment variable (not shell interpolation), so it is JSON-encoded correctly even if it contains special characters.</p>
+
+    <h3>Atomic queue file writes</h3>
+    <p>The pending task queue (<code>~/.phd_os_queue.json</code>) is written atomically: the script writes to a <code>.tmp</code> file first, then does an <code>os.replace()</code> to swap it in. A crash mid-write leaves the old queue intact rather than producing a corrupted file. The queue file is also created with mode <code>600</code>.</p>
+
+    <h3>Email cap</h3>
+    <p>The pipeline processes at most <code>max_emails_per_run</code> emails per run (default: 20). A flooded LLM Queue folder — from a runaway forwarding rule, for example — cannot cause unbounded API calls or runaway Ollama usage. Override in <code>~/.phd_os_config.json</code>:</p>
+    <pre><code>"max_emails_per_run": 10</code></pre>
+
+    <h3>Audit log</h3>
+    <p>Every action taken by the pipeline is written as a JSON line to <code>/tmp/phd_os_audit.log</code>: which emails were read, when they were moved, how many tasks were queued. You can inspect it at any time:</p>
+    <pre><code>cat /tmp/phd_os_audit.log | python3 -m json.tool --no-indent | head -40</code></pre>
+    <div class="docs-callout info">The audit log lives in <code>/tmp</code> and is cleared on reboot. It is not a tamper-proof security record — it is a convenience log for your own review.</div>
+
+    <h3>Cover image URL scheme validation</h3>
+    <p>Book cover URLs from <code>books.json</code> are validated before being placed in an <code>&lt;img src&gt;</code> attribute. Only <code>http://</code> and <code>https://</code> URLs are accepted; anything else (including <code>javascript:</code> or <code>data:</code> URLs) is silently replaced with a colored placeholder. All other user-controlled strings rendered into HTML go through <code>escHtml()</code>.</p>
+
+    <h3>Todoist token storage</h3>
+    <p>The Todoist API token used by the website is stored in your browser's <code>localStorage</code> for the site's origin. It is never sent anywhere except directly to the Todoist API over HTTPS. There is no third-party JavaScript on any page, so there is no script that could exfiltrate it. It is visible in browser developer tools — treat it like a password and don't use a shared machine.</p>
+
+    <h3>What is NOT protected</h3>
+    <p>Being honest about limitations:</p>
+    <ul>
+      <li>The macOS automation permission cannot be scoped to specific folders — a malicious script running as you could abuse it. Revoke it in <strong>System Settings → Privacy &amp; Security → Automation</strong> if the pipeline is not in use.</li>
+      <li>The audit log in <code>/tmp</code> is not append-only or cryptographically signed — it can be modified or deleted.</li>
+      <li>The Todoist token in <code>localStorage</code> is visible to browser dev tools. On a shared machine, clear it with the ⚙ button in the nav when done.</li>
+      <li>The pipeline scripts have not been independently security-audited.</li>
+    </ul>
 
     <h2 id="troubleshooting">Troubleshooting</h2>
 
