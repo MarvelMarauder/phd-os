@@ -188,6 +188,14 @@
   },
   "active": "31b7ab9bd353d7c0",
   "lastOpenFiles": [
+    "site/docs.html",
+    "scripts/setup.sh",
+    "scripts/com.phd-os.pipeline.plist",
+    "scripts/model/build_model.sh",
+    "scripts/model/examples.md",
+    "scripts/model/Modelfile",
+    "scripts/model",
+    "scripts/review_tasks.py",
     "scripts/email_pipeline.py",
     "scripts",
     "400 Personal/Books/John Dies at the End.md",
@@ -199,14 +207,7 @@
     "100 Research/Source Papers/Teacher's Corner - Testing Measurement Invariance of Second-Order Factor Models.md",
     "500 Recharge/Recharge List.md",
     "site/lit.html",
-    "site/books.html",
-    "400 Personal/Books",
     "Thoughts.md",
-    "_site/recharge.json",
-    "_site/papers.json",
-    "_site/app.js",
-    "_site/recharge.html",
-    "_site/papers.html",
     "000 Dashboard/Home.md",
     "100 Research/My Papers/Self-Verification and JudgyAI.md",
     "100 Research/My Papers/Self-Compassion and JudgyAI.md",
@@ -222,7 +223,6 @@
     "PaperTracker.base.md",
     "sdfd.md",
     "000 Dashboard/Paper Tracker.md",
-    "900 Templates/Template - My Paper.md",
-    "900 Templates/Template - Source Paper.md"
+    "900 Templates/Template - My Paper.md"
   ]
 }

@@ -306,6 +306,24 @@ function renderTaskList(containerId, tasks, allTasks, showDue, reminderMap) {
   });
 }
 
+// ── Site footer (auto-inserted on every page) ─────────
+function footerHTML() {
+  return `
+    <div class="footer-inner">
+      <span class="footer-brand">PhD OS</span>
+      <nav class="footer-links">
+        <a href="docs.html">Documentation</a>
+      </nav>
+    </div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const footer = document.createElement('footer');
+  footer.className = 'site-footer';
+  footer.innerHTML = footerHTML();
+  document.body.appendChild(footer);
+});
+
 // ── Standard nav HTML (call with current page key) ────
 function navHTML(active) {
   const pages = [
@@ -317,6 +335,7 @@ function navHTML(active) {
     ['projects.html','projects', 'Projects'],
     ['church.html',  'church',   'Church'],
     ['recharge.html','recharge', 'Recharge'],
+    ['docs.html',    'docs',     'Docs'],
   ];
   const links = pages.map(([href, key, label]) =>
     `<a href="${href}"${active === key ? ' class="active"' : ''}>${label}</a>`
