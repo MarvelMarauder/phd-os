@@ -1096,6 +1096,14 @@ details[open] .rc-accordion-hd {
   overflow: hidden;
 }
 
+.discover-card-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 8px;
+}
+
 .discover-add-btn {
   font-size: 11px;
   font-weight: 600;
@@ -1109,6 +1117,26 @@ details[open] .rc-accordion-hd {
   transition: opacity 0.12s;
 }
 .discover-add-btn:hover { opacity: 0.8; }
+
+.disc-todoist-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-dim);
+  border: 1px solid color-mix(in srgb, var(--blue) 20%, var(--border));
+  border-radius: 20px;
+  padding: 3px 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.12s;
+}
+.disc-todoist-btn:hover { opacity: 0.8; }
+.disc-todoist-btn:disabled { opacity: 0.55; cursor: default; }
+.disc-todoist-btn.disc-todoist-saved {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
 
 /* Quick Add form */
 .doi-form {

@@ -14,20 +14,6 @@
   <p class="page-title">Literature</p>
   <p class="page-sub">Discover new papers · quick-add to your library · see connections</p>
 
-  <!-- ── Discover ────────────────────────────────────── -->
-  <section>
-    <h2>
-      Discover
-      <button class="lit-refresh-btn" id="discover-refresh" title="Refresh results">↻</button>
-    </h2>
-    <!--
-      EDIT YOUR DISCOVERY QUERIES HERE.
-      Each entry runs one Semantic Scholar search.
-      Add / remove objects to match your research streams.
-    -->
-    <div id="discover-area"></div>
-  </section>
-
   <!-- ── Quick Add ──────────────────────────────────── -->
   <section>
     <h2>Quick Add</h2>
@@ -100,6 +86,15 @@
     </div>
   </section>
 
+  <!-- ── Discover ────────────────────────────────────── -->
+  <section>
+    <h2>
+      Discover
+      <button class="lit-refresh-btn" id="discover-refresh" title="Refresh results">↻</button>
+    </h2>
+    <div id="discover-area"></div>
+  </section>
+
   <!-- ── Your Library ───────────────────────────────── -->
   <section>
     <h2>Your Library <span class="section-count" id="lib-count"></span></h2>
@@ -137,10 +132,6 @@ function discoverCardHtml(p, cardCls) {
     return parts.length > 1 ? parts[parts.length - 1] + ', ' + parts[0][0] + '.' : name;
   }).join('; ') + ((p.authors || []).length > 3 ? ' et al.' : '');
 
-  const abstract = p.abstract
-    ? escHtml(p.abstract.trim().slice(0, 280)) + (p.abstract.length > 280 ? '…' : '')
-    : '';
-
   const dateDisplay = p.pub_date
     ? new Date(p.pub_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : (year ? String(year) : '');
@@ -164,13 +155,17 @@ function discoverCardHtml(p, cardCls) {
       </div>
       ${titleEl}
       <div class="discover-card-authors">${escHtml(authors)}</div>
-      ${abstract ? `<p class="discover-card-abstract">${abstract}</p>` : ''}
-      <button class="discover-add-btn"
-        data-title="${escHtml(p.title)}"
-        data-authors="${escHtml((p.authors || []).join('; '))}"
-        data-journal="${escHtml(journal)}"
-        data-year="${escHtml(String(year))}"
-        data-doi="${escHtml(doi)}">Add to library →</button>
+      <div class="discover-card-actions">
+        <button class="discover-add-btn"
+          data-title="${escHtml(p.title)}"
+          data-authors="${escHtml((p.authors || []).join('; '))}"
+          data-journal="${escHtml(journal)}"
+          data-year="${escHtml(String(year))}"
+          data-doi="${escHtml(doi)}">Add to library →</button>
+        <button class="disc-todoist-btn"
+          data-title="${escHtml(p.title)}"
+          data-doi="${escHtml(doi)}">Save to Readings</button>
+      </div>
     </div>`;
 }
 
@@ -225,12 +220,55 @@ async function loadDiscover() {
       }));
     });
 
+    area.querySelectorAll('.disc-todoist-btn').forEach(btn => {
+      btn.addEventListener('click', () => saveToReadings(btn, btn.dataset.title, btn.dataset.doi));
+    });
+
   } catch(e) {
     area.innerHTML = '<p class="error">Could not load discover.json — push to main to generate it.</p>';
   }
 }
 
 document.getElementById('discover-refresh').addEventListener('click', loadDiscover);
+
+// ── Todoist — Save to Readings ───────────────────────
+
+let _readingsProjectId = null;
+
+async function getReadingsProjectId() {
+  if (_readingsProjectId) return _readingsProjectId;
+  const projects = await fetchProjects();
+  const proj = projects.find(p => p.name.toLowerCase() === 'readings');
+  _readingsProjectId = proj ? proj.id : null;
+  return _readingsProjectId;
+}
+
+async function saveToReadings(btn, title, doi) {
+  if (!hasToken()) {
+    showTokenModal(async () => saveToReadings(btn, title, doi));
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const projId = await getReadingsProjectId();
+    if (!projId) throw new Error('no_project');
+    const description = doi ? `https://doi.org/${doi}` : '';
+    await apiPost('/tasks', { content: title, project_id: projId, description });
+    btn.textContent = 'Saved ✓';
+    btn.classList.add('disc-todoist-saved');
+  } catch(e) {
+    btn.disabled = false;
+    if (e.message === 'bad_token') {
+      btn.textContent = 'Save to Readings';
+      showTokenModal(async () => saveToReadings(btn, title, doi));
+    } else if (e.message === 'no_project') {
+      btn.textContent = '"Readings" not found';
+    } else {
+      btn.textContent = 'Failed — retry';
+    }
+  }
+}
 
 // ── DOI / Quick Add ──────────────────────────────────
 

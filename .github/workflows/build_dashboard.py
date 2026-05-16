@@ -258,7 +258,7 @@ def _oa_journal_papers(sort, per_page, days_back, label):
 
 def _oa_stream_papers(query, label):
     url = (f"{OA_BASE}?search={urllib.parse.quote(query)}"
-           f"&sort=publication_date:desc&per_page=8"
+           f"&sort=publication_date:desc&per_page=5"
            f"&select={OA_FIELDS}&{OA_MAILTO}")
     try:
         data   = _oa_get(url)
@@ -277,7 +277,7 @@ def build_discover():
     sections.append({
         "type":   "journals",
         "label":  "Recent Issues — IS Journals",
-        "papers": _oa_journal_papers("publication_date:desc", 25, 180, "recent-issues"),
+        "papers": _oa_journal_papers("publication_date:desc", 10, 180, "recent-issues"),
     })
 
     time.sleep(1)
@@ -286,7 +286,7 @@ def build_discover():
     sections.append({
         "type":   "trending",
         "label":  "Trending This Year",
-        "papers": _oa_journal_papers("cited_by_count:desc", 10, 365, "trending"),
+        "papers": _oa_journal_papers("cited_by_count:desc", 6, 365, "trending"),
     })
 
     # Per-stream keyword searches
