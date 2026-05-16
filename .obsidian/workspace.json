@@ -186,8 +186,10 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "5f00b1d136c6608c",
+  "active": "31b7ab9bd353d7c0",
   "lastOpenFiles": [
+    "scripts/email_pipeline.py",
+    "scripts",
     "400 Personal/Books/John Dies at the End.md",
     "400 Personal/Books/Gilead.md",
     "400 Personal/Books/_template.md",
@@ -205,7 +207,6 @@
     "_site/app.js",
     "_site/recharge.html",
     "_site/papers.html",
-    "_site/style.css",
     "000 Dashboard/Home.md",
     "100 Research/My Papers/Self-Verification and JudgyAI.md",
     "100 Research/My Papers/Self-Compassion and JudgyAI.md",
