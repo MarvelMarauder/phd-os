@@ -23,12 +23,12 @@ DISCOVER_QUERIES = [
     {
         "stream": "ai-companions",
         "label":  "AI Companions",
-        "query":  "AI companion social robot conversational agent human relationship",
+        "query":  "(AI companion) OR (social robot) OR (human-AI relationship)",
     },
     {
         "stream": "judgy-ai",
         "label":  "JudgyAI",
-        "query":  "artificial intelligence judgment anthropomorphism moral evaluation human",
+        "query":  "(AI judgment) OR (AI evaluation)",
     },
 ]
 
