@@ -47,7 +47,7 @@ JOURNAL_ABBREVS = {
     "journal of information technology": "JIT",
     "journal of management information systems": "JMIS",
     "journal of the association for information systems": "JAIS",
-    "journal of strategic information systems": "JSIS",
+    "the journal of strategic information systems": "JSIS",
     "mis quarterly": "MISQ",
     "management information systems quarterly": "MISQ",
 }
