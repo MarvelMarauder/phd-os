@@ -270,6 +270,17 @@ def _oa_stream_papers(query, label):
         return []
 
 
+def build_dismissed():
+    path = "100 Research/Source Papers/_dismissed.md"
+    if not os.path.exists(path):
+        return []
+    post = frontmatter.load(path)
+    items = post.get("dismissed", []) or []
+    if isinstance(items, str):
+        items = [i.strip() for i in items.splitlines() if i.strip()]
+    return [str(i).lower().strip() for i in items if i]
+
+
 def build_discover():
     sections = []
 
@@ -301,6 +312,7 @@ def build_discover():
 
     return {
         "sections":   sections,
+        "dismissed":  build_dismissed(),
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
 

@@ -12,7 +12,7 @@
 
 <main>
   <p class="page-title">Discover</p>
-  <p class="page-sub">Recent & trending papers from top IS journals · hover a title for details · papers already in your library are hidden</p>
+  <p class="page-sub">Recent & trending papers from top IS journals · hover a title for details · library & dismissed papers hidden</p>
 
   <section>
     <h2>
@@ -44,6 +44,67 @@ async function loadLibraryDois() {
       (data.papers || []).map(p => (p.doi || '').toLowerCase().trim()).filter(Boolean)
     );
   } catch(e) { /* silent — just don't filter */ }
+}
+
+// ── Dismissed papers ──────────────────────────────────
+// Source of truth: _dismissed.md in vault → baked into discover.json on push.
+// Session bridge: localStorage holds papers dismissed this session until vault is updated.
+const DISMISS_KEY = 'phd_dismissed_papers';
+let dismissedVault   = new Set(); // from discover.json (vault)
+let dismissedSession = new Set(); // from localStorage (pending vault update)
+
+function loadSessionDismissed() {
+  try {
+    dismissedSession = new Set(JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]'));
+  } catch(e) { dismissedSession = new Set(); }
+}
+
+function dismissKey(doi, title) {
+  return doi ? doi.toLowerCase().trim() : `title:${(title || '').toLowerCase().trim()}`;
+}
+
+function isPaperHidden(doi, title) {
+  const key = dismissKey(doi, title);
+  return dismissedVault.has(key) || dismissedSession.has(key);
+}
+
+function dismissPaper(doi, title, cardEl) {
+  const key = dismissKey(doi, title);
+  dismissedSession.add(key);
+  localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissedSession]));
+  cardEl.style.transition = 'opacity 0.18s, transform 0.18s';
+  cardEl.style.opacity = '0';
+  cardEl.style.transform = 'translateX(10px)';
+  setTimeout(() => cardEl.remove(), 200);
+  showDismissToast(doi);
+}
+
+function showDismissToast(doi) {
+  const prev = document.getElementById('dismiss-toast');
+  if (prev) prev.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'dismiss-toast';
+  toast.className = 'dismiss-toast';
+  toast.innerHTML = `
+    <div class="dismiss-toast-msg">
+      Hidden this session.
+      ${doi
+        ? `To make permanent, add to <code>_dismissed.md</code> and push:`
+        : `To make permanent, add the title to <code>_dismissed.md</code> and push.`}
+    </div>
+    ${doi ? `<button class="dismiss-toast-copy" data-doi="${escHtml(doi)}">Copy DOI</button>` : ''}
+    <button class="dismiss-toast-close" aria-label="Close">✕</button>
+  `;
+  document.body.appendChild(toast);
+
+  if (doi) {
+    toast.querySelector('.dismiss-toast-copy').addEventListener('click', function() {
+      navigator.clipboard.writeText(doi).then(() => { this.textContent = 'Copied ✓'; });
+    });
+  }
+  toast.querySelector('.dismiss-toast-close').addEventListener('click', () => toast.remove());
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 9000);
 }
 
 // ── Todoist — Save to Readings ───────────────────────
@@ -117,7 +178,6 @@ function discoverCardHtml(p, cardCls) {
     ? `<a class="discover-card-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
     : `<span class="discover-card-title">${escHtml(p.title)}</span>`;
 
-  // URL for → Library button (takes user to library.html with form pre-filled)
   const libParams = new URLSearchParams({
     title:   p.title,
     authors: (p.authors || []).join('; '),
@@ -139,6 +199,9 @@ function discoverCardHtml(p, cardCls) {
         <button class="disc-todoist-btn"
           data-title="${escHtml(p.title)}"
           data-doi="${escHtml(doi)}">+ Readings</button>
+        <button class="disc-dismiss-btn" aria-label="Hide paper"
+          data-doi="${escHtml(doi)}"
+          data-title="${escHtml(p.title)}">✕</button>
       </div>
     </div>`;
 }
@@ -149,6 +212,9 @@ async function loadDiscover() {
   try {
     const data = await fetch(`discover.json?t=${Date.now()}`).then(r => r.json());
     const { sections = [], fetched_at } = data;
+
+    // Populate vault-dismissed set from the built JSON
+    dismissedVault = new Set((data.dismissed || []).map(d => d.toLowerCase().trim()));
 
     if (fetched_at) {
       const d = new Date(fetched_at);
@@ -173,15 +239,16 @@ async function loadDiscover() {
         cardCls   = `disc-${s.type}`;
       }
 
-      // Filter papers already in library (matched by DOI)
       const papers = s.papers.filter(p => {
         const doi = (p.doi || '').toLowerCase().trim();
-        return !doi || !libraryDois.has(doi);
+        if (doi && libraryDois.has(doi)) return false;
+        if (isPaperHidden(p.doi, p.title)) return false;
+        return true;
       });
 
       const cards = papers.length
         ? papers.map(p => discoverCardHtml(p, cardCls)).join('')
-        : '<p class="empty">All found papers are already in your library.</p>';
+        : '<p class="empty">All found papers are already in your library or dismissed.</p>';
 
       return `
         <div class="discover-stream">
@@ -198,6 +265,13 @@ async function loadDiscover() {
       btn.addEventListener('click', () => saveToReadings(btn, btn.dataset.title, btn.dataset.doi));
     });
 
+    area.querySelectorAll('.disc-dismiss-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.discover-card');
+        dismissPaper(btn.dataset.doi, btn.dataset.title, card);
+      });
+    });
+
   } catch(e) {
     area.innerHTML = '<p class="error">Could not load discover.json — push to main to generate it.</p>';
   }
@@ -205,7 +279,7 @@ async function loadDiscover() {
 
 document.getElementById('discover-refresh').addEventListener('click', loadDiscover);
 
-// Load library DOIs first, then render (so filtering is applied on first paint)
+loadSessionDismissed();
 loadLibraryDois().then(loadDiscover);
 </script>
 </body>
