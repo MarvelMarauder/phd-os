@@ -5,7 +5,7 @@ Starts a local server on http://localhost:7891 and opens your browser.
 Shows pending tasks, lets you approve/edit/skip them, run the pipeline,
 and add training examples — all without touching the terminal.
 
-Launch: double-click PhD OS Tasks.app  (built by build_app.sh)
+Launch: double-click PhD OS Review.app  (built by build_app.sh)
 Or run:  python3 scripts/review_server.py
 """
 
@@ -24,7 +24,8 @@ from urllib.parse import urlparse
 CONFIG_FILE   = os.path.expanduser("~/.phd_os_config.json")
 QUEUE_FILE    = os.path.expanduser("~/.phd_os_queue.json")
 REPO_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXAMPLES_FILE = os.path.join(REPO_DIR, "scripts", "model", "examples.md")
+EXAMPLES_FILE    = os.path.join(REPO_DIR, "scripts", "model", "examples.md")
+CORRECTIONS_FILE = os.path.join(REPO_DIR, "scripts", "model", "corrections.md")
 PIPELINE_SCRIPT = os.path.join(REPO_DIR, "scripts", "email_pipeline.py")
 BUILD_MODEL_SCRIPT = os.path.join(REPO_DIR, "scripts", "model", "build_model.sh")
 PORT = 7891
@@ -157,6 +158,17 @@ def dismiss_tasks(task_contents):
     return {"ok": True}
 
 
+def save_correction(task, reason):
+    """Append a dismissed task's reason to corrections.md for model retraining."""
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    line = f"- Don't generate tasks like \"{task}\". Reason: {reason} ({date_str})\n"
+    try:
+        with open(CORRECTIONS_FILE, "a", encoding="utf-8") as f:
+            f.write(line)
+    except Exception as e:
+        log(f"WARNING: Could not save correction: {e}")
+
+
 def run_pipeline_bg():
     global _pipeline_running, _pipeline_log
     with _lock:
@@ -234,6 +246,7 @@ def add_example(data):
         indent=2
     )
 
+    summary_safe = summary.replace('"', '\\"')
     block = f"""
 ## Example — {desc}
 
@@ -245,7 +258,7 @@ BODY:
 
 OUTPUT:
 {{
-  "summary": "{summary.replace('"', '\\"')}",
+  "summary": "{summary_safe}",
   "todos": {todos_json}
 }}
 
@@ -370,6 +383,12 @@ main{max-width:860px;margin:0 auto;padding:28px 20px 80px}
   padding:2px 6px;border-radius:4px;border:none;background:transparent;
   flex-shrink:0;transition:color .1s,background .1s}
 .task-dismiss:hover{color:var(--danger);background:var(--danger-dim)}
+.dismiss-form{display:flex;align-items:center;gap:8px;padding:8px 16px 10px;
+  background:var(--surface2);border-top:1px solid var(--border)}
+.dismiss-reason{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border);
+  border-radius:4px;background:var(--surface);color:var(--text);font-family:inherit;outline:none}
+.dismiss-reason:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.dismiss-reason::placeholder{color:var(--subtle)}
 
 /* ── Approve bar ── */
 .approve-bar{position:fixed;bottom:0;left:0;right:0;
@@ -436,6 +455,7 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 <header>
   <span class="brand">PhD OS</span>
   <span class="header-sub" id="header-sub">Loading…</span>
+  <button class="btn btn-ghost btn-sm" onclick="stopServer()" id="stop-btn">Stop Server</button>
 </header>
 
 <main>
@@ -567,8 +587,9 @@ function switchTab(name) {
 
 async function refreshQueue() {
   const res = await fetch('/api/queue').then(r => r.json());
+  const changed = JSON.stringify(res) !== JSON.stringify(queueData);
   queueData = res;
-  renderQueue();
+  if (changed) renderQueue();
   updateHeader();
 }
 
@@ -708,13 +729,51 @@ async function approveChecked() {
   await refreshQueue();
 }
 
-async function skipTask(bi, ei, ti) {
+function skipTask(bi, ei, ti) {
+  const formId = `dismiss-form-${bi}-${ei}-${ti}`;
+  if (document.getElementById(formId)) { cancelSkip(bi, ei, ti); return; }
+  const row = document.getElementById(`row-${bi}-${ei}-${ti}`);
+  if (!row) return;
+  const form = document.createElement('div');
+  form.className = 'dismiss-form';
+  form.id = formId;
+  form.innerHTML = `
+    <input class="dismiss-reason" id="reason-${bi}-${ei}-${ti}"
+      placeholder="Why skip? Helps train the model (optional)" autocomplete="off">
+    <button class="btn btn-sm btn-danger" onclick="confirmSkip(${bi},${ei},${ti})">Skip</button>
+    <button class="btn btn-sm btn-ghost" onclick="cancelSkip(${bi},${ei},${ti})">Cancel</button>`;
+  row.after(form);
+  const inp = document.getElementById(`reason-${bi}-${ei}-${ti}`);
+  inp.focus();
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmSkip(bi, ei, ti);
+    if (e.key === 'Escape') cancelSkip(bi, ei, ti);
+  });
+}
+
+async function confirmSkip(bi, ei, ti) {
   const todo = queueData.batches[bi]?.emails[ei]?.todos[ti];
   if (!todo) return;
+  const reasonEl = document.getElementById(`reason-${bi}-${ei}-${ti}`);
+  const reason = reasonEl ? reasonEl.value.trim() : '';
   const row = document.getElementById(`row-${bi}-${ei}-${ti}`);
   if (row) row.style.opacity = '.3';
-  await post('/api/dismiss', {task_contents: [todo.task || '']});
+  document.getElementById(`dismiss-form-${bi}-${ei}-${ti}`)?.remove();
+  await post('/api/dismiss', {task_contents: [todo.task || ''], task: todo.task || '', reason});
   await refreshQueue();
+}
+
+function cancelSkip(bi, ei, ti) {
+  document.getElementById(`dismiss-form-${bi}-${ei}-${ti}`)?.remove();
+}
+
+async function stopServer() {
+  const btn = document.getElementById('stop-btn');
+  btn.textContent = 'Stopping…';
+  btn.disabled = true;
+  try { await post('/api/quit', {}); } catch(_) {}
+  btn.textContent = 'Stopped';
+  document.getElementById('header-sub').textContent = 'Server stopped — close this tab.';
 }
 
 async function skipAll() {
@@ -745,7 +804,7 @@ async function runPipeline() {
 async function pollPipeline() {
   const res = await fetch('/api/status').then(r => r.json());
   const logEl = document.getElementById('pipeline-log');
-  logEl.innerHTML = res.log.map(l => escLine(l)).join('\n');
+  logEl.innerHTML = res.log.map(l => escLine(l)).join('\\n');
   logEl.scrollTop = logEl.scrollHeight;
 
   if (!res.running) {
@@ -853,7 +912,7 @@ async function rebuildModel() {
 async function pollModel() {
   const res = await fetch('/api/model-status').then(r => r.json());
   const logEl = document.getElementById('model-log');
-  logEl.innerHTML = res.log.map(l => escLine(l)).join('\n');
+  logEl.innerHTML = res.log.map(l => escLine(l)).join('\\n');
   logEl.scrollTop = logEl.scrollHeight;
   if (!res.running) {
     clearInterval(modelTimer);
@@ -923,13 +982,21 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/approve":
             self._send_json(approve_tasks(body.get("tasks", [])))
         elif path == "/api/dismiss":
-            self._send_json(dismiss_tasks(body.get("task_contents", [])))
+            reason = body.get("reason", "").strip()
+            task   = body.get("task", "").strip()
+            result = dismiss_tasks(body.get("task_contents", []))
+            if reason and task:
+                save_correction(task, reason)
+            self._send_json(result)
         elif path == "/api/run-pipeline":
             self._send_json(run_pipeline_bg())
         elif path == "/api/rebuild-model":
             self._send_json(rebuild_model_bg())
         elif path == "/api/add-example":
             self._send_json(add_example(body))
+        elif path == "/api/quit":
+            self._send_json({"ok": True})
+            threading.Timer(0.3, self.server.shutdown).start()
         else:
             self.send_error(404)
 

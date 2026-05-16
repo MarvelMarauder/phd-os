@@ -319,6 +319,26 @@ def fetch_emails(queue_folder, max_emails, dry_run):
     return emails
 
 
+def deduplicate_by_thread(emails):
+    """
+    When a whole conversation is in the queue at once (e.g. manually moved),
+    keep only the latest message per thread instead of processing every reply.
+    Thread identity = subject with Re:/Fwd: prefixes stripped.
+    Apple Mail returns messages in date order, so the last occurrence wins.
+    """
+    seen = {}
+    for i, email in enumerate(emails):
+        key = re.sub(r'^(re|fwd?|fw):\s*', '', email["subject"], flags=re.IGNORECASE).strip().lower()
+        seen[key] = i
+    kept_indices = set(seen.values())
+    result = [e for i, e in enumerate(emails) if i in kept_indices]
+    dropped = len(emails) - len(result)
+    if dropped:
+        log(f"  Skipped {dropped} earlier message(s) in same thread(s) — keeping latest per subject.")
+        audit("DEDUP", f"dropped={dropped} kept={len(result)}")
+    return result
+
+
 def move_all_to_processed(queue_folder, processed_folder, dry_run):
     if dry_run:
         log("  [dry-run] Would move emails to LLM Processed — skipped.")
@@ -488,6 +508,7 @@ def main():
         if not emails:
             return
 
+        emails = deduplicate_by_thread(emails)
         log(f"Found {len(emails)} email(s) in '{queue_folder}'")
 
         queue        = load_queue()

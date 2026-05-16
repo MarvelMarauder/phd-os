@@ -26,11 +26,28 @@ pairs = re.findall(
     re.DOTALL
 )
 
+# Load corrections (lines starting with "- " in corrections.md)
+corrections = []
+try:
+    with open("scripts/model/corrections.md") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped.startswith("- "):
+                corrections.append(stripped[2:])
+except FileNotFoundError:
+    pass
+
 with open("scripts/model/Modelfile") as f:
     base = f.read().rstrip()
 
 # Remove any existing MESSAGE lines
 base = re.sub(r"\nMESSAGE.*", "", base, flags=re.DOTALL)
+
+# Inject corrections into the SYSTEM block before the closing """
+if corrections:
+    corr_block = "\nLEARNED CORRECTIONS (patterns to avoid, from rejected tasks):\n"
+    corr_block += "\n".join(f"- {c}" for c in corrections)
+    base = base.replace('\n"""', corr_block + '\n"""', 1)
 
 lines = [base, ""]
 for user_text, assistant_text in pairs:
@@ -42,7 +59,7 @@ for user_text, assistant_text in pairs:
 with open("scripts/model/Modelfile.built", "w") as f:
     f.write("\n".join(lines) + "\n")
 
-print(f"Built Modelfile with {len(pairs)} example(s).")
+print(f"Built Modelfile with {len(pairs)} example(s) and {len(corrections)} correction(s).")
 PYEOF
     MODELFILE="$SCRIPT_DIR/Modelfile.built"
 fi
