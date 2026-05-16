@@ -3,11 +3,22 @@ PhD OS Email Pipeline — headless background runner.
 
 Reads emails from Apple Mail 'LLM Queue' via AppleScript,
 parses with a local Ollama model, and appends proposed tasks to the queue file.
-Run automatically via LaunchAgent; review and approve with review_tasks.py.
+
+SCOPE LIMITS (what this script can and cannot do):
+  - Reads ONLY from the folder named in outlook_queue_folder (default: LLM Queue)
+  - Moves ONLY to the folder named in outlook_processed_folder (default: LLM Processed)
+  - Never sends email, never deletes email, never reads other folders
+  - Writes only to: /tmp/phd_* (temp, cleaned up), ~/.phd_os_queue.json, logs
+  - Creates Todoist tasks only after human approval in review_tasks.py
+
+Flags:
+  --dry-run   Parse emails and print proposed tasks; write nothing, move nothing
+  --no-move   Process emails but leave them in LLM Queue (don't move to Processed)
 
 Config: ~/.phd_os_config.json
 Queue:  ~/.phd_os_queue.json
 Log:    /tmp/phd_os_pipeline.log
+Audit:  /tmp/phd_os_audit.log
 """
 
 import json
@@ -15,12 +26,16 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import urllib.request
 from datetime import datetime, timezone
 
 CONFIG_FILE = os.path.expanduser("~/.phd_os_config.json")
 QUEUE_FILE  = os.path.expanduser("~/.phd_os_queue.json")
 LOG_FILE    = "/tmp/phd_os_pipeline.log"
+AUDIT_FILE  = "/tmp/phd_os_audit.log"
+
+DEFAULT_MAX_EMAILS = 20  # safety cap; override with max_emails_per_run in config
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -33,6 +48,8 @@ def load_config():
         return json.load(f)
 
 
+# ── Logging ───────────────────────────────────────────────────────────────────
+
 def log(msg):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {msg}"
@@ -44,12 +61,34 @@ def log(msg):
         pass
 
 
+def audit(event, detail=""):
+    """Separate audit trail: records every read, move, and task-creation action."""
+    ts = datetime.now().isoformat()
+    line = json.dumps({"ts": ts, "event": event, "detail": detail})
+    try:
+        with open(AUDIT_FILE, "a") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
+
+# ── Folder guard ──────────────────────────────────────────────────────────────
+
+def assert_safe_folder_name(name, label):
+    """Refuse to operate on a folder with a suspicious name."""
+    name = name.strip()
+    if not name:
+        log(f"ERROR: {label} folder name is empty — refusing to run.")
+        sys.exit(1)
+    forbidden = {"inbox", "sent", "sent items", "drafts", "deleted items",
+                 "trash", "junk", "junk e-mail", "archive", "all mail", ""}
+    if name.lower() in forbidden:
+        log(f"ERROR: {label} folder name '{name}' looks like a system folder — refusing to run.")
+        log("       Set a custom name in ~/.phd_os_config.json (e.g. 'LLM Queue').")
+        sys.exit(1)
+
+
 # ── AppleScript helpers ───────────────────────────────────────────────────────
-
-def run_as(script):
-    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-    return r.stdout.strip(), r.returncode
-
 
 def run_as_file(path):
     r = subprocess.run(["osascript", path], capture_output=True, text=True)
@@ -59,8 +98,12 @@ def run_as_file(path):
 # ── Apple Mail ────────────────────────────────────────────────────────────────
 
 def mail_running():
-    out, _ = run_as('tell application "System Events" to return (name of processes) contains "Mail"')
-    return out.strip() == "true"
+    r = subprocess.run(
+        ["osascript", "-e",
+         'tell application "System Events" to return (name of processes) contains "Mail"'],
+        capture_output=True, text=True,
+    )
+    return r.stdout.strip() == "true"
 
 
 def ensure_mail_open():
@@ -79,31 +122,43 @@ def ensure_mail_open():
     return False
 
 
-# Fetches all messages from LLM Queue, writes each body to /tmp/phd_email_<id>.txt,
-# saves PDF attachments to /tmp/phd_att_<id>_<name>.pdf,
-# and returns tab-delimited lines: id \t subject \t sender \t date \t pipe-separated-pdf-names
-FETCH_SCRIPT = """\
+def build_fetch_script(queue_folder, max_emails):
+    """
+    Fetches up to max_emails messages from queue_folder ONLY.
+    Writes each body to /tmp/phd_email_<id>.txt (no shell execution inside AppleScript).
+    Returns tab-delimited lines: id \\t subject \\t sender \\t date \\t pipe-separated-pdf-names
+    """
+    # Folder name is validated before this is called; embed it safely.
+    return f"""\
 tell application "Mail"
-    -- Find LLM Queue mailbox across all accounts
+    -- SCOPE GUARD: only operate on the explicitly configured folder
+    set targetName to "{queue_folder}"
     set queueMailbox to missing value
     repeat with acct in every account
         try
-            set queueMailbox to mailbox "LLM Queue" of acct
+            set mb to mailbox targetName of acct
+            set queueMailbox to mb
             exit repeat
         end try
     end repeat
     if queueMailbox is missing value then
-        return "ERROR:LLM Queue not found in any Mail account"
+        return "ERROR:Mailbox '" & targetName & "' not found in any Mail account"
     end if
 
-    set theMessages to messages of queueMailbox
-    if (count of theMessages) is 0 then return "EMPTY"
+    set allMessages to messages of queueMailbox
+    set msgCount to count of allMessages
+    if msgCount is 0 then return "EMPTY"
+
+    -- Cap to max_emails
+    set capCount to {max_emails}
+    if msgCount < capCount then set capCount to msgCount
 
     set output to ""
-    repeat with msg in theMessages
+    repeat with i from 1 to capCount
+        set msg to item i of allMessages
         set msgId to (id of msg) as string
 
-        -- Write body to temp file
+        -- Write body to temp file using AppleScript file I/O only (no shell)
         set bodyPath to "/tmp/phd_email_" & msgId & ".txt"
         try
             set bodyText to content of msg
@@ -112,10 +167,15 @@ tell application "Mail"
             write bodyText to fRef as \xc2\xabclass utf8\xc2\xbb
             close access fRef
         on error
-            do shell script "touch " & quoted form of bodyPath
+            -- If body write fails, create empty file via file I/O only
+            try
+                set fRef to open for access POSIX file bodyPath with write permission
+                set eof of fRef to 0
+                close access fRef
+            end try
         end try
 
-        -- Save any PDF attachments
+        -- Save PDF attachments using AppleScript file I/O only (no shell)
         set pdfNames to ""
         try
             repeat with att in mail attachments of msg
@@ -128,55 +188,74 @@ tell application "Mail"
             end repeat
         end try
 
-        set output to output & msgId & "\t" & (subject of msg) & "\t" \\
-            & (sender of msg) & "\t" & ((date received of msg) as string) \\
-            & "\t" & pdfNames & "\n"
+        set output to output & msgId & "\\t" & (subject of msg) & "\\t" \\
+            & (sender of msg) & "\\t" & ((date received of msg) as string) \\
+            & "\\t" & pdfNames & "\\n"
     end repeat
     return output
 end tell
 """
 
-# Moves all messages from LLM Queue → LLM Processed in one batch.
-# Run after all emails have been processed and queued.
-MOVE_ALL_SCRIPT = """\
+
+def build_move_script(queue_folder, processed_folder):
+    """
+    Moves ALL messages from queue_folder to processed_folder ONLY.
+    Both folder names are validated before this is called.
+    """
+    return f"""\
 tell application "Mail"
-    set queueMailbox to missing value
-    set destMailbox to missing value
+    set srcName to "{queue_folder}"
+    set dstName to "{processed_folder}"
+
+    -- SCOPE GUARD: find both folders before touching anything
+    set srcMailbox to missing value
+    set dstMailbox to missing value
     repeat with acct in every account
         try
-            set queueMailbox to mailbox "LLM Queue" of acct
+            set srcMailbox to mailbox srcName of acct
             try
-                set destMailbox to mailbox "LLM Processed" of acct
+                set dstMailbox to mailbox dstName of acct
             end try
             exit repeat
         end try
     end repeat
-    if queueMailbox is missing value then return "ERROR:no queue"
-    if destMailbox is missing value then return "ERROR:no processed folder — create it in Apple Mail"
-    set theMessages to messages of queueMailbox
+
+    if srcMailbox is missing value then return "ERROR:Source folder not found: " & srcName
+    if dstMailbox is missing value then return "ERROR:Destination folder not found: " & dstName
+
+    -- Only move; never delete
+    set theMessages to messages of srcMailbox
     repeat with msg in theMessages
-        move msg to destMailbox
+        move msg to dstMailbox
     end repeat
     return "OK:" & (count of theMessages) as string
 end tell
 """
 
 
-def fetch_emails(queue_folder):
-    """Read emails from Apple Mail LLM Queue. Returns list of email dicts."""
-    # Write fetch script to temp file to avoid shell quoting issues
-    import tempfile, os
-    script_path = "/tmp/phd_fetch.applescript"
-    with open(script_path, "w") as f:
-        f.write(FETCH_SCRIPT.replace("LLM Queue", queue_folder))
+# ── Email fetching ────────────────────────────────────────────────────────────
 
+# Temp files created this run — cleaned up in finally block
+_temp_files = []
+
+
+def fetch_emails(queue_folder, max_emails, dry_run):
+    script_path = "/tmp/phd_fetch.applescript"
+    _temp_files.append(script_path)
+
+    with open(script_path, "w") as f:
+        f.write(build_fetch_script(queue_folder, max_emails))
+
+    audit("FETCH_START", f"folder={queue_folder} max={max_emails} dry_run={dry_run}")
     raw, code = run_as_file(script_path)
 
     if raw.startswith("ERROR:"):
         log(f"AppleScript error: {raw[6:]}")
+        audit("FETCH_ERROR", raw[6:])
         return []
     if raw == "EMPTY" or not raw.strip():
         log("LLM Queue is empty.")
+        audit("FETCH_EMPTY")
         return []
 
     emails = []
@@ -184,27 +263,25 @@ def fetch_emails(queue_folder):
         parts = line.split("\t")
         if len(parts) < 5:
             continue
-        msg_id, subject, sender, date_str, pdf_names_raw = parts[0], parts[1], parts[2], parts[3], parts[4]
+        msg_id, subject, sender, date_str, pdf_names_raw = (
+            parts[0], parts[1], parts[2], parts[3], parts[4]
+        )
 
-        # Read body from temp file
         body_path = f"/tmp/phd_email_{msg_id}.txt"
+        _temp_files.append(body_path)
         try:
             with open(body_path, encoding="utf-8", errors="replace") as f:
                 body = f.read()[:4000]
-            os.remove(body_path)
         except FileNotFoundError:
             body = ""
 
-        # Read any saved PDF text
         pdf_texts = []
         for pdf_name in filter(None, pdf_names_raw.split("|")):
             att_path = f"/tmp/phd_att_{msg_id}_{pdf_name}"
+            _temp_files.append(att_path)
             pdf_texts.append(extract_pdf_text(att_path))
-            try:
-                os.remove(att_path)
-            except FileNotFoundError:
-                pass
 
+        audit("EMAIL_READ", f"id={msg_id} subject={subject!r} from={sender!r}")
         emails.append({
             "id":      msg_id,
             "subject": subject,
@@ -217,13 +294,30 @@ def fetch_emails(queue_folder):
     return emails
 
 
-def move_all_to_processed(processed_folder):
-    script = MOVE_ALL_SCRIPT.replace("LLM Processed", processed_folder)
+def move_all_to_processed(queue_folder, processed_folder, dry_run):
+    if dry_run:
+        log("  [dry-run] Would move emails to LLM Processed — skipped.")
+        return
     script_path = "/tmp/phd_move.applescript"
+    _temp_files.append(script_path)
     with open(script_path, "w") as f:
-        f.write(script)
+        f.write(build_move_script(queue_folder, processed_folder))
     out, _ = run_as_file(script_path)
-    return out
+    if out.startswith("ERROR:"):
+        log(f"  WARNING: Could not move emails: {out[6:]}")
+        audit("MOVE_ERROR", out[6:])
+    else:
+        count = out.replace("OK:", "")
+        log(f"  Moved {count} email(s) to '{processed_folder}'")
+        audit("MOVE_OK", f"count={count} dest={processed_folder}")
+
+
+def cleanup_temp_files():
+    for path in _temp_files:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
 
 
 # ── PDF extraction ────────────────────────────────────────────────────────────
@@ -231,10 +325,9 @@ def move_all_to_processed(processed_folder):
 def extract_pdf_text(path):
     try:
         from pdfminer.high_level import extract_text
-        text = extract_text(path)
-        return text.strip()[:3000]
+        return extract_text(path).strip()[:3000]
     except ImportError:
-        return "[PDF — install pdfminer.six to extract text: pip3 install pdfminer.six]"
+        return "[PDF — install pdfminer.six: pip3 install pdfminer.six]"
     except Exception as e:
         return f"[PDF extraction failed: {e}]"
 
@@ -286,8 +379,7 @@ def ask_ollama(prompt, model, url):
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
-            data = json.loads(r.read().decode())
-        return data.get("response", "")
+            return json.loads(r.read().decode()).get("response", "")
     except Exception as e:
         log(f"Ollama error: {e}")
         return ""
@@ -298,18 +390,14 @@ def parse_email(email, model, ollama_url):
         f"FROM: {email['from']}",
         f"DATE: {email['date']}",
         f"SUBJECT: {email['subject']}",
-        "",
-        "BODY:",
-        email["body"],
+        "", "BODY:", email["body"],
     ]
     for i, pdf in enumerate(email["pdfs"], 1):
         parts += ["", f"PDF ATTACHMENT {i}:", pdf[:2000]]
 
-    prompt = SYSTEM_PROMPT + "\n\n---\n\n" + "\n".join(parts)
-    raw = ask_ollama(prompt, model, ollama_url)
+    raw = ask_ollama(SYSTEM_PROMPT + "\n\n---\n\n" + "\n".join(parts), model, ollama_url)
     if not raw:
         return None
-
     match = re.search(r"\{.*\}", raw, re.DOTALL)
     if not match:
         return None
@@ -336,64 +424,90 @@ def save_queue(q):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
+    dry_run  = "--dry-run" in sys.argv
+    no_move  = "--no-move" in sys.argv or dry_run
+
     cfg = load_config()
     model            = cfg.get("ollama_model", "llama3.2:3b")
     ollama_url       = cfg.get("ollama_url", "http://localhost:11434/api/generate")
     queue_folder     = cfg.get("outlook_queue_folder", "LLM Queue")
     processed_folder = cfg.get("outlook_processed_folder", "LLM Processed")
+    max_emails       = int(cfg.get("max_emails_per_run", DEFAULT_MAX_EMAILS))
 
-    log(f"Starting pipeline run (model: {model})")
+    # Validate folder names before touching anything
+    assert_safe_folder_name(queue_folder, "queue")
+    assert_safe_folder_name(processed_folder, "processed")
 
-    if not ensure_mail_open():
-        return
+    mode = " [DRY RUN]" if dry_run else (" [NO MOVE]" if no_move else "")
+    log(f"Starting pipeline run (model: {model}){mode}")
+    audit("RUN_START", f"model={model} queue={queue_folder} max={max_emails} dry_run={dry_run}")
 
-    emails = fetch_emails(queue_folder)
-    if not emails:
-        return
+    try:
+        if not ensure_mail_open():
+            return
 
-    log(f"Found {len(emails)} email(s) in '{queue_folder}'")
+        emails = fetch_emails(queue_folder, max_emails, dry_run)
+        if not emails:
+            return
 
-    queue       = load_queue()
-    batch_emails = []
-    parse_errors = 0
+        log(f"Found {len(emails)} email(s) in '{queue_folder}'")
 
-    for email in emails:
-        log(f"  Parsing: {email['subject']}")
-        result = parse_email(email, model, ollama_url)
-        if result is None:
-            log(f"  WARNING: Could not parse LLM response for '{email['subject']}'")
-            parse_errors += 1
-            continue
+        queue        = load_queue()
+        batch_emails = []
+        parse_errors = 0
 
-        batch_emails.append({
-            "subject": email["subject"],
-            "from":    email["from"],
-            "date":    email["date"],
-            "summary": result.get("summary", ""),
-            "todos":   result.get("todos", []),
-        })
-        n = len(result.get("todos", []))
-        log(f"  → {n} task(s) proposed")
+        for email in emails:
+            log(f"  Parsing: {email['subject']}")
+            result = parse_email(email, model, ollama_url)
+            if result is None:
+                log(f"  WARNING: Could not parse LLM response for '{email['subject']}'")
+                audit("PARSE_ERROR", f"subject={email['subject']!r}")
+                parse_errors += 1
+                continue
 
-    # Move all emails to Processed in one batch
-    move_result = move_all_to_processed(processed_folder)
-    if move_result.startswith("ERROR:"):
-        log(f"  WARNING: Could not move emails: {move_result[6:]}")
-    else:
-        log(f"  Moved emails to '{processed_folder}'")
+            todos = result.get("todos", [])
+            batch_emails.append({
+                "subject": email["subject"],
+                "from":    email["from"],
+                "date":    email["date"],
+                "summary": result.get("summary", ""),
+                "todos":   todos,
+            })
+            log(f"  → {len(todos)} task(s) proposed")
+            audit("PARSE_OK", f"subject={email['subject']!r} todos={len(todos)}")
 
-    if batch_emails:
-        queue["batches"].append({
-            "run_at": datetime.now(timezone.utc).isoformat(),
-            "emails": batch_emails,
-        })
-        save_queue(queue)
-        total = sum(len(e["todos"]) for e in batch_emails)
-        log(f"Queued {total} task(s) across {len(batch_emails)} email(s). Run review_tasks.py to approve.")
-    elif parse_errors:
-        log(f"No tasks queued ({parse_errors} parse error(s)).")
-    else:
-        log("No tasks generated this run.")
+        # Move emails (unless suppressed)
+        if not no_move:
+            move_all_to_processed(queue_folder, processed_folder, dry_run=False)
+        else:
+            log(f"  Leaving emails in '{queue_folder}' (--no-move or --dry-run).")
+
+        # Write to queue (unless dry run)
+        if batch_emails and not dry_run:
+            queue["batches"].append({
+                "run_at": datetime.now(timezone.utc).isoformat(),
+                "emails": batch_emails,
+            })
+            save_queue(queue)
+            total = sum(len(e["todos"]) for e in batch_emails)
+            log(f"Queued {total} task(s) across {len(batch_emails)} email(s). Run review_tasks.py to approve.")
+            audit("QUEUE_WRITTEN", f"total_todos={total}")
+        elif dry_run:
+            # Print proposed tasks for inspection
+            print("\n── Dry run results ──────────────────────────────────")
+            for e in batch_emails:
+                print(f"\n  From: {e['from']}\n  Re:   {e['subject']}")
+                print(f"  Summary: {e['summary']}")
+                for t in e["todos"]:
+                    print(f"    • [{t.get('priority','?')}] {t.get('task','')}  ({t.get('due_suggestion','')})")
+            print("\n── No files written, no emails moved ────────────────")
+        else:
+            log(f"No tasks generated ({parse_errors} parse error(s))." if parse_errors else "No tasks generated.")
+
+        audit("RUN_END", "ok")
+
+    finally:
+        cleanup_temp_files()
 
 
 if __name__ == "__main__":

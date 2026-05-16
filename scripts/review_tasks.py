@@ -117,6 +117,11 @@ def review_queue(queue, projects, token):
     )
     print(f"\nFound {total_todos} proposed task(s) across {len(batches)} batch run(s).\n")
 
+    # Pre-flight summary so you know exactly what might get created before you decide anything
+    total_proposed = sum(len(e["todos"]) for b in batches for e in b.get("emails", []))
+    print(f"  {len(batches)} batch run(s) · {total_proposed} proposed task(s) total")
+    print(f"  You will approve each task individually before anything is sent to Todoist.\n")
+
     # Collect all approved tasks first, then create at the end
     # (so a crash mid-review doesn't partially create tasks)
     approved = []
@@ -186,13 +191,20 @@ def review_queue(queue, projects, token):
         if emails_with_remaining_todos:
             batches_to_keep.append({**batch, "emails": emails_with_remaining_todos})
 
-    # Summary before creating tasks
+    # Final confirmation before any Todoist writes
     if not approved:
         print("\nNo tasks approved.")
     else:
         print(f"\n{'='*60}")
-        print(f"Creating {len(approved)} task(s) in Todoist…")
+        print(f"Ready to create {len(approved)} task(s) in Todoist:")
+        for task_text, priority, hint, due in approved:
+            print(f"  • {task_text}  [{hint}]  {due}")
         print(f"{'='*60}")
+        go = input("Create these tasks now? [y/n] ").strip().lower()
+        if go != "y":
+            print("Cancelled — tasks remain in queue for next time.")
+            return queue
+        print()
         for task_text, priority, hint, due in approved:
             project_id = projects.get(hint) or projects.get("inbox")
             try:
