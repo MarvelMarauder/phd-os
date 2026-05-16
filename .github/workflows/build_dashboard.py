@@ -23,12 +23,12 @@ DISCOVER_QUERIES = [
     {
         "stream": "ai-companions",
         "label":  "AI Companions",
-        "query":  "(AI companion) OR (social robot) OR (human-AI relationship)",
+        "query":  "AI companion",          # keep short — S2 uses AND for every word
     },
     {
         "stream": "judgy-ai",
         "label":  "JudgyAI",
-        "query":  "(AI judgment) OR (AI evaluation)",
+        "query":  "algorithmic judgment",
     },
 ]
 
@@ -87,6 +87,7 @@ def build_lit():
             "year":           post.get("year") or None,
             "doi":            post.get("doi", ""),
             "stream":         post.get("stream", ""),
+            "topic":          post.get("topic", ""),
             "related_papers": related,
             "thoughts":       post.get("thoughts", ""),
             "snippet":        snippet,

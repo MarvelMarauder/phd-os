@@ -1235,6 +1235,17 @@ select.form-input { cursor: pointer; }
 .lit-stream-badge.stream-jai { background: var(--purple-dim); color: var(--purple); }
 .lit-stream-badge.stream-gis { background: var(--accent-dim); color: var(--accent); }
 
+.lit-topic-pill {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-style: italic;
+}
+
 .lit-meta {
   font-size: 11px;
   color: var(--text-subtle);

@@ -52,8 +52,8 @@
           </div>
         </div>
         <div class="form-field">
-          <label class="form-label">Authors <span class="form-hint">(comma-separated)</span></label>
-          <input class="form-input" type="text" id="f-authors">
+          <label class="form-label">Authors <span class="form-hint">(semicolon-separated: Last, First; Last2, First2)</span></label>
+          <input class="form-input" type="text" id="f-authors" placeholder="Smith, John; Doe, Jane">
         </div>
         <div class="form-row">
           <div class="form-field" style="flex:2">
@@ -69,6 +69,10 @@
               <option value="general-is">General IS</option>
             </select>
           </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Topic <span class="form-hint">(specific concept — e.g. social presence, trust, anthropomorphism)</span></label>
+          <input class="form-input" type="text" id="f-topic" placeholder="anthropomorphism">
         </div>
         <div class="form-field">
           <label class="form-label">Related working papers</label>
@@ -144,7 +148,7 @@ function discoverCardHtml(p, streamCls) {
       ${abstract ? `<p class="discover-card-abstract">${abstract}</p>` : ''}
       <button class="discover-add-btn"
         data-title="${escHtml(p.title)}"
-        data-authors="${escHtml((p.authors||[]).map(a=>a.name).join(', '))}"
+        data-authors="${escHtml((p.authors||[]).map(a=>a.name).join('; '))}"
         data-journal="${escHtml(venue)}"
         data-year="${escHtml(String(year))}"
         data-doi="${escHtml(doi)}">Add to library →</button>
@@ -275,11 +279,12 @@ async function doiLookup() {
   }
 }
 
-function prefillForm({ title, authors, journal, year, doi }) {
+function prefillForm({ title, authors, journal, year, doi, topic = '' }) {
   document.getElementById('f-title').value   = title;
   document.getElementById('f-authors').value = authors;
   document.getElementById('f-journal').value = journal;
   document.getElementById('f-year').value    = year;
+  document.getElementById('f-topic').value   = topic;
   document.getElementById('f-doi-display').textContent = doi ? `DOI: ${doi}` : '';
   activeDoi = doi || '';
   renderRelatedCheckboxes([]);
@@ -299,10 +304,11 @@ document.getElementById('f-thoughts').addEventListener('input', function() {
 document.getElementById('doi-copy-btn').addEventListener('click', () => {
   const title   = document.getElementById('f-title').value.trim();
   const authors = document.getElementById('f-authors').value.trim()
-                    .split(/[,;]/).map(s => s.trim()).filter(Boolean);
+                    .split(';').map(s => s.trim()).filter(Boolean);
   const journal = document.getElementById('f-journal').value.trim();
   const year    = document.getElementById('f-year').value.trim();
   const stream  = document.getElementById('f-stream').value;
+  const topic   = document.getElementById('f-topic').value.trim();
   const thoughts= document.getElementById('f-thoughts').value.trim();
   const related = [...document.querySelectorAll('#f-related input:checked')].map(c => c.value);
 
@@ -318,7 +324,8 @@ title: "${title.replace(/"/g, '\\"')}"${authorsYaml}
 journal: "${journal}"
 year: ${year || 'null'}
 doi: ${activeDoi || 'null'}
-stream: ${stream || 'null'}${relatedYaml}
+stream: ${stream || 'null'}
+topic: "${topic.replace(/"/g, '\\"')}"${relatedYaml}
 thoughts: "${thoughts.replace(/"/g, '\\"')}"
 ---
 `;
@@ -389,6 +396,7 @@ function renderLib(papers) {
       <div class="lit-card">
         <div class="lit-card-top">
           ${streamPill(p.stream)}
+          ${p.topic ? `<span class="lit-topic-pill">${escHtml(p.topic)}</span>` : ''}
           <span class="lit-meta">${escHtml(p.journal || '')}${p.journal && p.year ? ' · ' : ''}${p.year || ''}</span>
         </div>
         ${titleHtml}

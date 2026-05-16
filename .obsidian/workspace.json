@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "500 Recharge/Recharge List.md",
+                "file": "100 Research/Source Papers/_template.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Recharge List"
+              "title": "_template"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "500 Recharge/Recharge List.md",
+                "file": "100 Research/Source Papers/_template.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Recharge List"
+              "title": "Backlinks for _template"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "500 Recharge/Recharge List.md",
+                "file": "100 Research/Source Papers/_template.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Recharge List"
+              "title": "Outgoing links from _template"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "500 Recharge/Recharge List.md",
+                "file": "100 Research/Source Papers/_template.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Recharge List"
+              "title": "Outline of _template"
             }
           }
         ]
@@ -188,8 +188,10 @@
   },
   "active": "5f00b1d136c6608c",
   "lastOpenFiles": [
-    "site/lit.html",
+    "100 Research/Source Papers/Teacher's Corner - Testing Measurement Invariance of Second-Order Factor Models.md",
     "100 Research/Source Papers/_template.md",
+    "500 Recharge/Recharge List.md",
+    "site/lit.html",
     "site/books.html",
     "400 Personal/Books/_template.md",
     "400 Personal/Books",
@@ -201,7 +203,6 @@
     "_site/papers.html",
     "_site/style.css",
     "_site/projects.html",
-    "_site/index.html",
     "000 Dashboard/Home.md",
     "100 Research/My Papers/Self-Verification and JudgyAI.md",
     "100 Research/My Papers/Self-Compassion and JudgyAI.md",
@@ -211,7 +212,6 @@
     "100 Research/My Papers/AIC Disclosure.md",
     "100 Research/My Papers/AI Companion Commentary.md",
     "900 Templates/Template - Daily Note.md",
-    "500 Recharge/Recharge List.md",
     "400 Personal/Personal.md",
     "300 Church/Speaking Assignments/Speaking Assignments.md",
     "200 PhD Program/PhD Milestones.md",

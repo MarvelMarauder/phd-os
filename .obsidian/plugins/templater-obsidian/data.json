@@ -1,6 +1,6 @@
 {
   "command_timeout": 5,
-  "templates_folder": "900 Templates",
+  "templates_folder": "",
   "templates_pairs": [
     [
       "",
@@ -17,10 +17,6 @@
     {
       "folder": "100 Research/My Papers",
       "template": "900 Templates/Template - My Paper.md"
-    },
-    {
-      "folder": "100 Research/Source Papers",
-      "template": "900 Templates/Template - Source Paper.md"
     }
   ],
   "enable_file_templates": false,

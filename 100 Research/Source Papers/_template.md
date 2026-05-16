@@ -7,6 +7,7 @@ journal: Journal / Venue Name
 year: 2024
 doi: 10.XXXX/XXXXX
 stream: ai-companions
+topic: e.g. social presence, trust, anthropomorphism, fairness
 related-papers: []
 thoughts: One-sentence take on why this paper matters.
 ---
