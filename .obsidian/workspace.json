@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "100 Research/Source Papers/Using multitrait–multimethod analyses in testing for evidence of construct validity.md",
+                "file": "000 Dashboard/Home.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Using multitrait–multimethod analyses in testing for evidence of construct validity"
+              "title": "Home"
             }
           }
         ]
@@ -186,8 +186,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "31b7ab9bd353d7c0",
+  "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "100 Research/Source Papers/Using multitrait–multimethod analyses in testing for evidence of construct validity.md",
     "scripts/email_pipeline.py.tmp.63879.97cd1e74bf60",
     "scripts/email_pipeline.py.tmp.63879.59f2c15ae737",
     "scripts/email_pipeline.py.tmp.63879.33588f81b243",
@@ -222,7 +223,6 @@
     "scripts/model/Modelfile.built",
     "site/docs.html",
     "scripts/setup.sh",
-    "scripts/com.phd-os.pipeline.plist",
-    "scripts/model/build_model.sh"
+    "scripts/com.phd-os.pipeline.plist"
   ]
 }
