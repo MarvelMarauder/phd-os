@@ -315,19 +315,14 @@ function renderLibFilters(papers) {
     </div>`;
   }
 
-  // Keyword row — top keywords by frequency
-  const kwCount = {};
-  papers.forEach(p => (p.keywords || []).forEach(k => { kwCount[k] = (kwCount[k] || 0) + 1; }));
-  const topKws = Object.entries(kwCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([k]) => k);
-  if (topKws.length) {
-    html += `<div class="lib-filter-row">
-      <span class="lib-filter-label">Keyword</span>
-      ${topKws.map(k => `<button class="rc-chip rc-chip-sm${k === libFilters.keyword ? ' active' : ''}" data-type="keyword" data-key="${escHtml(k)}">${escHtml(k)}</button>`).join('')}
-    </div>`;
-  }
+  // Keyword row — live text search
+  html += `<div class="lib-filter-row">
+    <span class="lib-filter-label">Keyword</span>
+    <input class="lib-kw-search" id="lib-kw-input" type="text"
+           placeholder="type to filter by keyword…"
+           autocomplete="off" spellcheck="false"
+           value="${escHtml(libFilters.keyword || '')}">
+  </div>`;
 
   // Related-papers row
   const relSet = new Set();
@@ -344,6 +339,7 @@ function renderLibFilters(papers) {
   }
 
   el.innerHTML = html;
+
   el.querySelectorAll('.rc-chip').forEach(btn => {
     btn.addEventListener('click', () => {
       const type = btn.dataset.type;
@@ -353,12 +349,21 @@ function renderLibFilters(papers) {
       renderLib(papers);
     });
   });
+
+  const kwInput = document.getElementById('lib-kw-input');
+  if (kwInput) {
+    kwInput.addEventListener('input', () => {
+      libFilters.keyword = kwInput.value.trim() || null;
+      renderLib(papers);
+    });
+  }
 }
 
 function applyLibFilters(papers) {
+  const kwLower = libFilters.keyword ? libFilters.keyword.toLowerCase() : null;
   return papers.filter(p => {
-    if (libFilters.stream  && p.stream !== libFilters.stream) return false;
-    if (libFilters.keyword && !(p.keywords || []).includes(libFilters.keyword)) return false;
+    if (libFilters.stream && p.stream !== libFilters.stream) return false;
+    if (kwLower && !(p.keywords || []).some(k => k.toLowerCase().includes(kwLower))) return false;
     if (libFilters.related && !(p.related_papers || []).includes(libFilters.related)) return false;
     return true;
   });
@@ -384,31 +389,14 @@ function renderLib(papers) {
       ? `<a class="lit-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
       : `<span class="lit-title">${escHtml(p.title)}</span>`;
     const authorsStr = (p.authors || []).slice(0, 3).join('; ') + ((p.authors||[]).length > 3 ? ' et al.' : '');
-    const kws = (p.keywords || []).slice(0, 5);
-    const kwHtml = kws.length
-      ? `<div class="lit-keywords">${kws.map(k => `<span class="lit-kw-chip">${escHtml(k)}</span>`).join('')}</div>`
-      : '';
-    const related = (p.related_papers || []);
-    const relatedHtml = related.length
-      ? `<div class="lit-related">
-           <span class="lit-related-label">Related to:</span>
-           ${related.map(r => `<span class="lit-related-chip">${escHtml(r)}</span>`).join('')}
-         </div>`
-      : '';
 
     return `
       <div class="lit-card">
         <div class="lit-card-top">
           ${streamPill(p.stream)}
-          ${p.topic ? `<span class="lit-topic-pill">${escHtml(p.topic)}</span>` : ''}
-          <span class="lit-meta">${escHtml(p.journal || '')}${p.journal && p.year ? ' · ' : ''}${p.year || ''}</span>
+          ${titleHtml}
         </div>
-        ${titleHtml}
         ${authorsStr ? `<div class="lit-authors">${escHtml(authorsStr)}</div>` : ''}
-        ${p.thoughts ? `<p class="lit-thoughts">${escHtml(p.thoughts)}</p>` : ''}
-        ${p.snippet  ? `<p class="lit-snippet">${escHtml(p.snippet)}</p>`   : ''}
-        ${kwHtml}
-        ${relatedHtml}
       </div>`;
   }).join('');
 }
