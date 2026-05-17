@@ -1547,6 +1547,90 @@ a.lit-title:hover { text-decoration: underline; color: var(--blue); }
   a.lit-title:hover { color: #80b0f0; }
 }
 
+/* ── Calendar events ─────────────────────────────────── */
+.event-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.event-item:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.event-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 58px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.event-time.all-day {
+  color: var(--text-subtle);
+  font-weight: 600;
+  font-style: italic;
+}
+
+.event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.event-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 450;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid color-mix(in srgb, var(--blue) 20%, var(--border));
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.gcal-connect-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.gcal-connect-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 /* ── Loading / empty / error states ─────────────────── */
 .loading { font-size: 13px; color: var(--text-muted); padding: 8px 0; }
 .empty   { font-size: 13px; color: var(--text-subtle); font-style: italic; padding: 8px 0; }

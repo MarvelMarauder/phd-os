@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PhD OS</title>
   <link rel="stylesheet" href="style.css">
+  <script async defer src="https://accounts.google.com/gsi/client" onload="gcalInit()"></script>
 </head>
 <body>
 
@@ -13,6 +14,13 @@
 <main>
   <p class="page-title" id="date-display"></p>
   <p class="page-sub" id="day-display"></p>
+
+  <section id="calendar-section">
+    <h2>Today's Meetings</h2>
+    <ul class="event-list" id="event-list">
+      <li class="loading">Loading meetings…</li>
+    </ul>
+  </section>
 
   <section id="tasks-section">
     <h2>Today</h2>
@@ -118,6 +126,65 @@ async function loadPapers() {
   }
 }
 
+// ── Calendar ──────────────────────────────────────────
+function renderEvents(events) {
+  const el = document.getElementById('event-list');
+  if (!events.length) {
+    el.innerHTML = '<li class="empty">No meetings today.</li>';
+    return;
+  }
+  el.innerHTML = events.map(e => {
+    const allDay = !e.start.dateTime;
+    const timeStr = allDay
+      ? 'All day'
+      : new Date(e.start.dateTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const badge = e.hangoutLink
+      ? '<span class="event-badge">Meet</span>'
+      : (e.location || '').toLowerCase().includes('zoom.us')
+        ? '<span class="event-badge">Zoom</span>'
+        : '';
+    return `
+      <li class="event-item">
+        <span class="event-time${allDay ? ' all-day' : ''}">${escHtml(timeStr)}</span>
+        <span class="event-dot" style="background:${escHtml(e._calColor)}"></span>
+        <span class="event-name">${escHtml(e.summary || '(no title)')}</span>
+        ${badge}
+      </li>`;
+  }).join('');
+}
+
+async function loadCalendar() {
+  const el = document.getElementById('event-list');
+  if (!GCAL_CLIENT_ID) {
+    el.innerHTML = '<li class="empty">Add your Google Client ID to <code>app.js</code> to enable calendar.</li>';
+    return;
+  }
+  if (!gcalTokenValid()) {
+    el.innerHTML = '<li style="padding:4px 0"><button class="gcal-connect-btn" id="gcal-btn">Connect Google Calendar</button></li>';
+    document.getElementById('gcal-btn').addEventListener('click', () => {
+      requestGcalToken(resp => {
+        if (resp.access_token) loadCalendar();
+        else el.innerHTML = '<li class="error">Google sign-in failed or was cancelled.</li>';
+      });
+    });
+    return;
+  }
+  el.innerHTML = '<li class="loading">Loading meetings…</li>';
+  try {
+    const events = await fetchTodayEvents();
+    renderEvents(events);
+  } catch(e) {
+    if (e.message === 'gcal_expired') {
+      el.innerHTML = '<li style="padding:4px 0"><button class="gcal-connect-btn" id="gcal-btn">Reconnect Google Calendar</button></li>';
+      document.getElementById('gcal-btn').addEventListener('click', () => {
+        requestGcalToken(resp => { if (resp.access_token) loadCalendar(); });
+      });
+    } else {
+      el.innerHTML = `<li class="error">Calendar error: ${escHtml(e.message)}</li>`;
+    }
+  }
+}
+
 // ── Init ──────────────────────────────────────────────
 if (!hasToken()) {
   document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
@@ -126,6 +193,7 @@ if (!hasToken()) {
 
 loadTasks();
 loadPapers();
+loadCalendar();
 </script>
 </body>
 </html>

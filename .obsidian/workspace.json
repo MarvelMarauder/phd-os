@@ -186,8 +186,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "e7a7b303c61786dc",
+  "active": "31b7ab9bd353d7c0",
   "lastOpenFiles": [
+    "site/index.html.tmp.63879.4cdc03ab94de",
     "100 Research/Source Papers/The Concept of Validity..md",
     "100 Research/Source Papers/The AI‐IP Minimizing the guesswork of personality scale item development through artificial intellig.md",
     "100 Research/Source Papers/Ten frequently asked questions about latent class analysis..md",
@@ -213,7 +214,6 @@
     "100 Research/Source Papers/Content validation guidelines Evaluation criteria for definitional correspondence and definitional d.md",
     "100 Research/Source Papers/Confirmatory factor analysis for applied research.md",
     "100 Research/Source Papers/Choosing Prediction Over Explanation in Psychology Lessons From Machine Learning.md",
-    "100 Research/Source Papers/Book Review Psychometric theory (3rd ed.).md",
     "scripts/build_app.sh",
     "scripts/review_server.py",
     "scripts/model/Modelfile.built",

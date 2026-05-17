@@ -306,6 +306,84 @@ function renderTaskList(containerId, tasks, allTasks, showDue, reminderMap) {
   });
 }
 
+// ── Google Calendar ───────────────────────────────────
+// Paste your OAuth Client ID here after setting up Google Cloud Console:
+const GCAL_CLIENT_ID = '955783464155-8tjdfucclo0hlbv57s2oti415a094dln.apps.googleusercontent.com';
+
+let _gcalTokenClient = null;
+let _gcalCb = null;
+
+function getGcalAuth() {
+  try { return JSON.parse(localStorage.getItem('phd_gcal_auth') || 'null'); } catch { return null; }
+}
+function setGcalAuth(token, expiresIn) {
+  localStorage.setItem('phd_gcal_auth', JSON.stringify({
+    access_token: token,
+    expires_at: Date.now() + (Number(expiresIn) - 60) * 1000
+  }));
+}
+function clearGcalAuth() { localStorage.removeItem('phd_gcal_auth'); }
+function gcalTokenValid() {
+  const a = getGcalAuth();
+  return !!(a && a.access_token && a.expires_at > Date.now());
+}
+function gcalAccessToken() { return (getGcalAuth() || {}).access_token || null; }
+
+// Called via onload on the GIS <script> tag
+function gcalInit() {
+  if (!GCAL_CLIENT_ID || !window.google?.accounts?.oauth2) return;
+  _gcalTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    callback: resp => {
+      if (resp.access_token) setGcalAuth(resp.access_token, resp.expires_in || 3600);
+      if (_gcalCb) { _gcalCb(resp); _gcalCb = null; }
+    }
+  });
+}
+
+function requestGcalToken(callback) {
+  _gcalCb = callback;
+  if (!_gcalTokenClient) gcalInit();
+  if (_gcalTokenClient) _gcalTokenClient.requestAccessToken();
+  else callback({ error: 'gis_not_ready' });
+}
+
+async function gcalGet(url) {
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${gcalAccessToken()}` } });
+  if (r.status === 401) { clearGcalAuth(); throw new Error('gcal_expired'); }
+  if (!r.ok) throw new Error(`gcal_${r.status}`);
+  return r.json();
+}
+
+async function fetchTodayEvents() {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const end   = new Date(start.getTime() + 86400000);
+
+  const calList = await gcalGet('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=50');
+  const cals = (calList.items || []).filter(c => c.selected !== false);
+
+  const settled = await Promise.allSettled(
+    cals.map(cal =>
+      gcalGet(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events` +
+        `?timeMin=${encodeURIComponent(start.toISOString())}&timeMax=${encodeURIComponent(end.toISOString())}` +
+        `&singleEvents=true&orderBy=startTime&maxResults=50`
+      ).then(data => (data.items || []).map(e => ({ ...e, _calColor: cal.backgroundColor || '#4285f4' })))
+    )
+  );
+
+  const events = [];
+  for (const r of settled) if (r.status === 'fulfilled') events.push(...r.value);
+  events.sort((a, b) => {
+    const at = a.start.dateTime || a.start.date || '';
+    const bt = b.start.dateTime || b.start.date || '';
+    return at < bt ? -1 : at > bt ? 1 : 0;
+  });
+  return events;
+}
+
 // ── Site footer (auto-inserted on every page) ─────────
 function footerHTML() {
   return `
