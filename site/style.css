@@ -1744,6 +1744,204 @@ a.lit-title:hover { text-decoration: underline; color: var(--blue); }
 }
 .footer-links a:hover { color: var(--text-muted); }
 
+/* ── Church page ─────────────────────────────────────── */
+.church-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+@media (max-width: 500px) { .church-grid { grid-template-columns: 1fr; } }
+
+.contact-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.12s, border-color 0.12s;
+}
+.contact-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+.contact-card.pinned { border-left: 3px solid var(--brand); }
+
+.contact-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.contact-card-actions {
+  display: flex;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.contact-card:hover .contact-card-actions,
+.contact-card:focus-within .contact-card-actions { opacity: 1; }
+@media (hover: none) { .contact-card-actions { opacity: 1; } }
+
+.contact-action-btn {
+  font-size: 13px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 5px;
+  border: none;
+  background: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.1s, background 0.1s;
+}
+.contact-action-btn:hover { color: var(--text); background: var(--bg); }
+.contact-action-btn.del:hover { color: var(--danger); }
+
+.contact-name { font-size: 13.5px; font-weight: 600; }
+.contact-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brand);
+  margin-top: 3px;
+}
+.contact-details { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 5px; }
+.contact-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color 0.1s;
+}
+.contact-detail:hover { color: var(--blue); text-decoration: underline; }
+.contact-note { font-size: 11.5px; color: var(--text-subtle); margin-top: 5px; line-height: 1.45; }
+
+.church-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-subtle);
+  margin-bottom: 6px;
+}
+
+.meeting-body { padding: 14px 16px; }
+.meeting-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.meeting-attendees { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+.meeting-note { font-size: 11.5px; color: var(--text-subtle); margin-top: 10px; line-height: 1.5; font-style: italic; }
+
+.church-checklist { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; margin: 0; }
+.church-checklist li { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+.zoom-btn {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid color-mix(in srgb, var(--blue) 20%, var(--border));
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  transition: opacity 0.12s;
+  white-space: nowrap;
+}
+.zoom-btn:hover { opacity: 0.8; }
+.zoom-btn.unset {
+  background: var(--bg);
+  color: var(--text-subtle);
+  border-color: var(--border);
+  cursor: default;
+  opacity: 0.6;
+}
+
+.private-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 2px;
+  box-shadow: var(--shadow-sm);
+}
+.private-label { font-size: 12px; color: var(--text-muted); font-weight: 500; flex-shrink: 0; width: 155px; }
+.private-val {
+  flex: 1;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.private-val.masked { color: var(--text-subtle); letter-spacing: 0.1em; }
+.private-val.unset  { color: var(--text-subtle); font-style: italic; font-family: inherit; letter-spacing: 0; }
+.private-actions { display: flex; gap: 3px; flex-shrink: 0; }
+.priv-btn {
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+}
+.priv-btn:hover { background: var(--bg); color: var(--text); border-color: var(--border-strong); }
+
+.resource-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+.resource-name { flex: 1; font-size: 13.5px; font-weight: 500; }
+.resource-link {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 11px;
+  border-radius: 20px;
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid color-mix(in srgb, var(--blue) 20%, var(--border));
+  text-decoration: none;
+  transition: opacity 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.resource-link:hover { opacity: 0.8; }
+.resource-link.unset {
+  background: var(--bg);
+  color: var(--text-subtle);
+  border-color: var(--border);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.modal-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-subtle);
+  margin: 16px 0 5px;
+}
+.modal-section-label:first-child { margin-top: 0; }
+
 /* ── Docs page ───────────────────────────────────────── */
 .docs-layout {
   display: grid;

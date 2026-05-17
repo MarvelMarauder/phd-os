@@ -12,45 +12,352 @@
 
 <main>
   <p class="page-title">Church</p>
-  <p class="page-sub">Stake secretary responsibilities</p>
+  <p class="page-sub">Stake Executive Secretary</p>
 
+  <!-- ── Key Contacts ──────────────────────────────────── -->
   <section>
-    <h2>Recurring Commitments</h2>
-    <ul class="commitment-list">
-      <li class="commitment-item">
-        <span class="commitment-name">Presidency meeting agenda</span>
-        <span class="commitment-freq">Weekly</span>
+    <h2>Contacts
+      <button class="btn btn-ghost" id="add-contact-btn"
+        style="font-size:11px;padding:3px 12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px">
+        + Add
+      </button>
+    </h2>
+    <div class="church-grid" id="contacts-container"></div>
+  </section>
+
+  <!-- ── Meetings ──────────────────────────────────────── -->
+  <section>
+    <h2>Meetings</h2>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Presidency Meeting</span>
+        <span class="rc-accordion-count">Thu · 6:30 PM · Institute</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="meeting-meta">
+          <span class="commitment-freq">Weekly</span>
+          <button class="zoom-btn" data-zoom-key="presidency_zoom">Join Zoom</button>
+        </div>
+        <div class="church-label">Attendees</div>
+        <p class="meeting-attendees">Stake Presidency + Brother Woolwine</p>
+        <div class="church-label">Preparation</div>
+        <ol class="church-checklist">
+          <li>Assign prayers / spiritual thought / handbook training (rotation)</li>
+          <li>Update callings business chart — counselors send updates; Pres. Warnick also updates independently</li>
+          <li>Update Discussion Items with any known critical topics (let Pres. Warnick set final order)</li>
+          <li>Action Items: update temple recommend interview list by unit (LCR → Membership → Recommend Activations)</li>
+          <li>Action Items: maintain running list of priesthood ratifications for Stake Conference / Priesthood Meeting</li>
+          <li>Update Calendar section with major events for next 1–2 months</li>
+          <li>During the meeting: make a copy of agenda and start next week's draft</li>
+          <li>Print 3 copies (Kiss, Montagna, self) — Warnick brings his own; Woolwine declines paper</li>
+        </ol>
+        <p class="meeting-note">Pres. Warnick updates and sends the approved agenda Mon. evening. Update callings and calendar Sun. evening or Mon. morning.</p>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">High Council Meeting</span>
+        <span class="rc-accordion-count">1st Tue · 7:00 PM · Stake Center</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="meeting-meta">
+          <span class="commitment-freq">Monthly</span>
+          <button class="zoom-btn" data-zoom-key="stake_zoom_link">Join Zoom</button>
+        </div>
+        <div class="church-label">Attendees</div>
+        <p class="meeting-attendees">Stake Presidency + all High Council members</p>
+        <div class="church-label">Preparation</div>
+        <ol class="church-checklist">
+          <li>Plan topics at the presidency meeting the week before</li>
+          <li>Assign prayers / spiritual thought / handbook training</li>
+          <li>Send draft agenda to Pres. Warnick by Friday</li>
+          <li>Once approved, send final agenda + reminder to all attendees</li>
+          <li>Bring printed agenda copies for HC members</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Council Meeting</span>
+        <span class="rc-accordion-count">3rd Sun · 3:00 PM · Stake Center</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="meeting-meta">
+          <span class="commitment-freq">Monthly</span>
+          <button class="zoom-btn" data-zoom-key="stake_zoom_link">Join Zoom</button>
+        </div>
+        <div class="church-label">Attendees</div>
+        <p class="meeting-attendees">Stake Presidency · All HC members · Stake RS President · Stake YW President · Stake Primary President · Stake Communication Director · Stake Welfare &amp; Self-Reliance Specialist · YSA Committee Co-chairs</p>
+        <div class="church-label">Preparation</div>
+        <ol class="church-checklist">
+          <li>Plan topics at the presidency meeting the week before</li>
+          <li>Assign prayers / spiritual thought / handbook training</li>
+          <li>Send draft agenda to Pres. Warnick by Friday</li>
+          <li>Once approved, send final agenda + reminder to all attendees</li>
+          <li>Bring printed agenda copies for council members</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Adult Leadership Committee</span>
+        <span class="rc-accordion-count">Jan · Apr · Jul · Oct · Tue 7:00 PM</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="meeting-meta">
+          <span class="commitment-freq">Quarterly</span>
+          <button class="zoom-btn" data-zoom-key="stake_zoom_link">Join Zoom</button>
+        </div>
+        <p class="meeting-attendees" style="margin-bottom:10px">Replaces the High Council meeting in those months.</p>
+        <div class="church-label">Preparation</div>
+        <ol class="church-checklist">
+          <li>Assign prayers / spiritual thought / handbook training</li>
+          <li>Send agenda + reminder to attendees</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Bishops' Council</span>
+        <span class="rc-accordion-count">Scheduled with Pres. Warnick</span>
+      </summary>
+      <div class="meeting-body">
+        <p class="meeting-attendees">Work with Pres. Warnick to schedule and add to the calendar. You do not prepare agendas and you do not attend.</p>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake General Priesthood Meeting</span>
+        <span class="rc-accordion-count">Annual</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="church-label">Preparation (begin ~4 weeks prior)</div>
+        <ol class="church-checklist">
+          <li>Remind the Presidency and begin planning discussion ~4 weeks out</li>
+          <li>Prepare the program</li>
+          <li>Select prayers, chorister, and organist with Presidency approval</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Conference — Spring</span>
+        <span class="rc-accordion-count">Semi-annual · Visiting authority directs</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="church-label">Preparation</div>
+        <ol class="church-checklist">
+          <li>Follow all instructions provided by the visiting authority</li>
+          <li>Complete agenda — usually a fill-in-the-blank template</li>
+          <li>Coordinate meals on Saturday/Sunday if requested</li>
+          <li>Prepare the To-Do assignment tracker as tasks are assigned</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Conference — Fall</span>
+        <span class="rc-accordion-count">Semi-annual · We plan this one</span>
+      </summary>
+      <div class="meeting-body">
+        <div class="church-label">Preparation</div>
+        <ol class="church-checklist">
+          <li>Prepare a program template for the Presidency to fill out</li>
+          <li>Plan for prayer selection</li>
+          <li>Prepare the To-Do assignment tracker</li>
+          <li>Communicate with Stake Council/HC regarding assignments</li>
+          <li>Start the process as early as possible</li>
+          <li>Record speakers in the "Past Speakers" file</li>
+        </ol>
+      </div>
+    </details>
+  </section>
+
+  <!-- ── Credentials ────────────────────────────────────── -->
+  <section>
+    <h2>Credentials
+      <button class="btn btn-ghost" id="edit-private-btn"
+        style="font-size:11px;padding:3px 12px;font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px">
+        Edit
+      </button>
+    </h2>
+    <div id="private-rows"></div>
+    <p style="font-size:11px;color:var(--text-subtle);margin-top:8px">Stored in your browser only — never sent to GitHub.</p>
+  </section>
+
+  <!-- ── Resources ─────────────────────────────────────── -->
+  <section>
+    <h2>Resources</h2>
+    <ul class="resource-list">
+      <li class="resource-item">
+        <span class="resource-name">LCR — Leader &amp; Clerk Resources</span>
+        <a href="https://lcr.churchofjesuschrist.org" target="_blank" rel="noopener" class="resource-link">Open →</a>
       </li>
-      <li class="commitment-item">
-        <span class="commitment-name">High council meeting agenda</span>
-        <span class="commitment-freq">Monthly</span>
+      <li class="resource-item">
+        <span class="resource-name">Church Webmail</span>
+        <a href="https://mail.google.com" target="_blank" rel="noopener" class="resource-link" id="resource-webmail">Open →</a>
       </li>
-      <li class="commitment-item">
-        <span class="commitment-name">Stake council agenda</span>
-        <span class="commitment-freq">Monthly</span>
+      <li class="resource-item">
+        <span class="resource-name">Google Drive — Stake Presidency</span>
+        <a href="#" class="resource-link unset" id="resource-drive-stake" target="_blank" rel="noopener">Open →</a>
       </li>
-      <li class="commitment-item">
-        <span class="commitment-name">Adult leadership agenda</span>
-        <span class="commitment-freq">Quarterly</span>
-      </li>
-      <li class="commitment-item">
-        <span class="commitment-name">Speaking assignments</span>
-        <span class="commitment-freq">Every 2 months · 3rd Sunday</span>
-      </li>
-      <li class="commitment-item">
-        <span class="commitment-name">Update stake calendar</span>
-        <span class="commitment-freq">Weekly</span>
+      <li class="resource-item">
+        <span class="resource-name">Google Drive — Administration</span>
+        <a href="#" class="resource-link unset" id="resource-drive-admin" target="_blank" rel="noopener">Open →</a>
       </li>
     </ul>
   </section>
 
+  <!-- ── Other Responsibilities ─────────────────────────── -->
   <section>
-    <h2>Upcoming Church Tasks</h2>
+    <h2>Other Responsibilities</h2>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Speaking Assignments</span>
+        <span class="rc-accordion-count">Every 2 months</span>
+      </summary>
+      <div class="meeting-body">
+        <ol class="church-checklist">
+          <li>Use the template; save a new version for each month</li>
+          <li>Couples in stake callings: place in same unit, or ensure one is not assigned</li>
+          <li>Check with Patriarch Stauffer for his preferred unit(s) before finalizing</li>
+          <li>CC Bennie Stauffer (Stake Historian) when sending assignments</li>
+          <li>Publish 1 month in advance; send a reminder 1 week prior</li>
+          <li>Keep Youth leaders free in May and July (summer activities)</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Business</span>
+        <span class="rc-accordion-count">3rd Sunday (if applicable)</span>
+      </summary>
+      <div class="meeting-body">
+        <ol class="church-checklist">
+          <li>Prepare if there is stake business to conduct that month</li>
+          <li>Record completed units in the spreadsheet</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Stake Calendar</span>
+        <span class="rc-accordion-count">Ongoing</span>
+      </summary>
+      <div class="meeting-body">
+        <p class="meeting-attendees" style="margin-bottom:10px">Two documents: <strong>Annual stake calendar</strong> (list form) and <strong>Sunday calendar</strong> (table — unit conferences + major Sunday meetings). Both in Google Drive → Stake Presidency → Administration.</p>
+        <ol class="church-checklist">
+          <li>Publish all items on the LCR church calendar</li>
+          <li>Check regularly with RS/Youth/Primary/Activities Committee for event details</li>
+          <li>Prepare template for Presidency review — they need 3–4 months lead time before publishing to stake leaders</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Unit Conferences</span>
+        <span class="rc-accordion-count">Per schedule</span>
+      </summary>
+      <div class="meeting-body">
+        <ol class="church-checklist">
+          <li>Pres. Warnick sends the schedule email to unit leaders at the start of the year</li>
+          <li>Two weeks before each: send reminder to unit + stake leaders, including a copy of Pres. Warnick's original instructions</li>
+          <li>Before sending the reminder: help schedule a one-on-one between Pres. Warnick and the Bishop/Branch President</li>
+          <li>You are not required to attend</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Protecting Children &amp; Youth (PCY) Training</span>
+        <span class="rc-accordion-count">Quarterly review</span>
+      </summary>
+      <div class="meeting-body">
+        <ol class="church-checklist">
+          <li>LCR → Reports → "Protecting Children &amp; Youth Training"</li>
+          <li>Review quarterly — check completion status for all units in the stake</li>
+          <li>Communicate status to Unit Executive Secretaries</li>
+          <li>Send reminders to stake leaders when training has expired or is expiring</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd">
+        <span class="rc-accordion-title">Scheduling</span>
+        <span class="rc-accordion-count">As needed</span>
+      </summary>
+      <div class="meeting-body">
+        <p class="meeting-attendees">Help coordinate appointments for Pres. Warnick. He is typically flexible with members. Be available as a scheduling liaison.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ── Upcoming Church Tasks ──────────────────────────── -->
+  <section>
+    <h2>Upcoming Tasks</h2>
     <ul class="task-list" id="church-tasks">
       <li class="loading">Loading…</li>
     </ul>
   </section>
 </main>
+
+<!-- Contact add/edit modal -->
+<div id="church-contact-modal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:460px">
+    <h3 id="contact-modal-title">Add Contact</h3>
+    <input type="hidden" id="contact-edit-id">
+    <div class="modal-section-label">Name</div>
+    <input type="text" class="form-input" id="contact-name-input" placeholder="e.g. Pres. Warnick" autocomplete="off"
+      style="margin-bottom:10px;font-family:inherit">
+    <div class="modal-section-label">Role / Title</div>
+    <input type="text" class="form-input" id="contact-role-input" placeholder="e.g. Stake President" autocomplete="off"
+      style="margin-bottom:10px;font-family:inherit">
+    <div class="modal-section-label">Phone</div>
+    <input type="text" class="form-input" id="contact-phone-input" placeholder="e.g. 585-555-0100" autocomplete="off"
+      style="margin-bottom:10px;font-family:inherit">
+    <div class="modal-section-label">Email</div>
+    <input type="text" class="form-input" id="contact-email-input" placeholder="e.g. name@domain.com" autocomplete="off"
+      style="margin-bottom:10px;font-family:inherit">
+    <div class="modal-section-label">Note</div>
+    <textarea class="form-input" id="contact-note-input" rows="3"
+      placeholder="Context, reminders, behavioral notes..."
+      style="margin-bottom:10px;font-family:inherit"></textarea>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);margin-bottom:16px;cursor:pointer">
+      <input type="checkbox" id="contact-pinned-input"> Pin to top (key contact)
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="contact-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="contact-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Private data edit modal -->
+<div id="church-private-modal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:500px;max-height:85vh;overflow-y:auto">
+    <h3>Edit Private Info</h3>
+    <p>Stored only in your browser. Never sent to GitHub or any server.</p>
+    <div id="private-form-body"></div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-ghost" id="private-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="private-save-btn">Save</button>
+    </div>
+  </div>
+</div>
 
 <div id="token-modal-placeholder"></div>
 
@@ -59,6 +366,282 @@
 document.getElementById('nav').innerHTML = navHTML('church');
 initSettings();
 
+// ── Contacts ──────────────────────────────────────────
+const DEFAULT_CONTACTS = [
+  { id: 'warnick',   name: 'Pres. Warnick',     role: 'Stake President',          phone: '', email: '', note: 'Updates agenda Mon. evening and sends to Presidency. Very flexible with members.', pinned: true  },
+  { id: 'kiss',      name: 'Pres. Kiss',         role: 'First Counselor',          phone: '', email: '', note: 'Print agenda copy — confirm if still wanted.',                                      pinned: true  },
+  { id: 'montagna',  name: 'Pres. Montagna',     role: 'Second Counselor',         phone: '', email: '', note: 'Print agenda copy — confirm if still wanted.',                                      pinned: true  },
+  { id: 'woolwine',  name: 'Brother Woolwine',   role: 'Counselor',                phone: '', email: '', note: 'Does not take paper copies.',                                                        pinned: true  },
+  { id: 'brandt',    name: 'William Brandt',     role: 'Area Authority Secretary', phone: '', email: '', note: 'Periodic email requests. See Credentials for email.',                               pinned: false },
+  { id: 'pstauffer', name: 'Patriarch Stauffer', role: 'Stake Patriarch',          phone: '', email: '', note: 'Check before finalizing speaking assignments — confirm preferred unit(s).',         pinned: false },
+  { id: 'bstauffer', name: 'Bennie Stauffer',    role: 'Stake Historian',          phone: '', email: '', note: 'CC on every speaking assignment email.',                                             pinned: false },
+];
+
+function getContacts() {
+  const raw = localStorage.getItem('phd_church_contacts');
+  if (raw === null) { saveContacts(DEFAULT_CONTACTS); return DEFAULT_CONTACTS; }
+  try { return JSON.parse(raw); } catch { return []; }
+}
+function saveContacts(cs) { localStorage.setItem('phd_church_contacts', JSON.stringify(cs)); }
+
+function renderContacts() {
+  const contacts = getContacts();
+  const container = document.getElementById('contacts-container');
+  if (!contacts.length) {
+    container.innerHTML = '<p class="empty" style="grid-column:1/-1;padding:8px 0">No contacts yet — click + Add.</p>';
+    return;
+  }
+  const sorted = [
+    ...contacts.filter(c => c.pinned),
+    ...contacts.filter(c => !c.pinned),
+  ];
+  container.innerHTML = sorted.map(c => {
+    const phone = c.phone ? `<a href="tel:${escHtml(c.phone)}" class="contact-detail">📞 ${escHtml(c.phone)}</a>` : '';
+    const email = c.email ? `<a href="mailto:${escHtml(c.email)}" class="contact-detail">✉ ${escHtml(c.email)}</a>` : '';
+    const details = (phone || email) ? `<div class="contact-details">${phone}${email}</div>` : '';
+    const note = c.note ? `<div class="contact-note">${escHtml(c.note)}</div>` : '';
+    return `
+      <div class="contact-card${c.pinned ? ' pinned' : ''}">
+        <div class="contact-card-top">
+          <div>
+            <div class="contact-name">${escHtml(c.name)}</div>
+            ${c.role ? `<div class="contact-role">${escHtml(c.role)}</div>` : ''}
+          </div>
+          <div class="contact-card-actions">
+            <button class="contact-action-btn" title="Edit" onclick="openContactModal('${escHtml(c.id)}')">✎</button>
+            <button class="contact-action-btn del" title="Delete" onclick="deleteContact('${escHtml(c.id)}')">×</button>
+          </div>
+        </div>
+        ${details}
+        ${note}
+      </div>`;
+  }).join('');
+}
+
+function openContactModal(id) {
+  const modal = document.getElementById('church-contact-modal');
+  document.getElementById('contact-edit-id').value = id || '';
+  document.getElementById('contact-modal-title').textContent = id ? 'Edit Contact' : 'Add Contact';
+  const c = id ? (getContacts().find(x => x.id === id) || {}) : {};
+  document.getElementById('contact-name-input').value  = c.name  || '';
+  document.getElementById('contact-role-input').value  = c.role  || '';
+  document.getElementById('contact-phone-input').value = c.phone || '';
+  document.getElementById('contact-email-input').value = c.email || '';
+  document.getElementById('contact-note-input').value  = c.note  || '';
+  document.getElementById('contact-pinned-input').checked = Boolean(c.pinned);
+  modal.classList.remove('hidden');
+  document.getElementById('contact-name-input').focus();
+}
+
+function deleteContact(id) {
+  const contacts = getContacts();
+  const c = contacts.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Remove ${c.name}?\n\nThis cannot be undone.`)) return;
+  saveContacts(contacts.filter(x => x.id !== id));
+  renderContacts();
+}
+
+document.getElementById('contact-save-btn').addEventListener('click', () => {
+  const name = document.getElementById('contact-name-input').value.trim();
+  if (!name) { document.getElementById('contact-name-input').focus(); return; }
+  const contacts = getContacts();
+  const editId = document.getElementById('contact-edit-id').value;
+  const entry = {
+    id:     editId || Date.now().toString(36),
+    name,
+    role:   document.getElementById('contact-role-input').value.trim(),
+    phone:  document.getElementById('contact-phone-input').value.trim(),
+    email:  document.getElementById('contact-email-input').value.trim(),
+    note:   document.getElementById('contact-note-input').value.trim(),
+    pinned: document.getElementById('contact-pinned-input').checked,
+  };
+  if (editId) {
+    const i = contacts.findIndex(x => x.id === editId);
+    if (i !== -1) contacts[i] = entry; else contacts.push(entry);
+  } else {
+    contacts.push(entry);
+  }
+  saveContacts(contacts);
+  document.getElementById('church-contact-modal').classList.add('hidden');
+  renderContacts();
+});
+
+document.getElementById('contact-cancel-btn').addEventListener('click', () => {
+  document.getElementById('church-contact-modal').classList.add('hidden');
+});
+document.getElementById('church-contact-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+document.getElementById('add-contact-btn').addEventListener('click', () => openContactModal(null));
+
+// ── Private credentials ───────────────────────────────
+const PRIVATE_FIELDS = [
+  { section: 'Church Email',              key: 'church_email',         label: 'Email address',       textarea: false },
+  { section: 'Church Email',              key: 'church_email_pw',      label: 'Password',            textarea: false },
+  { section: 'Area Authority (Brandt)',   key: 'brandt_email',         label: 'Email address',       textarea: false },
+  { section: 'Zoom — Pres. Warnick',     key: 'warnick_zoom',         label: 'Personal Zoom link',  textarea: false },
+  { section: 'Zoom — Presidency Meeting',key: 'presidency_zoom',      label: 'Meeting Zoom link',   textarea: false },
+  { section: 'Zoom — Stake / HC / ALC',  key: 'stake_zoom_link',      label: 'One-click link',      textarea: false },
+  { section: 'Zoom — Stake / HC / ALC',  key: 'stake_zoom_id',        label: 'Meeting ID',          textarea: false },
+  { section: 'Zoom — Stake / HC / ALC',  key: 'stake_zoom_dialin',    label: 'Dial-in number',      textarea: false },
+  { section: 'Zoom — Stake / HC / ALC',  key: 'stake_zoom_dialin_id', label: 'Dial-in Meeting ID',  textarea: false },
+  { section: 'Google Drive',             key: 'drive_stake',          label: 'Stake Presidency URL',textarea: false },
+  { section: 'Google Drive',             key: 'drive_admin',          label: 'Administration URL',  textarea: false },
+  { section: 'Stake Zoom Accounts',      key: 'zoom_accounts',        label: 'One per line: email  password', textarea: true },
+  { section: 'Notes',                    key: 'private_notes',        label: 'Other private notes', textarea: true },
+];
+
+function getPrivate() {
+  try { return JSON.parse(localStorage.getItem('phd_church_private') || '{}'); } catch { return {}; }
+}
+function savePrivate(data) { localStorage.setItem('phd_church_private', JSON.stringify(data)); }
+
+function renderPrivateRows() {
+  const data = getPrivate();
+  const container = document.getElementById('private-rows');
+  let html = '';
+  let lastSection = '';
+
+  for (const f of PRIVATE_FIELDS) {
+    if (f.textarea) continue;
+    if (f.section !== lastSection) {
+      html += `<div class="church-label" style="margin-top:${lastSection ? '12px' : '0'};margin-bottom:4px">${escHtml(f.section)}</div>`;
+      lastSection = f.section;
+    }
+    const val = data[f.key] || '';
+    const isSet = Boolean(val);
+    html += `<div class="private-row" data-key="${escHtml(f.key)}">
+      <span class="private-label">${escHtml(f.label)}</span>
+      <span class="private-val ${isSet ? 'masked' : 'unset'}" data-raw="${escHtml(val)}">${isSet ? '••••••••' : 'Not set'}</span>
+      <div class="private-actions">
+        ${isSet ? `<button class="priv-btn" title="Reveal" onclick="toggleReveal(this)">👁</button>` : ''}
+        ${isSet ? `<button class="priv-btn" title="Copy" onclick="copyPriv(this)">⎘</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // Zoom accounts collapsible
+  const accounts = (data.zoom_accounts || '').trim();
+  if (accounts) {
+    const count = accounts.split('\n').filter(l => l.trim()).length;
+    html += `<div class="church-label" style="margin-top:12px;margin-bottom:4px">Stake Zoom Accounts</div>
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd" style="font-size:13px">
+        <span>${count} accounts stored</span>
+        <span class="rc-accordion-count">Click to reveal</span>
+      </summary>
+      <div class="meeting-body">
+        <div style="font-family:'SF Mono','Fira Code',monospace;font-size:11.5px;color:var(--text-muted);white-space:pre;line-height:1.7;overflow-x:auto">${escHtml(accounts)}</div>
+      </div>
+    </details>`;
+  }
+
+  // Notes
+  const notes = (data.private_notes || '').trim();
+  if (notes) {
+    html += `<div class="church-label" style="margin-top:12px;margin-bottom:4px">Notes</div>
+    <details class="rc-accordion">
+      <summary class="rc-accordion-hd" style="font-size:13px">
+        <span>Private notes</span><span class="rc-accordion-count">Click to reveal</span>
+      </summary>
+      <div class="meeting-body" style="white-space:pre-wrap;font-size:13px;color:var(--text-muted);line-height:1.6">${escHtml(notes)}</div>
+    </details>`;
+  }
+
+  container.innerHTML = html || '<p class="empty" style="padding:8px 0">No credentials stored yet — click Edit to add them.</p>';
+
+  // Wire zoom buttons in meeting cards
+  document.querySelectorAll('button.zoom-btn[data-zoom-key]').forEach(btn => {
+    const url = data[btn.dataset.zoomKey];
+    if (url) {
+      btn.classList.remove('unset');
+      btn.onclick = () => window.open(url, '_blank', 'noopener');
+    } else {
+      btn.classList.add('unset');
+      btn.onclick = null;
+      btn.title = 'No Zoom link stored — click Edit in Credentials to add';
+    }
+  });
+
+  // Wire resource links
+  const setResource = (id, url) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (url) { el.href = url; el.classList.remove('unset'); }
+    else { el.href = '#'; el.classList.add('unset'); el.onclick = e => e.preventDefault(); }
+  };
+  setResource('resource-drive-stake', data.drive_stake);
+  setResource('resource-drive-admin', data.drive_admin);
+}
+
+function toggleReveal(btn) {
+  const row = btn.closest('.private-row');
+  const valEl = row.querySelector('.private-val');
+  if (valEl.classList.contains('masked')) {
+    valEl.textContent = valEl.dataset.raw;
+    valEl.classList.remove('masked');
+    btn.textContent = '🔒';
+  } else {
+    valEl.textContent = '••••••••';
+    valEl.classList.add('masked');
+    btn.textContent = '👁';
+  }
+}
+
+async function copyPriv(btn) {
+  const raw = btn.closest('.private-row').querySelector('.private-val').dataset.raw;
+  await navigator.clipboard.writeText(raw);
+  const orig = btn.textContent;
+  btn.textContent = '✓';
+  setTimeout(() => btn.textContent = orig, 1200);
+}
+
+// Edit modal
+function buildEditForm() {
+  const data = getPrivate();
+  let html = '';
+  let lastSection = '';
+  for (const f of PRIVATE_FIELDS) {
+    if (f.section !== lastSection) {
+      html += `<div class="modal-section-label">${escHtml(f.section)}</div>`;
+      lastSection = f.section;
+    }
+    const val = escHtml(data[f.key] || '');
+    const labelHtml = `<label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px">${escHtml(f.label)}</label>`;
+    if (f.textarea) {
+      html += `${labelHtml}<textarea class="form-input" name="${f.key}" rows="4" style="margin-bottom:10px">${val}</textarea>`;
+    } else {
+      html += `${labelHtml}<input type="text" class="form-input" name="${f.key}" value="${val}" autocomplete="off" spellcheck="false" style="margin-bottom:10px">`;
+    }
+  }
+  return html;
+}
+
+document.getElementById('edit-private-btn').addEventListener('click', () => {
+  document.getElementById('private-form-body').innerHTML = buildEditForm();
+  document.getElementById('church-private-modal').classList.remove('hidden');
+});
+
+document.getElementById('private-save-btn').addEventListener('click', () => {
+  const data = getPrivate();
+  document.getElementById('private-form-body').querySelectorAll('[name]').forEach(el => {
+    data[el.name] = el.value.trim();
+  });
+  savePrivate(data);
+  document.getElementById('church-private-modal').classList.add('hidden');
+  renderPrivateRows();
+});
+
+document.getElementById('private-cancel-btn').addEventListener('click', () => {
+  document.getElementById('church-private-modal').classList.add('hidden');
+});
+
+document.getElementById('church-private-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.add('hidden');
+});
+
+// ── Todoist ───────────────────────────────────────────
 async function loadChurchTasks() {
   const el = document.getElementById('church-tasks');
   if (!hasToken()) {
@@ -67,13 +650,11 @@ async function loadChurchTasks() {
     showTokenModal(() => loadChurchTasks());
     return;
   }
-
   try {
     const [projects, all, reminders] = await Promise.all([fetchProjects(), fetchTasks(), fetchReminders()]);
     setApiStatus('connected');
     const reminderMap = buildReminderMap(reminders);
 
-    // Find Church project and all children
     const churchProject = projects.find(p => p.name === 'Church');
     if (!churchProject) {
       el.innerHTML = '<li class="empty">No "Church" project found in Todoist.</li>';
@@ -85,19 +666,15 @@ async function loadChurchTasks() {
       if (p.parent_id === churchProject.id) churchIds.add(p.id);
     }
 
-    const projectNames = Object.fromEntries(projects.map(p => [p.id, p.name]));
-
-    const churchTasks = all
+    const tasks = all
       .filter(t => churchIds.has(t.project_id) && (isDueNow(t) || isDueWithin(t, 14)))
       .sort((a, b) => (a.due?.date || '9999').localeCompare(b.due?.date || '9999'));
 
-    if (!churchTasks.length) {
+    if (!tasks.length) {
       el.innerHTML = '<li class="empty">Nothing due in the next 14 days.</li>';
       return;
     }
-
-    renderTaskList('church-tasks', churchTasks, all, true, reminderMap);
-
+    renderTaskList('church-tasks', tasks, all, true, reminderMap);
   } catch(e) {
     setApiStatus('error');
     el.innerHTML = e.message === 'bad_token'
@@ -106,6 +683,8 @@ async function loadChurchTasks() {
   }
 }
 
+renderContacts();
+renderPrivateRows();
 loadChurchTasks();
 </script>
 </body>
