@@ -105,9 +105,35 @@ def assert_safe_folder_name(name, label):
 
 # ── AppleScript helpers ───────────────────────────────────────────────────────
 
-def run_as_file(path):
-    r = subprocess.run(["osascript", path], capture_output=True, text=True)
-    return r.stdout.strip(), r.returncode
+def run_as_file(path, timeout=90):
+    # Use Popen + manual timer so we can SIGKILL and return immediately without
+    # waiting for the drain that subprocess.run's cleanup does — that drain can
+    # hang indefinitely when osascript is mid-Apple-Event with Mail.
+    import time
+    out_path = path + ".out"
+    err_path = path + ".err"
+    try:
+        with open(out_path, "w") as out_f, open(err_path, "w") as err_f:
+            proc = subprocess.Popen(["osascript", path], stdout=out_f, stderr=err_f)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            rc = proc.poll()
+            if rc is not None:
+                with open(out_path, encoding="utf-8", errors="replace") as f:
+                    return f.read().strip(), rc
+            time.sleep(0.5)
+        # Timed out — kill and return error without waiting for drain
+        try:
+            proc.kill()
+        except OSError:
+            pass
+        return "ERROR:AppleScript timed out after 90 s — Exchange may still be syncing", 1
+    finally:
+        for p in (out_path, err_path):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
 
 
 # ── Apple Mail ────────────────────────────────────────────────────────────────
@@ -130,7 +156,7 @@ def ensure_mail_open():
     for _ in range(12):
         time.sleep(5)
         if mail_running():
-            time.sleep(6)  # let accounts sync
+            time.sleep(15)  # let Exchange accounts sync before reading
             log("Apple Mail ready.")
             return True
     log("WARNING: Apple Mail did not launch in time — skipping this run.")
@@ -151,16 +177,24 @@ tell application "Mail"
     set targetName to "{queue_folder}"
     set queueMailbox to missing value
     repeat with acct in every account
-        try
-            set mb to first mailbox of acct whose name is targetName
-            set queueMailbox to mb
-            exit repeat
-        on error
-        end try
+        repeat with mb in mailboxes of acct
+            if name of mb is targetName then
+                set queueMailbox to mb
+                exit repeat
+            end if
+        end repeat
+        if queueMailbox is not missing value then exit repeat
     end repeat
     if queueMailbox is missing value then
         return "ERROR:Mailbox '" & targetName & "' not found in any Mail account"
     end if
+
+    -- Force Exchange to download message bodies before we read them.
+    -- Without this, content/attachment reads block indefinitely on un-synced messages.
+    try
+        synchronize queueMailbox
+    end try
+    delay 5
 
     set allMessages to messages of queueMailbox
     set msgCount to count of allMessages
@@ -225,14 +259,15 @@ tell application "Mail"
     set srcMailbox to missing value
     set dstMailbox to missing value
     repeat with acct in every account
-        try
-            set srcMailbox to first mailbox of acct whose name is srcName
-            try
-                set dstMailbox to first mailbox of acct whose name is dstName
-            end try
-            exit repeat
-        on error
-        end try
+        repeat with mb in mailboxes of acct
+            if name of mb is srcName then
+                set srcMailbox to mb
+            end if
+            if name of mb is dstName then
+                set dstMailbox to mb
+            end if
+        end repeat
+        if srcMailbox is not missing value and dstMailbox is not missing value then exit repeat
     end repeat
 
     if srcMailbox is missing value then return "ERROR:Source folder not found: " & srcName
@@ -286,11 +321,11 @@ def fetch_emails(queue_folder, max_emails, dry_run):
     emails = []
     for line in raw.strip().splitlines():  # splitlines() handles \r, \n, \r\n
         parts = line.split("\t")
-        if len(parts) < 5:
+        if len(parts) < 4:
             continue
-        msg_id, subject, sender, date_str, pdf_names_raw = (
-            parts[0], parts[1], parts[2], parts[3], parts[4]
-        )
+        msg_id, subject, sender, date_str = parts[0], parts[1], parts[2], parts[3]
+        # 5th field (pdf names) may be absent if strip() ate the trailing tab
+        pdf_names_raw = parts[4] if len(parts) > 4 else ""
 
         body_path = os.path.join(_secure_tmp, f"{msg_id}.txt")
         _temp_files.append(body_path)

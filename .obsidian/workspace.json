@@ -188,6 +188,9 @@
   },
   "active": "31b7ab9bd353d7c0",
   "lastOpenFiles": [
+    "scripts/email_pipeline.py.tmp.63879.97cd1e74bf60",
+    "scripts/email_pipeline.py.tmp.63879.59f2c15ae737",
+    "scripts/email_pipeline.py.tmp.63879.33588f81b243",
     "site/index.html.tmp.63879.4cdc03ab94de",
     "100 Research/Source Papers/The Concept of Validity..md",
     "100 Research/Source Papers/The AI‐IP Minimizing the guesswork of personality scale item development through artificial intellig.md",
@@ -220,9 +223,6 @@
     "site/docs.html",
     "scripts/setup.sh",
     "scripts/com.phd-os.pipeline.plist",
-    "scripts/model/build_model.sh",
-    "scripts/model/Modelfile",
-    "scripts/model",
-    "scripts/review_tasks.py"
+    "scripts/model/build_model.sh"
   ]
 }
