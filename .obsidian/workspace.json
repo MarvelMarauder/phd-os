@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "100 Research/Source Papers/25 years of higher-order confirmatory factor analysis in the organizational sciences A critical revi.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Home"
+              "title": "25 years of higher-order confirmatory factor analysis in the organizational sciences A critical revi"
             }
           }
         ]
@@ -188,6 +188,7 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "000 Dashboard/Home.md",
     "100 Research/Source Papers/Using multitrait–multimethod analyses in testing for evidence of construct validity.md",
     "scripts/email_pipeline.py.tmp.63879.97cd1e74bf60",
     "scripts/email_pipeline.py.tmp.63879.59f2c15ae737",
@@ -217,7 +218,6 @@
     "100 Research/Source Papers/Cronbach’s coefficient alpha Well known but poorly understood.md",
     "100 Research/Source Papers/Content validation guidelines Evaluation criteria for definitional correspondence and definitional d.md",
     "100 Research/Source Papers/Confirmatory factor analysis for applied research.md",
-    "100 Research/Source Papers/Choosing Prediction Over Explanation in Psychology Lessons From Machine Learning.md",
     "scripts/build_app.sh",
     "scripts/review_server.py",
     "scripts/model/Modelfile.built",

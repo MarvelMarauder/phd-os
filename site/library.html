@@ -93,7 +93,7 @@
   <!-- ── Your Library ───────────────────────────────── -->
   <section>
     <h2>Your Library <span class="section-count" id="lib-count"></span></h2>
-    <div class="rc-chips" id="lib-filters"></div>
+    <div class="lib-filters-wrap" id="lib-filters"></div>
     <div id="lib-list"><p class="loading">Loading…</p></div>
   </section>
 </main>
@@ -292,7 +292,7 @@ thoughts: "${thoughts.replace(/"/g, '\\"')}"
 
 // ── Library ───────────────────────────────────────────
 
-let libFilter = null;
+let libFilters = { stream: null, keyword: null, related: null };
 
 function streamPill(stream) {
   if (!stream) return '';
@@ -303,30 +303,78 @@ function streamPill(stream) {
 
 function renderLibFilters(papers) {
   const el = document.getElementById('lib-filters');
+  let html = '';
+
+  // Stream row
   const streams = [...new Set(papers.map(p => p.stream).filter(Boolean))];
-  if (!streams.length) { el.innerHTML = ''; return; }
-  const opts = [{ key: null, label: 'All' }, ...streams.map(s => ({ key: s, label: (STREAM_META[s]||{}).label || s }))];
-  el.innerHTML = opts.map(o =>
-    `<button class="rc-chip${o.key === libFilter ? ' active' : ''}" data-key="${o.key ?? ''}">${escHtml(o.label)}</button>`
-  ).join('');
+  if (streams.length) {
+    const opts = [{ key: null, label: 'All' }, ...streams.map(s => ({ key: s, label: (STREAM_META[s]||{}).label || s }))];
+    html += `<div class="lib-filter-row">
+      <span class="lib-filter-label">Stream</span>
+      ${opts.map(o => `<button class="rc-chip${o.key === libFilters.stream ? ' active' : ''}" data-type="stream" data-key="${o.key ?? ''}">${escHtml(o.label)}</button>`).join('')}
+    </div>`;
+  }
+
+  // Keyword row — top keywords by frequency
+  const kwCount = {};
+  papers.forEach(p => (p.keywords || []).forEach(k => { kwCount[k] = (kwCount[k] || 0) + 1; }));
+  const topKws = Object.entries(kwCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([k]) => k);
+  if (topKws.length) {
+    html += `<div class="lib-filter-row">
+      <span class="lib-filter-label">Keyword</span>
+      ${topKws.map(k => `<button class="rc-chip rc-chip-sm${k === libFilters.keyword ? ' active' : ''}" data-type="keyword" data-key="${escHtml(k)}">${escHtml(k)}</button>`).join('')}
+    </div>`;
+  }
+
+  // Related-papers row
+  const relSet = new Set();
+  papers.forEach(p => (p.related_papers || []).forEach(r => relSet.add(r)));
+  const relPapers = [...relSet].sort();
+  if (relPapers.length) {
+    html += `<div class="lib-filter-row">
+      <span class="lib-filter-label">Related to</span>
+      ${relPapers.map(r => {
+        const label = r.length > 38 ? r.slice(0, 35) + '…' : r;
+        return `<button class="rc-chip rc-chip-sm${r === libFilters.related ? ' active' : ''}" data-type="related" data-key="${escHtml(r)}" title="${escHtml(r)}">${escHtml(label)}</button>`;
+      }).join('')}
+    </div>`;
+  }
+
+  el.innerHTML = html;
   el.querySelectorAll('.rc-chip').forEach(btn => {
     btn.addEventListener('click', () => {
-      libFilter = btn.dataset.key || null;
+      const type = btn.dataset.type;
+      const key = btn.dataset.key || null;
+      libFilters[type] = libFilters[type] === key ? null : key;
       renderLibFilters(papers);
       renderLib(papers);
     });
   });
 }
 
+function applyLibFilters(papers) {
+  return papers.filter(p => {
+    if (libFilters.stream  && p.stream !== libFilters.stream) return false;
+    if (libFilters.keyword && !(p.keywords || []).includes(libFilters.keyword)) return false;
+    if (libFilters.related && !(p.related_papers || []).includes(libFilters.related)) return false;
+    return true;
+  });
+}
+
 function renderLib(papers) {
   const el = document.getElementById('lib-list');
-  const visible = libFilter ? papers.filter(p => p.stream === libFilter) : papers;
-  document.getElementById('lib-count').textContent = papers.length || '';
+  const visible = applyLibFilters(papers);
+  const anyFilter = libFilters.stream || libFilters.keyword || libFilters.related;
+  document.getElementById('lib-count').textContent =
+    papers.length ? (anyFilter ? `${visible.length} / ${papers.length}` : papers.length) : '';
 
   if (!visible.length) {
     el.innerHTML = papers.length
-      ? '<p class="empty">No papers in this stream yet.</p>'
-      : `<p class="empty">No papers yet — use Quick Add above, then push to main.</p>`;
+      ? '<p class="empty">No papers match these filters.</p>'
+      : '<p class="empty">No papers yet — use Quick Add above, then push to main.</p>';
     return;
   }
 
@@ -335,7 +383,11 @@ function renderLib(papers) {
     const titleHtml = href
       ? `<a class="lit-title" href="${escHtml(href)}" target="_blank" rel="noopener">${escHtml(p.title)}</a>`
       : `<span class="lit-title">${escHtml(p.title)}</span>`;
-    const authorsStr = (p.authors || []).slice(0, 4).join('; ') + (p.authors?.length > 4 ? ' et al.' : '');
+    const authorsStr = (p.authors || []).slice(0, 3).join('; ') + ((p.authors||[]).length > 3 ? ' et al.' : '');
+    const kws = (p.keywords || []).slice(0, 5);
+    const kwHtml = kws.length
+      ? `<div class="lit-keywords">${kws.map(k => `<span class="lit-kw-chip">${escHtml(k)}</span>`).join('')}</div>`
+      : '';
     const related = (p.related_papers || []);
     const relatedHtml = related.length
       ? `<div class="lit-related">
@@ -355,6 +407,7 @@ function renderLib(papers) {
         ${authorsStr ? `<div class="lit-authors">${escHtml(authorsStr)}</div>` : ''}
         ${p.thoughts ? `<p class="lit-thoughts">${escHtml(p.thoughts)}</p>` : ''}
         ${p.snippet  ? `<p class="lit-snippet">${escHtml(p.snippet)}</p>`   : ''}
+        ${kwHtml}
         ${relatedHtml}
       </div>`;
   }).join('');
