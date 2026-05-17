@@ -164,7 +164,8 @@ def openalex_search(title):
 
 def _oa_parse(w):
     """Extract useful fields from an OpenAlex work object."""
-    kws = [k.get("keyword") or k for k in (w.get("keywords") or []) if k]
+    kws = [k.get("display_name") or k.get("keyword") for k in (w.get("keywords") or []) if k]
+    kws = [k for k in kws if k]
     if not kws:
         # fall back to mid-level concepts (level 2–3, score > 0.3)
         kws = [
