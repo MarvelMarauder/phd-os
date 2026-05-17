@@ -61,6 +61,10 @@
           <input class="form-input" type="text" id="f-topic" placeholder="anthropomorphism">
         </div>
         <div class="form-field">
+          <label class="form-label">Keywords <span class="form-hint" id="kw-hint">auto-filled from OpenAlex · comma-separated · editable</span></label>
+          <input class="form-input" type="text" id="f-keywords" placeholder="trust, human-AI interaction, algorithmic decision-making">
+        </div>
+        <div class="form-field">
           <label class="form-label">Related working papers</label>
           <div class="related-list" id="f-related"></div>
         </div>
@@ -168,21 +172,45 @@ async function doiLookup() {
     const parts   = (m.published?.['date-parts'] || [[]])[0];
     const year    = parts[0] ? String(parts[0]) : '';
 
-    prefillForm({ title, authors, journal, year, doi: m.DOI || doi });
+    // Fetch keywords from OpenAlex (non-blocking — prefill first, then update)
+    prefillForm({ title, authors, journal, year, doi: m.DOI || doi, keywords: '' });
     statusEl.innerHTML = '';
+
+    document.getElementById('kw-hint').textContent = 'fetching keywords…';
+    try {
+      const oaR = await fetch(`https://api.openalex.org/works/https://doi.org/${encodeURIComponent(doi)}?select=keywords,concepts`);
+      if (oaR.ok) {
+        const oa = await oaR.json();
+        const kws = (oa.keywords || []).map(k => k.keyword || k).filter(Boolean);
+        const fallback = (oa.concepts || [])
+          .filter(c => c.level >= 2 && c.score > 0.3)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 8)
+          .map(c => c.display_name);
+        const keywords = (kws.length ? kws : fallback).join(', ');
+        document.getElementById('f-keywords').value = keywords;
+        document.getElementById('kw-hint').textContent = keywords
+          ? 'auto-filled from OpenAlex · editable'
+          : 'not found in OpenAlex · enter manually';
+      }
+    } catch(_) {
+      document.getElementById('kw-hint').textContent = 'auto-fill unavailable · enter manually';
+    }
   } catch(e) {
     statusEl.innerHTML = '<p class="error" style="margin-top:6px">DOI not found — try editing the fields manually.</p>';
-    prefillForm({ title:'', authors:'', journal:'', year:'', doi });
+    prefillForm({ title:'', authors:'', journal:'', year:'', doi, keywords: '' });
   }
 }
 
-function prefillForm({ title, authors, journal, year, doi, topic = '' }) {
-  document.getElementById('f-title').value   = title;
-  document.getElementById('f-authors').value = authors;
-  document.getElementById('f-journal').value = journal;
-  document.getElementById('f-year').value    = year;
-  document.getElementById('f-topic').value   = topic;
+function prefillForm({ title, authors, journal, year, doi, topic = '', keywords = '' }) {
+  document.getElementById('f-title').value    = title;
+  document.getElementById('f-authors').value  = authors;
+  document.getElementById('f-journal').value  = journal;
+  document.getElementById('f-year').value     = year;
+  document.getElementById('f-topic').value    = topic;
+  document.getElementById('f-keywords').value = keywords;
   document.getElementById('f-doi-display').textContent = doi ? `DOI: ${doi}` : '';
+  document.getElementById('kw-hint').textContent = 'auto-filled from OpenAlex · comma-separated · editable';
   activeDoi = doi || '';
   renderRelatedCheckboxes([]);
   document.getElementById('doi-fields').classList.remove('hidden');
@@ -207,15 +235,20 @@ document.getElementById('doi-copy-btn').addEventListener('click', () => {
                     .split(';').map(s => s.trim()).filter(Boolean);
   const journal = document.getElementById('f-journal').value.trim();
   const year    = document.getElementById('f-year').value.trim();
-  const stream  = document.getElementById('f-stream').value;
-  const topic   = document.getElementById('f-topic').value.trim();
-  const thoughts= document.getElementById('f-thoughts').value.trim();
-  const related = [...document.querySelectorAll('#f-related input:checked')].map(c => c.value);
+  const stream   = document.getElementById('f-stream').value;
+  const topic    = document.getElementById('f-topic').value.trim();
+  const keywords = document.getElementById('f-keywords').value.trim()
+                     .split(',').map(k => k.trim()).filter(Boolean);
+  const thoughts = document.getElementById('f-thoughts').value.trim();
+  const related  = [...document.querySelectorAll('#f-related input:checked')].map(c => c.value);
 
-  const authorsYaml = authors.length
+  const authorsYaml  = authors.length
     ? '\nauthors:\n' + authors.map(a => `  - ${a}`).join('\n')
     : '\nauthors: []';
-  const relatedYaml = related.length
+  const keywordsYaml = keywords.length
+    ? '\nkeywords:\n' + keywords.map(k => `  - "${k}"`).join('\n')
+    : '\nkeywords: []';
+  const relatedYaml  = related.length
     ? '\nrelated-papers:\n' + related.map(r => `  - "${r}"`).join('\n')
     : '\nrelated-papers: []';
 
@@ -225,7 +258,7 @@ journal: "${journal}"
 year: ${year || 'null'}
 doi: ${activeDoi || 'null'}
 stream: ${stream || 'null'}
-topic: "${topic.replace(/"/g, '\\"')}"${relatedYaml}
+topic: "${topic.replace(/"/g, '\\"')}"${keywordsYaml}${relatedYaml}
 thoughts: "${thoughts.replace(/"/g, '\\"')}"
 ---
 `;

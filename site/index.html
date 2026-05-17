@@ -35,10 +35,6 @@
     </div>
   </section>
 
-  <section id="recharge-section" style="display:none">
-    <h2>Recharge</h2>
-    <div class="recharge-spotlight" id="recharge-item"></div>
-  </section>
 </main>
 
 <div id="token-modal-placeholder"></div>
@@ -122,18 +118,6 @@ async function loadPapers() {
   }
 }
 
-// ── Recharge spotlight ────────────────────────────────
-async function loadRecharge() {
-  try {
-    const data = await fetch('recharge.json').then(r => r.json());
-    const items = data.sections.flatMap(s => s.items);
-    if (!items.length) return;
-    const pick = items[Math.floor(Math.random() * items.length)];
-    document.getElementById('recharge-item').textContent = pick;
-    document.getElementById('recharge-section').style.display = '';
-  } catch(e) { /* recharge list empty — skip */ }
-}
-
 // ── Init ──────────────────────────────────────────────
 if (!hasToken()) {
   document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
@@ -142,7 +126,6 @@ if (!hasToken()) {
 
 loadTasks();
 loadPapers();
-loadRecharge();
 </script>
 </body>
 </html>

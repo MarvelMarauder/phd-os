@@ -1,24 +1,24 @@
 {
   "main": {
-    "id": "881a1c193b1ffc0c",
+    "id": "5324373015726ba8",
     "type": "split",
     "children": [
       {
-        "id": "1a0d8e337863192c",
+        "id": "4509724f8bf84da7",
         "type": "tabs",
         "children": [
           {
-            "id": "5f00b1d136c6608c",
+            "id": "e7a7b303c61786dc",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "400 Personal/Books/Gilead.md",
+                "file": "000 Dashboard/Home.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Gilead"
+              "title": "Home"
             }
           }
         ]
@@ -186,8 +186,9 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "31b7ab9bd353d7c0",
+  "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "400 Personal/Books/Gilead.md",
     "scripts/build_app.sh",
     "scripts/review_server.py",
     "scripts/model/Modelfile.built",
@@ -199,9 +200,7 @@
     "scripts/model/Modelfile",
     "scripts/model",
     "scripts/review_tasks.py",
-    "scripts/email_pipeline.py",
     "400 Personal/Books/John Dies at the End.md",
-    "400 Personal/Books/Gilead.md",
     "400 Personal/Books/_template.md",
     "100 Research/Source Papers/_dismissed.md",
     "100 Research/Source Papers/_template.md",

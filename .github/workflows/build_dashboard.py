@@ -110,6 +110,9 @@ def build_lit():
         related = post.get("related-papers", [])
         if isinstance(related, str):
             related = [r.strip() for r in related.split(",") if r.strip()]
+        keywords = post.get("keywords", [])
+        if isinstance(keywords, str):
+            keywords = [k.strip() for k in keywords.split(",") if k.strip()]
         papers.append({
             "title":          post.get("title") or os.path.splitext(os.path.basename(filepath))[0],
             "authors":        authors,
@@ -118,6 +121,7 @@ def build_lit():
             "doi":            post.get("doi", ""),
             "stream":         post.get("stream", ""),
             "topic":          post.get("topic", ""),
+            "keywords":       keywords,
             "related_papers": related,
             "thoughts":       post.get("thoughts", ""),
             "snippet":        snippet,

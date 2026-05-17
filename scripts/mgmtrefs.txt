@@ -1,0 +1,70 @@
+Borsboom, D., Mellenbergh, G. J., & Van Heerden, J. (2004). The concept of validity.
+Psychological Review, 111, 1061–1071.
+Brown, T. A. (2015). Confirmatory factor analysis for applied research . Guilford Publications.
+Byrne, B. M. (2016). Using multitrait–multimethod analyses in testing for evidence of construct
+validity. In K. Schweitzer & C. DiStefano (Eds.), Principles and methods of test
+construction: Standards and recent advances (pp. 288-307). Boston, MA: Hogrefe
+Publishing Corp.
+Chen, F. F., Sousa, K. H., & West, S. G. (2005). Teacher's corner: Testing measurement invariance
+of second-order factor models. Structural Equation Modeling , 12 , 471-492.
+Cho, E. & Kim, S. (2015). Cronbach’s coefficient alpha: Well known but poorly understood.
+Organizational Research Methods, 18, 207-230.
+Colquitt, J. A., Sabey, T. B., Rodell, J. B., & Hill, E. T. (2019). Content validation guidelines:
+Evaluation criteria for definitional correspondence and definitional distinctiveness. Journal
+of Applied Psychology, 104 (10), 1243–1265.
+Credé, M., & Harms, P. D. (2015). 25 years of higher‐order confirmatory factor analysis in the
+organizational sciences: A critical review and development of reporting recommendations.
+Journal of Organizational Behavior , 36 , 845-872.
+DeSimone, J. A., Harms, P. D., & DeSimone, A. J. (2015). Best practice recommendations for data
+screening. Journal of Organizational Behavior , 36 , 171-181.
+DeSimone, J. A., & Harms, P. D. (2018). Dirty data: The effects of screening respondents who
+provide low-quality data in survey research. Journal of Business and Psychology, 33 , 559-
+577.
+DeVellis, R. F. (2017). Scale development: Theory and applications, 4th edition. Thousand
+Oaks, CA: Sage Publications.
+Fabrigar, L. R., & Wegener, D. T. (2011). Exploratory factor analysis. Oxford University Press.
+Finch, W. & French, B. (2015). Latent variable modeling with R . New York: Routledge.
+Gana, K., & Broc, G. (2019). Structural equation modeling with lavaan . John Wiley & Sons.
+Gregorich, S. E. (2006). Do self-report instruments allow meaningful comparisons across diverse
+population groups? Testing measurement invariance using the confirmatory factor analysis
+framework. Medical C are , 44 (11 Suppl 3), S78.
+Hambleton, R. K., Swaminathan, H., & Rogers, H. J. (1991). Fundamentals of item response
+theory. Newbury Park, CA: Sage Publications, Inc.
+Hernandez, I., & Nie, W. (2023). The AI‐IP: Minimizing the guesswork of personality scale item
+development through artificial intelligence. Personnel Psychology, 76 (4), 1011-1035.
+Kline, T. J. B. (2005). Psychological testing: A practical approach to design and evaluation .
+Thousand Oaks, CA: Sage Publications, Inc.
+8
+Leite, W. L., Huang, I. C., & Marcoulides, G. A. (2008). Item selection for the development of short
+forms of scales using an ant colony optimization algorithm. Multivariate Behavioral
+Research, 43 (3), 411-431.
+Luo, L., Arizmendi, C., & Gates, K. M. (2019). Exploratory Factor Analysis (EFA) Programs in R.
+Structural Equation Modeling , 26 , 819-826.
+McLarnon, M. J., & O’Neill, T. A. (2018). Extensions of auxiliary variable approaches for the
+investigation of mediation, moderation, and conditional effects in mixture
+models. Organizational Research Methods, 21 (4), 955-982.
+Newman, D. A. (2014). Missing data: Five practical guidelines. Organizational Research
+Methods , 17 (4), 372-411.
+Nunnally, J. C. & Bernstein, I. H. (1994). Psychometric theory (3rd ed.). McGraw-Hill.
+Nylund-Gibson, K., & Choi, A. Y. (2018). Ten frequently asked questions about latent class analysis.
+Translational Issues in Psychological Science , 4 , 440-461.
+Podsakoff, P. M., MacKenzie, S. B., & Podsakoff, N. P. (2012). Sources of method bias in social
+science research and recommendations on how to control it. Annual Review of
+Psychology, 63, 539-569.
+Podsakoff, P. M., MacKenzie, S. B., & Podsakoff, N. P. (2016). Recommendations for creating
+better concept definitions in the organizational, behavioral, and social sciences.
+Organizational Research Methods, 19, 159-203.
+Podsakoff, N. P., Podsakoff, P. M., MacKenzie, S. B., & Klinger, R. L. (2013). Are we really
+measuring what we say we're measuring? Using video techniques to supplement traditional
+construct validation procedures. Journal of Applied Psychology, 98, 99-113.
+Preacher, K. J., & MacCallum, R. C. (2003). Repairing Tom Swift's electric factor analysis machine.
+Understanding S tatistics, 2 (1), 13-43.
+Rönkkö, M., & Cho, E. (2022). An updated guideline for assessing discriminant validity.
+Organizational Research Methods, 25 (1), 6-14.
+Shavelson, R. J., Webb, N. M., & Rowley, G. L. (1989). Generalizability theory. American
+Psychologist , 44 (6), 922-932.
+Spurk, D., Hirschi, A., Wang, M., Valero, D., & Kauffeld, S. (2020). Latent profile analysis: A review
+and “how to” guide of its application within vocational behavior research. Journal of
+Vocational Behavior , 120 , 103445.
+Yarkoni, T., & Westfall, J. (2017). Choosing prediction over explanation in psychology: Lessons
+from machine learning. Perspectives on Psychological Science, 12 (6), 1100-1122.
