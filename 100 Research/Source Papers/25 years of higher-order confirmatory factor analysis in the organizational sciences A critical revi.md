@@ -19,7 +19,8 @@ keywords:
   - Mathematics
   - Economics
 thoughts: ""
-related-papers: []
+related-papers:
+  - test
 ---
 
 ## Abstract
