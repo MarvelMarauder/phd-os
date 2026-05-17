@@ -1,26 +1,25 @@
 ---
-title: "An Updated Guideline for Assessing Discriminant Validity"
+title: An Updated Guideline for Assessing Discriminant Validity
 authors:
-  - "Rönkkö, Mikko"
-  - "Cho, Eunseong"
-journal: "Organizational Research Methods"
+  - Rönkkö, Mikko
+  - Cho, Eunseong
+journal: Organizational Research Methods
 year: 2020
 doi: 10.1177/1094428120968614
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/discriminant-validity', 'display_name': 'Discriminant validity', 'score': 0.8247265815734863}"
-  - "{'id': 'https://openalex.org/keywords/linear-discriminant-analysis', 'display_name': 'Linear discriminant analysis', 'score': 0.7330061793327332}"
-  - "{'id': 'https://openalex.org/keywords/discriminant', 'display_name': 'Discriminant', 'score': 0.7177473902702332}"
-  - "{'id': 'https://openalex.org/keywords/optimal-discriminant-analysis', 'display_name': 'Optimal discriminant analysis', 'score': 0.6477228999137878}"
-  - "{'id': 'https://openalex.org/keywords/artificial-intelligence', 'display_name': 'Artificial intelligence', 'score': 0.4858505427837372}"
-  - "{'id': 'https://openalex.org/keywords/external-validity', 'display_name': 'External validity', 'score': 0.4797414541244507}"
-  - "{'id': 'https://openalex.org/keywords/machine-learning', 'display_name': 'Machine learning', 'score': 0.4323098361492157}"
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.4273449182510376}"
-  - "{'id': 'https://openalex.org/keywords/psychology', 'display_name': 'Psychology', 'score': 0.38367536664009094}"
-  - "{'id': 'https://openalex.org/keywords/statistics', 'display_name': 'Statistics', 'score': 0.3579527735710144}"
-  - "{'id': 'https://openalex.org/keywords/mathematics', 'display_name': 'Mathematics', 'score': 0.3478611409664154}"
-  - "{'id': 'https://openalex.org/keywords/psychometrics', 'display_name': 'Psychometrics', 'score': 0.2260972261428833}"
+  - Discriminant validity
+  - Linear discriminant analysis
+  - Optimal discriminant analysis
+  - Artificial intelligence
+  - External validity
+  - Machine learning
+  - Computer science
+  - Psychology
+  - Statistics
+  - Mathematics
+  - Psychometrics
 thoughts: ""
 related-papers: []
 ---

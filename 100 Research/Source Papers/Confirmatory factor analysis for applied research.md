@@ -1,18 +1,17 @@
 ---
-title: "Confirmatory factor analysis for applied research"
+title: Confirmatory factor analysis for applied research
 authors: []
-journal: "Choice Reviews Online"
+journal: Choice Reviews Online
 year: 2007
 doi: 10.5860/choice.44-2769
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/confirmatory-factor-analysis', 'display_name': 'Confirmatory factor analysis', 'score': 0.7414166331291199}"
-  - "{'id': 'https://openalex.org/keywords/factor', 'display_name': 'Factor (programming language)', 'score': 0.6099167466163635}"
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.3327814042568207}"
-  - "{'id': 'https://openalex.org/keywords/mathematics', 'display_name': 'Mathematics', 'score': 0.23120272159576416}"
-  - "{'id': 'https://openalex.org/keywords/statistics', 'display_name': 'Statistics', 'score': 0.20898762345314026}"
-  - "{'id': 'https://openalex.org/keywords/structural-equation-modeling', 'display_name': 'Structural equation modeling', 'score': 0.09930741786956787}"
+  - Confirmatory factor analysis
+  - Computer science
+  - Mathematics
+  - Statistics
+  - Structural equation modeling
 thoughts: ""
 related-papers: []
 ---

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "100 Research/Source Papers/Using multitrait–multimethod analyses in testing for evidence of construct validity.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Home"
+              "title": "Using multitrait–multimethod analyses in testing for evidence of construct validity"
             }
           }
         ]
@@ -188,7 +188,32 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
-    "400 Personal/Books/Gilead.md",
+    "100 Research/Source Papers/The Concept of Validity..md",
+    "100 Research/Source Papers/The AI‐IP Minimizing the guesswork of personality scale item development through artificial intellig.md",
+    "100 Research/Source Papers/Ten frequently asked questions about latent class analysis..md",
+    "100 Research/Source Papers/Teacher's Corner Testing Measurement Invariance of Second-Order Factor Models.md",
+    "100 Research/Source Papers/Sources of Method Bias in Social Science Research and Recommendations on How to Control It.md",
+    "100 Research/Source Papers/Scale development Theory and applications, 4th edition.md",
+    "100 Research/Source Papers/Repairing Tom Swift's Electric Factor Analysis Machine.md",
+    "100 Research/Source Papers/Recommendations for creating better concept definitions in the organizational, behavioral, and socia.md",
+    "100 Research/Source Papers/Psychological Testing A Practical Approach to Design and Evaluation.md",
+    "100 Research/Source Papers/Missing data Five practical guidelines.md",
+    "100 Research/Source Papers/lavaan AnRPackage for Structural Equation Modeling.md",
+    "100 Research/Source Papers/Latent Variable Modeling Using R.md",
+    "100 Research/Source Papers/Latent profile analysis A review and “how to” guide of its application within vocational behavior re.md",
+    "100 Research/Source Papers/Item Selection for the Development of Short Forms of Scales Using an Ant Colony Optimization Algorit.md",
+    "100 Research/Source Papers/Generalizability theory a primer.md",
+    "100 Research/Source Papers/Fundamentals of item response theory.md",
+    "100 Research/Source Papers/Extensions of auxiliary variable approaches for the investigation of mediation, moderation, and cond.md",
+    "100 Research/Source Papers/Exploratory Factor Analysis (EFA) Programs in R.md",
+    "100 Research/Source Papers/Evaluating the use of exploratory factor analysis in psychological research..md",
+    "100 Research/Source Papers/Do self-report instruments allow meaningful comparisons across diverse population groups Testing mea.md",
+    "100 Research/Source Papers/Dirty Data The Effects of Screening Respondents Who Provide Low-Quality Data in Survey Research.md",
+    "100 Research/Source Papers/Cronbach’s coefficient alpha Well known but poorly understood.md",
+    "100 Research/Source Papers/Content validation guidelines Evaluation criteria for definitional correspondence and definitional d.md",
+    "100 Research/Source Papers/Confirmatory factor analysis for applied research.md",
+    "100 Research/Source Papers/Choosing Prediction Over Explanation in Psychology Lessons From Machine Learning.md",
+    "100 Research/Source Papers/Book Review Psychometric theory (3rd ed.).md",
     "scripts/build_app.sh",
     "scripts/review_server.py",
     "scripts/model/Modelfile.built",
@@ -196,32 +221,8 @@
     "scripts/setup.sh",
     "scripts/com.phd-os.pipeline.plist",
     "scripts/model/build_model.sh",
-    "scripts/model/examples.md",
     "scripts/model/Modelfile",
     "scripts/model",
-    "scripts/review_tasks.py",
-    "400 Personal/Books/John Dies at the End.md",
-    "400 Personal/Books/_template.md",
-    "100 Research/Source Papers/_dismissed.md",
-    "100 Research/Source Papers/_template.md",
-    "100 Research/Source Papers/Teacher's Corner - Testing Measurement Invariance of Second-Order Factor Models.md",
-    "500 Recharge/Recharge List.md",
-    "Thoughts.md",
-    "000 Dashboard/Home.md",
-    "100 Research/My Papers/Self-Verification and JudgyAI.md",
-    "100 Research/My Papers/Self-Compassion and JudgyAI.md",
-    "100 Research/My Papers/Psychological Reactance and JudgyAI.md",
-    "100 Research/My Papers/Epistemic and Judgy AI.md",
-    "100 Research/My Papers/Emotional Similarity.md",
-    "100 Research/My Papers/AIC Disclosure.md",
-    "100 Research/My Papers/AI Companion Commentary.md",
-    "900 Templates/Template - Daily Note.md",
-    "400 Personal/Personal.md",
-    "300 Church/Speaking Assignments/Speaking Assignments.md",
-    "200 PhD Program/PhD Milestones.md",
-    "PaperTracker.base.md",
-    "sdfd.md",
-    "000 Dashboard/Paper Tracker.md",
-    "900 Templates/Template - My Paper.md"
+    "scripts/review_tasks.py"
   ]
 }

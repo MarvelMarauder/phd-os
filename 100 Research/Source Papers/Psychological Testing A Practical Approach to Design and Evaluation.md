@@ -9,10 +9,10 @@ doi: 10.4135/9781483385693
 stream: null
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.44822555780410767}"
-  - "{'id': 'https://openalex.org/keywords/reliability-engineering', 'display_name': 'Reliability engineering', 'score': 0.3906792402267456}"
-  - "{'id': 'https://openalex.org/keywords/psychology', 'display_name': 'Psychology', 'score': 0.36870843172073364}"
-  - "{'id': 'https://openalex.org/keywords/engineering', 'display_name': 'Engineering', 'score': 0.23685547709465027}"
+  - "Computer science"
+  - "Reliability engineering"
+  - "Psychology"
+  - "Engineering"
 thoughts: ""
 related-papers: []
 ---

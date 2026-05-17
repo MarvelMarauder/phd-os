@@ -1,20 +1,18 @@
 ---
-title: "Latent Variable Modeling Using R"
+title: Latent Variable Modeling Using R
 authors:
-  - "Beaujean, A. Alexander"
+  - Beaujean, A. Alexander
 journal: ""
 year: 2014
 doi: 10.4324/9781315869780
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/latent-variable', 'display_name': 'Latent variable', 'score': 0.6915630102157593}"
-  - "{'id': 'https://openalex.org/keywords/latent-variable-model', 'display_name': 'Latent variable model', 'score': 0.5272953510284424}"
-  - "{'id': 'https://openalex.org/keywords/variable', 'display_name': 'Variable (mathematics)', 'score': 0.5253447890281677}"
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.32205522060394287}"
-  - "{'id': 'https://openalex.org/keywords/mathematics', 'display_name': 'Mathematics', 'score': 0.25705575942993164}"
-  - "{'id': 'https://openalex.org/keywords/artificial-intelligence', 'display_name': 'Artificial intelligence', 'score': 0.17280983924865723}"
-  - "{'id': 'https://openalex.org/keywords/mathematical-analysis', 'display_name': 'Mathematical analysis', 'score': 0.07369133830070496}"
+  - Latent variable model
+  - Computer science
+  - Mathematics
+  - Artificial intelligence
+  - Mathematical analysis
 thoughts: ""
 related-papers: []
 ---

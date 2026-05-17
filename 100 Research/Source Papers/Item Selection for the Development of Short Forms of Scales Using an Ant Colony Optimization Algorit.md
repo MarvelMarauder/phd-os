@@ -1,24 +1,23 @@
 ---
-title: "Item Selection for the Development of Short Forms of Scales Using an Ant Colony Optimization Algorithm"
+title: Item Selection for the Development of Short Forms of Scales Using an Ant Colony Optimization Algorithm
 authors:
-  - "Leite, Walter L."
-  - "Huang, I-Chan"
-  - "Marcoulides, George A."
-journal: "Multivariate Behavioral Research"
+  - Leite, Walter L.
+  - Huang, I-Chan
+  - Marcoulides, George A.
+journal: Multivariate Behavioral Research
 year: 2008
 doi: 10.1080/00273170802285743
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/ant-colony-optimization-algorithms', 'display_name': 'Ant colony optimization algorithms', 'score': 0.8908324241638184}"
-  - "{'id': 'https://openalex.org/keywords/selection', 'display_name': 'Selection (genetic algorithm)', 'score': 0.6619937419891357}"
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.5820790529251099}"
-  - "{'id': 'https://openalex.org/keywords/scale', 'display_name': 'Scale (ratio)', 'score': 0.5479441285133362}"
-  - "{'id': 'https://openalex.org/keywords/algorithm', 'display_name': 'Algorithm', 'score': 0.5150896906852722}"
-  - "{'id': 'https://openalex.org/keywords/sample', 'display_name': 'Sample (material)', 'score': 0.44470348954200745}"
-  - "{'id': 'https://openalex.org/keywords/data-mining', 'display_name': 'Data mining', 'score': 0.4375409185886383}"
-  - "{'id': 'https://openalex.org/keywords/artificial-intelligence', 'display_name': 'Artificial intelligence', 'score': 0.3917997181415558}"
-  - "{'id': 'https://openalex.org/keywords/machine-learning', 'display_name': 'Machine learning', 'score': 0.38238197565078735}"
+  - Ant colony optimization algorithms
+  - Selection (genetic algorithm)
+  - Computer science
+  - Scale (ratio)
+  - Algorithm
+  - Data mining
+  - Artificial intelligence
+  - Machine learning
 thoughts: ""
 related-papers: []
 ---

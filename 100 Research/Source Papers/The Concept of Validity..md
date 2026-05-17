@@ -1,27 +1,23 @@
 ---
-title: "The Concept of Validity."
+title: The Concept of Validity.
 authors:
-  - "Borsboom, Denny"
-  - "Mellenbergh, Gideon J."
-  - "van Heerden, Jaap"
-journal: "Psychological Review"
+  - Borsboom, Denny
+  - Mellenbergh, Gideon J.
+  - van Heerden, Jaap
+journal: Psychological Review
 year: 2004
 doi: 10.1037/0033-295x.111.4.1061
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/causality', 'display_name': 'Causality (physics)', 'score': 0.6229730844497681}"
-  - "{'id': 'https://openalex.org/keywords/meaning', 'display_name': 'Meaning (existential)', 'score': 0.5869330763816833}"
-  - "{'id': 'https://openalex.org/keywords/external-validity', 'display_name': 'External validity', 'score': 0.5585461854934692}"
-  - "{'id': 'https://openalex.org/keywords/psychology', 'display_name': 'Psychology', 'score': 0.5358805060386658}"
-  - "{'id': 'https://openalex.org/keywords/test', 'display_name': 'Test (biology)', 'score': 0.5298464298248291}"
-  - "{'id': 'https://openalex.org/keywords/cognitive-psychology', 'display_name': 'Cognitive psychology', 'score': 0.49992847442626953}"
-  - "{'id': 'https://openalex.org/keywords/epistemology', 'display_name': 'Epistemology', 'score': 0.495608925819397}"
-  - "{'id': 'https://openalex.org/keywords/criterion-validity', 'display_name': 'Criterion validity', 'score': 0.4749695956707001}"
-  - "{'id': 'https://openalex.org/keywords/relation', 'display_name': 'Relation (database)', 'score': 0.4600188136100769}"
-  - "{'id': 'https://openalex.org/keywords/test-theory', 'display_name': 'Test theory', 'score': 0.4505336284637451}"
-  - "{'id': 'https://openalex.org/keywords/simple', 'display_name': 'Simple (philosophy)', 'score': 0.42890626192092896}"
-  - "{'id': 'https://openalex.org/keywords/ontology', 'display_name': 'Ontology', 'score': 0.4162992537021637}"
+  - External validity
+  - Psychology
+  - Cognitive psychology
+  - Epistemology
+  - Criterion validity
+  - Test theory
+  - Ontology
+  - Validity
 thoughts: ""
 related-papers: []
 ---

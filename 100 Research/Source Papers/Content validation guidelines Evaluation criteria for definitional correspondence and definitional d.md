@@ -11,10 +11,10 @@ doi: 10.1037/apl0000406
 stream: null
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/optimal-distinctiveness-theory', 'display_name': 'Optimal distinctiveness theory', 'score': 0.9268985986709595}"
-  - "{'id': 'https://openalex.org/keywords/psychology', 'display_name': 'Psychology', 'score': 0.7587481141090393}"
-  - "{'id': 'https://openalex.org/keywords/applied-psychology', 'display_name': 'Applied psychology', 'score': 0.3681481182575226}"
-  - "{'id': 'https://openalex.org/keywords/social-psychology', 'display_name': 'Social psychology', 'score': 0.35211408138275146}"
+  - "Optimal distinctiveness theory"
+  - "Psychology"
+  - "Applied psychology"
+  - "Social psychology"
 thoughts: ""
 related-papers: []
 ---

@@ -1,25 +1,23 @@
 ---
-title: "Sources of Method Bias in Social Science Research and Recommendations on How to Control It"
+title: Sources of Method Bias in Social Science Research and Recommendations on How to Control It
 authors:
-  - "Podsakoff, Philip M."
-  - "MacKenzie, Scott B."
-  - "Podsakoff, Nathan P."
-journal: "Annual Review of Psychology"
+  - Podsakoff, Philip M.
+  - MacKenzie, Scott B.
+  - Podsakoff, Nathan P.
+journal: Annual Review of Psychology
 year: 2012
 doi: 10.1146/annurev-psych-120710-100452
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/psychology', 'display_name': 'Psychology', 'score': 0.7400307655334473}"
-  - "{'id': 'https://openalex.org/keywords/control', 'display_name': 'Control (management)', 'score': 0.5778687596321106}"
-  - "{'id': 'https://openalex.org/keywords/meaning', 'display_name': 'Meaning (existential)', 'score': 0.5141337513923645}"
-  - "{'id': 'https://openalex.org/keywords/cognitive-psychology', 'display_name': 'Cognitive psychology', 'score': 0.4861471354961395}"
-  - "{'id': 'https://openalex.org/keywords/behavioural-sciences', 'display_name': 'Behavioural sciences', 'score': 0.45218366384506226}"
-  - "{'id': 'https://openalex.org/keywords/response-bias', 'display_name': 'Response bias', 'score': 0.42870211601257324}"
-  - "{'id': 'https://openalex.org/keywords/common-method-variance', 'display_name': 'Common-method variance', 'score': 0.4163539409637451}"
-  - "{'id': 'https://openalex.org/keywords/social-psychology', 'display_name': 'Social psychology', 'score': 0.38193273544311523}"
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.1759902834892273}"
-  - "{'id': 'https://openalex.org/keywords/artificial-intelligence', 'display_name': 'Artificial intelligence', 'score': 0.1253792941570282}"
+  - Psychology
+  - Cognitive psychology
+  - Behavioural sciences
+  - Response bias
+  - Common-method variance
+  - Social psychology
+  - Computer science
+  - Artificial intelligence
 thoughts: ""
 related-papers: []
 ---

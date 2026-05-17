@@ -1,13 +1,14 @@
 ---
-title: "Fundamentals of item response theory"
+title: Fundamentals of item response theory
 authors: []
-journal: "Choice Reviews Online"
+journal: Choice Reviews Online
 year: 1992
 doi: 10.5860/choice.29-4185
-stream: null
+stream:
 topic: ""
 keywords:
-  - "{'id': 'https://openalex.org/keywords/computer-science', 'display_name': 'Computer science', 'score': 0.3324553966522217}"
+  - Computer science
+  - Item response theory
 thoughts: ""
 related-papers: []
 ---
