@@ -11,6 +11,7 @@ Or run:  python3 scripts/review_server.py
 
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -18,8 +19,9 @@ import threading
 import time
 import urllib.request
 import webbrowser
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 CONFIG_FILE   = os.path.expanduser("~/.phd_os_config.json")
 QUEUE_FILE    = os.path.expanduser("~/.phd_os_queue.json")
@@ -29,7 +31,8 @@ CORRECTIONS_FILE = os.path.join(REPO_DIR, "scripts", "model", "corrections.md")
 PIPELINE_SCRIPT = os.path.join(REPO_DIR, "scripts", "email_pipeline.py")
 BUILD_MODEL_SCRIPT = os.path.join(REPO_DIR, "scripts", "model", "build_model.sh")
 PORT = 7891
-TODOIST_BASE = "https://api.todoist.com/api/v1"
+TODOIST_BASE    = "https://api.todoist.com/api/v1"
+ATTACHMENTS_DIR = os.path.expanduser("~/.phd_os_attachments")
 PRIORITY_MAP = {1: 4, 2: 3, 3: 2, 4: 1}
 
 # ── Pipeline state ────────────────────────────────────────────────────────────
@@ -103,19 +106,22 @@ def approve_tasks(approved_tasks):
     if not token:
         return {"ok": False, "error": "No Todoist token in config."}
 
-    try:
-        projects = get_projects(token)
-    except Exception as e:
-        return {"ok": False, "error": f"Could not reach Todoist: {e}"}
+    # Only fetch project list if any task needs hint→id resolution (no UI-supplied id)
+    needs_hint = any(not t.get("project_id") and t.get("project_hint") for t in approved_tasks)
+    projects = {}
+    if needs_hint:
+        try:
+            projects = get_projects(token)
+        except Exception as e:
+            return {"ok": False, "error": f"Could not reach Todoist: {e}"}
 
     created = []
     errors  = []
     for task in approved_tasks:
         content    = task.get("task", "").strip()
         priority   = task.get("priority", 3)
-        hint       = task.get("project_hint", "").lower()
-        due        = task.get("due_suggestion", "")
-        project_id = projects.get(hint)
+        due        = task.get("due", "") or task.get("due_suggestion", "")
+        project_id = task.get("project_id") or projects.get(task.get("project_hint", "").lower())
         if not content:
             continue
         try:
@@ -390,6 +396,25 @@ main{max-width:860px;margin:0 auto;padding:28px 20px 80px}
 .dismiss-reason:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .dismiss-reason::placeholder{color:var(--subtle)}
 
+/* ── Snippet & attachments ── */
+.email-snippet{padding:6px 16px 8px;border-top:1px solid var(--border)}
+.email-snippet summary{font-size:12px;color:var(--muted);cursor:pointer;user-select:none;list-style:none}
+.email-snippet summary:hover{color:var(--text)}
+.snippet-body{font-size:12px;color:var(--text);margin-top:8px;line-height:1.6;
+  white-space:pre-wrap;background:var(--surface2);padding:10px 12px;
+  border-radius:var(--radius-sm);max-height:200px;overflow-y:auto}
+.email-attachments{padding:6px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+.att-link{font-size:12px;color:var(--blue);text-decoration:none;
+  background:var(--blue-dim);padding:3px 8px;border-radius:12px}
+.att-link:hover{opacity:.8}
+
+/* ── Task project/due controls ── */
+.task-project-select,.task-due-input{font-size:11px;padding:2px 6px;border:1px solid var(--border);
+  border-radius:4px;background:var(--surface);color:var(--text);font-family:inherit}
+.task-project-select{cursor:pointer;max-width:160px}
+.task-due-input{width:110px;outline:none}
+.task-due-input:focus{border-color:var(--accent)}
+
 /* ── Approve bar ── */
 .approve-bar{position:fixed;bottom:0;left:0;right:0;
   background:var(--surface);border-top:1px solid var(--border);
@@ -563,14 +588,19 @@ textarea.form-input{resize:vertical;min-height:80px;line-height:1.5}
 // ── State ────────────────────────────────────────────────────────────────────
 
 let queueData     = {batches: []};
+let projectsList  = [];
 let pipelineTimer = null;
 let modelTimer    = null;
 let exTodoCount   = 0;
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 
-refreshQueue();
-setInterval(refreshQueue, 5000);
+async function init() {
+  await loadProjects();
+  refreshQueue();
+  setInterval(refreshQueue, 5000);
+}
+init();
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 
@@ -581,6 +611,23 @@ function switchTab(name) {
   });
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+async function loadProjects() {
+  try {
+    const res = await fetch('/api/projects').then(r => r.json());
+    if (res.ok) projectsList = res.projects || [];
+  } catch(_) {}
+}
+
+function findProjectIdByHint(hint) {
+  if (!hint || !projectsList.length) return '';
+  const h = hint.toLowerCase();
+  const p = projectsList.find(p => p.name.toLowerCase() === h)
+         || projectsList.find(p => p.name.toLowerCase().includes(h));
+  return p ? p.id : '';
 }
 
 // ── Queue rendering ──────────────────────────────────────────────────────────
@@ -634,10 +681,24 @@ function renderQueue() {
 }
 
 function renderEmailCard(email, bi, ei) {
-  const from    = email.from || '';
-  const subject = email.subject || '(no subject)';
-  const summary = email.summary || '';
-  const todos   = email.todos || [];
+  const from        = email.from || '';
+  const subject     = email.subject || '(no subject)';
+  const summary     = email.summary || '';
+  const snippet     = email.snippet || '';
+  const attachments = email.attachments || [];
+  const todos       = email.todos || [];
+
+  const attHtml = attachments.length
+    ? `<div class="email-attachments">${
+        attachments.map(a =>
+          `<a class="att-link" href="/api/attachments/${encodeURIComponent(a.file)}" download="${esc(a.name)}">📎 ${esc(a.name)}</a>`
+        ).join('')
+      }</div>`
+    : '';
+
+  const snippetHtml = snippet
+    ? `<details class="email-snippet"><summary>Show email</summary><div class="snippet-body">${esc(snippet)}</div></details>`
+    : '';
 
   return `
     <div class="email-card" id="card-${bi}-${ei}">
@@ -646,6 +707,8 @@ function renderEmailCard(email, bi, ei) {
         <span class="email-subject" title="${esc(subject)}">${esc(subject)}</span>
       </div>
       ${summary ? `<div class="email-summary">${esc(summary)}</div>` : ''}
+      ${attHtml}
+      ${snippetHtml}
       ${todos.map((t, ti) => renderTaskRow(t, bi, ei, ti)).join('')}
     </div>`;
 }
@@ -654,10 +717,16 @@ function renderTaskRow(todo, bi, ei, ti) {
   const task  = todo.task || '';
   const prio  = todo.priority || 3;
   const hint  = todo.project_hint || '';
-  const due   = todo.due_suggestion || '';
+  const due   = todo.due_suggestion && todo.due_suggestion !== 'no rush' ? todo.due_suggestion : '';
   const pid   = `chk-${bi}-${ei}-${ti}`;
   const prioClass = ['','badge-p1','badge-p2','badge-p3','badge-p4'][prio] || 'badge-p4';
   const prioLabel = ['','URGENT','High','Normal','Low'][prio] || '';
+
+  const preselect  = findProjectIdByHint(hint);
+  const projOptions = ['<option value="">— project —</option>',
+    ...projectsList.map(p =>
+      `<option value="${esc(p.id)}"${p.id === preselect ? ' selected' : ''}>${esc(p.name)}</option>`)
+  ].join('');
 
   return `
     <div class="task-row" id="row-${bi}-${ei}-${ti}">
@@ -669,8 +738,9 @@ function renderTaskRow(todo, bi, ei, ti) {
           oninput="autoResize(this)">${esc(task)}</textarea>
         <div class="task-meta">
           <span class="badge ${prioClass}">${prioLabel}</span>
-          ${hint ? `<span class="badge badge-hint">${esc(hint)}</span>` : ''}
-          ${due && due !== 'no rush' ? `<span class="badge badge-due">${esc(due)}</span>` : ''}
+          <select class="task-project-select" id="proj-${bi}-${ei}-${ti}">${projOptions}</select>
+          <input class="task-due-input" id="due-${bi}-${ei}-${ti}"
+            placeholder="due date" value="${esc(due)}">
         </div>
       </div>
       <button class="task-dismiss" title="Skip this task"
@@ -705,8 +775,15 @@ function gatherChecked() {
       (email.todos || []).forEach((todo, ti) => {
         const chk  = document.getElementById(`chk-${bi}-${ei}-${ti}`);
         const text = document.getElementById(`text-${bi}-${ei}-${ti}`);
+        const proj = document.getElementById(`proj-${bi}-${ei}-${ti}`);
+        const due  = document.getElementById(`due-${bi}-${ei}-${ti}`);
         if (chk && chk.checked) {
-          tasks.push({...todo, task: text ? text.value.trim() : todo.task});
+          tasks.push({
+            ...todo,
+            task:       text ? text.value.trim() : todo.task,
+            project_id: proj ? proj.value : '',
+            due:        due  ? due.value.trim()  : '',
+          });
         }
       });
     });
@@ -971,6 +1048,40 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json({"running": _pipeline_running, "log": _pipeline_log[-30:]})
         elif path == "/api/model-status":
             self._send_json({"running": _model_running, "log": _model_log[-30:]})
+        elif path == "/api/projects":
+            cfg = load_config()
+            token = cfg.get("todoist_token", "")
+            if not token:
+                self._send_json({"ok": False, "error": "No Todoist token"})
+                return
+            try:
+                req = urllib.request.Request(
+                    f"{TODOIST_BASE}/projects",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    data = json.loads(r.read())
+                items = data.get("results", data) if isinstance(data, dict) else data
+                self._send_json({"ok": True, "projects": [{"id": p["id"], "name": p["name"]} for p in items]})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)})
+        elif path.startswith("/api/attachments/"):
+            fname = unquote(path[len("/api/attachments/"):])
+            if not fname or "/" in fname or "\\" in fname or fname.startswith("."):
+                self.send_error(400, "Invalid filename")
+                return
+            fpath = os.path.join(ATTACHMENTS_DIR, fname)
+            if not os.path.isfile(fpath):
+                self.send_error(404, "Not found")
+                return
+            with open(fpath, "rb") as f:
+                fdata = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/pdf")
+            self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+            self.send_header("Content-Length", len(fdata))
+            self.end_headers()
+            self.wfile.write(fdata)
         else:
             self.send_error(404)
 

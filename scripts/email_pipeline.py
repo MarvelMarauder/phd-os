@@ -25,6 +25,7 @@ import json
 import os
 import re
 import stat
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -34,7 +35,8 @@ from datetime import datetime, timezone
 CONFIG_FILE = os.path.expanduser("~/.phd_os_config.json")
 QUEUE_FILE  = os.path.expanduser("~/.phd_os_queue.json")
 LOG_FILE    = "/tmp/phd_os_pipeline.log"
-AUDIT_FILE  = "/tmp/phd_os_audit.log"
+AUDIT_FILE      = "/tmp/phd_os_audit.log"
+ATTACHMENTS_DIR = os.path.expanduser("~/.phd_os_attachments")
 
 DEFAULT_MAX_EMAILS = 20  # safety cap; override with max_emails_per_run in config
 
@@ -343,12 +345,13 @@ def fetch_emails(queue_folder, max_emails, dry_run):
 
         audit("EMAIL_READ", f"id={msg_id} subject={subject!r} from={sender!r}")
         emails.append({
-            "id":      msg_id,
-            "subject": subject,
-            "from":    sender,
-            "date":    date_str,
-            "body":    body,
-            "pdfs":    pdf_texts,
+            "id":               msg_id,
+            "subject":          subject,
+            "from":             sender,
+            "date":             date_str,
+            "body":             body,
+            "pdfs":             pdf_texts,
+            "attachment_names": [n for n in filter(None, pdf_names_raw.split("|"))],
         })
 
     return emails
@@ -549,6 +552,7 @@ def main():
         queue        = load_queue()
         batch_emails = []
         parse_errors = 0
+        os.makedirs(ATTACHMENTS_DIR, exist_ok=True)
 
         for email in emails:
             log(f"  Parsing: {email['subject']}")
@@ -560,12 +564,28 @@ def main():
                 continue
 
             todos = result.get("todos", [])
+
+            # Copy PDF attachments to persistent dir so they survive temp cleanup
+            saved_attachments = []
+            for att_name in email.get("attachment_names", []):
+                src = os.path.join(_secure_tmp, f"att_{email['id']}_{att_name}")
+                dst_name = f"{email['id']}_{att_name}"
+                dst = os.path.join(ATTACHMENTS_DIR, dst_name)
+                if os.path.exists(src):
+                    try:
+                        shutil.copy2(src, dst)
+                        saved_attachments.append({"name": att_name, "file": dst_name})
+                    except Exception as e:
+                        log(f"  WARNING: Could not save attachment {att_name!r}: {e}")
+
             batch_emails.append({
-                "subject": email["subject"],
-                "from":    email["from"],
-                "date":    email["date"],
-                "summary": result.get("summary", ""),
-                "todos":   todos,
+                "subject":     email["subject"],
+                "from":        email["from"],
+                "date":        email["date"],
+                "snippet":     email["body"][:600].strip(),
+                "summary":     result.get("summary", ""),
+                "todos":       todos,
+                "attachments": saved_attachments,
             })
             log(f"  → {len(todos)} task(s) proposed")
             audit("PARSE_OK", f"subject={email['subject']!r} todos={len(todos)}")

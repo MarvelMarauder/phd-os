@@ -41,7 +41,14 @@
       <a href="#pipeline-overview">Overview</a>
       <a href="#pipeline-setup">Setup</a>
       <a href="#pipeline-daily">Daily Use</a>
+      <a href="#pipeline-review-ui">Review UI</a>
       <a href="#pipeline-model">Fine-Tuning the Model</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Architecture</div>
+      <a href="#system-map">System Map</a>
+      <a href="#data-flow">Data Flow</a>
+      <a href="#debugging">Debugging by Hand</a>
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Reference</div>
@@ -197,15 +204,15 @@ dismissed:
 
     <!-- ── Email Pipeline ──────────────────── -->
     <h2 id="pipeline-overview">Email Pipeline — Overview</h2>
-    <p>The email pipeline reads emails from a designated Outlook folder, runs them through a local LLM (Ollama), and accumulates proposed to-do items in a queue file. You review and approve the queue whenever you want — the pipeline runs automatically every two hours in the background.</p>
+    <p>The email pipeline reads emails from a designated Apple Mail folder, runs them through a local LLM (Ollama), and accumulates proposed to-do items in a queue file. You review and approve the queue through a local web UI whenever you want — the pipeline runs automatically every two hours in the background.</p>
     <p>All processing is local. Emails never leave your Mac. The only data that leaves is the task text you explicitly approve, which goes to Todoist. See <a href="#security">Security &amp; Protections</a> for a full breakdown of what the pipeline can and cannot do.</p>
     <h3>How it works</h3>
     <ol>
-      <li>Create a folder called <strong>LLM Queue</strong> in Outlook. Set up rules to forward emails you want processed into it.</li>
-      <li>A LaunchAgent runs <code>email_pipeline.py</code> every 2 hours. If Outlook isn't open, it launches it automatically.</li>
-      <li>Each email is parsed by the <code>phd-email-parser</code> Ollama model. Proposed tasks are appended to <code>~/.phd_os_queue.json</code>.</li>
+      <li>Create a folder called <strong>LLM Queue</strong> in Apple Mail. Set up rules in Outlook to forward emails you want processed into it — they sync to Apple Mail automatically.</li>
+      <li>A LaunchAgent runs <code>email_pipeline.py</code> every 2 hours. If Apple Mail isn't open, it launches it and waits for Exchange to sync before reading.</li>
+      <li>Each email is parsed by the <code>phd-email-parser</code> Ollama model. Proposed tasks, an email snippet, and any PDF attachments are saved to <code>~/.phd_os_queue.json</code> and <code>~/.phd_os_attachments/</code>.</li>
       <li>Emails are moved to <strong>LLM Processed</strong> immediately after parsing (so the queue folder stays clean).</li>
-      <li>Run <code>python3 scripts/review_tasks.py</code> to review the accumulated queue, approve/edit/skip tasks, and send approved ones to Todoist.</li>
+      <li>Open <strong>PhD OS Review.app</strong> from your Dock to launch the review web UI. Select a project and due date for each task, read the email snippet if you need context, download any PDF attachments, then click <em>Add to Todoist</em>.</li>
     </ol>
 
     <h2 id="pipeline-setup">Email Pipeline — Setup</h2>
@@ -248,23 +255,62 @@ dismissed:
 }</code></pre>
 
     <h2 id="pipeline-daily">Email Pipeline — Daily Use</h2>
-    <p>You don't need to do anything for the pipeline to run — it fires automatically every 2 hours when your Mac is on. Outlook opens itself if it's closed.</p>
-    <p>When you're ready to review accumulated tasks:</p>
+    <p>You don't need to do anything for the pipeline to run — it fires automatically every 2 hours when your Mac is on. Apple Mail opens itself if it's closed.</p>
+    <p>When you're ready to review accumulated tasks, click <strong>PhD OS Review.app</strong> in your Dock. It opens a local web UI at <code>http://localhost:7891</code> in your browser. If the server is already running, it goes straight to the browser.</p>
+    <p>To rebuild the app (e.g. if the vault path changed):</p>
+    <pre><code>bash scripts/build_app.sh</code></pre>
+    <p>If you prefer the terminal:</p>
+    <pre><code>python3 scripts/review_server.py</code></pre>
+    <p>There is also a minimal CLI fallback if the web UI isn't available:</p>
     <pre><code>python3 scripts/review_tasks.py</code></pre>
-    <p>For each proposed task you'll be asked: <code>[y]</code> approve · <code>[e]</code> edit then approve · <code>[n]</code> discard · <code>[s]</code> skip remaining tasks from this email. Approved tasks go straight to Todoist.</p>
-    <p>Tasks you skip (not discard) stay in the queue and will appear again next time you run the review. This means if you forget to review for a week, all proposed tasks from that week will be waiting.</p>
-    <h3>Useful commands</h3>
+    <h3>Useful terminal commands</h3>
     <pre><code># Check the pipeline log
 cat /tmp/phd_os_pipeline.log
 
 # Run the pipeline manually right now
 python3 scripts/email_pipeline.py
 
+# Run without moving emails (process but leave in LLM Queue)
+python3 scripts/email_pipeline.py --no-move
+
+# Parse emails and print proposed tasks — write nothing, move nothing
+python3 scripts/email_pipeline.py --dry-run
+
 # See how many tasks are pending
 python3 -c "import json; q=json.load(open('$HOME/.phd_os_queue.json')); print(sum(len(e['todos']) for b in q['batches'] for e in b['emails']), 'pending')"
 
 # Uninstall the LaunchAgent
 launchctl unload ~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></pre>
+
+    <h2 id="pipeline-review-ui">Email Pipeline — Review UI</h2>
+    <p>The review UI is a local web app served by <code>review_server.py</code> on port 7891. It has three tabs.</p>
+
+    <h3>Task Queue tab</h3>
+    <p>This is the main working view. Each batch shows the emails processed in that run, grouped as cards. For each email you see:</p>
+    <ul>
+      <li><strong>From / Subject</strong> — sender name and subject line in the card header.</li>
+      <li><strong>Summary</strong> — one-sentence LLM summary of what the email is about and what action it requires, shown in italics below the header.</li>
+      <li><strong>Show email</strong> — a collapsible that reveals the first ~600 characters of the email body so you can read the actual context without switching to Mail.</li>
+      <li><strong>📎 attachment links</strong> — if the email had PDF attachments, download links appear here. Attachments are stored in <code>~/.phd_os_attachments/</code> and survive between sessions.</li>
+    </ul>
+    <p>Each proposed task appears below its email card as a row with:</p>
+    <ul>
+      <li><strong>Checkbox</strong> — checked by default. Uncheck to exclude a task from the current approval batch without dismissing it.</li>
+      <li><strong>Editable task text</strong> — click to edit before approving. Changes are sent to Todoist as-is.</li>
+      <li><strong>Priority badge</strong> — Urgent / High / Normal / Low, set by the LLM.</li>
+      <li><strong>Project dropdown</strong> — your full Todoist project list, loaded from the API on page open. The LLM's <code>project_hint</code> pre-selects the closest match; change it before approving. <em>This is the most important field to review</em> — a task sent without a project lands in Todoist's inbox.</li>
+      <li><strong>Due date input</strong> — pre-filled with the LLM's suggestion. Accepts natural language (today, this week, Friday, 2026-06-15). Clear it to create the task with no due date.</li>
+      <li><strong>× dismiss button</strong> — removes the task. A reason field appears; your reason is saved to <code>scripts/model/corrections.md</code> and gets baked into the model on the next rebuild, creating a feedback loop.</li>
+    </ul>
+    <p>Click <strong>Add to Todoist</strong> in the bottom bar to create all checked tasks at once. The bar shows how many tasks are selected. Tasks are removed from the queue immediately after creation.</p>
+    <p>The <strong>Run Pipeline Now</strong> button at the top triggers <code>email_pipeline.py</code> in the background and streams its log output below the button. Useful if you want to process new emails without waiting for the next 2-hour automatic run.</p>
+
+    <h3>Add Example tab</h3>
+    <p>Paste in a real email, write the correct summary and tasks, and save it to <code>scripts/model/examples.md</code>. These become few-shot examples baked into the model. Use this when you encounter an email the LLM handled badly. After adding examples, go to the Model tab and rebuild.</p>
+
+    <h3>Model tab</h3>
+    <p>Rebuilds the <code>phd-email-parser</code> Ollama model from <code>scripts/model/Modelfile</code>, <code>examples.md</code>, and <code>corrections.md</code>. Takes about 30–60 seconds. The rebuild log streams to the page so you can see when it finishes.</p>
+    <div class="docs-callout tip">Click <strong>Stop Server</strong> in the header to shut down the web server gracefully when you're done. You don't need to keep it running — the pipeline runs independently of the review server.</div>
 
     <h2 id="pipeline-model">Fine-Tuning the Model</h2>
     <p>The <code>phd-email-parser</code> model is a customized version of <code>llama3.2:3b</code> with your research context and task categories baked in. You can sharpen it over time by adding examples — no GPU or training required.</p>
@@ -398,6 +444,187 @@ python3 scripts/email_pipeline.py --no-move</code></pre>
       <li>The pipeline scripts have not been independently security-audited.</li>
     </ul>
 
+    <!-- ── Architecture ──────────────────────── -->
+    <h2 id="system-map">System Map</h2>
+    <p>PhD OS has two completely independent pipelines that share nothing at runtime. The website pipeline is cloud-based and stateless. The email pipeline is local and stateful.</p>
+
+    <h3>All files at a glance</h3>
+    <table class="docs-table">
+      <thead><tr><th>File / Location</th><th>What it is</th><th>Who reads/writes it</th></tr></thead>
+      <tbody>
+        <tr><td><code>site/*.html</code></td><td>Static page templates — source of truth for all pages</td><td>Build script copies to <code>_site/</code>; browser renders</td></tr>
+        <tr><td><code>site/app.js</code></td><td>Shared JS: nav bar, Todoist API calls, Google Calendar auth</td><td>Every page loads this; build copies to <code>_site/</code></td></tr>
+        <tr><td><code>site/style.css</code></td><td>All CSS for the site</td><td>Every page; build copies to <code>_site/</code></td></tr>
+        <tr><td><code>.github/workflows/build_dashboard.py</code></td><td>Build script — reads vault markdown, writes JSON to <code>_site/</code></td><td>GitHub Actions runs it on every push</td></tr>
+        <tr><td><code>.github/workflows/dashboard.yml</code></td><td>CI/CD config — triggers the build and deploys to Pages</td><td>GitHub reads this automatically</td></tr>
+        <tr><td><code>_site/</code></td><td>Build output — what GitHub Pages actually serves</td><td>Build script writes; Pages serves; never edit directly</td></tr>
+        <tr><td><code>scripts/email_pipeline.py</code></td><td>Headless runner — reads Apple Mail via AppleScript, calls Ollama, writes queue</td><td>LaunchAgent runs it every 2 hrs; you can run it manually</td></tr>
+        <tr><td><code>scripts/review_server.py</code></td><td>Web UI server on port 7891 — task approval interface</td><td>PhD OS Review.app launches it; you can run it manually</td></tr>
+        <tr><td><code>scripts/review_tasks.py</code></td><td>CLI fallback for task approval</td><td>You run it manually in terminal if the web UI isn't available</td></tr>
+        <tr><td><code>scripts/model/Modelfile</code></td><td>Ollama model definition — system prompt and base model</td><td>You edit this; <code>build_model.sh</code> compiles it into Ollama</td></tr>
+        <tr><td><code>scripts/model/examples.md</code></td><td>Few-shot email→task training examples</td><td>You add examples via the Review UI or by hand; <code>build_model.sh</code> reads it</td></tr>
+        <tr><td><code>scripts/model/corrections.md</code></td><td>Rejection reasons from dismissed tasks</td><td>Review UI appends to it; <code>build_model.sh</code> injects it as corrections</td></tr>
+        <tr><td><code>~/.phd_os_config.json</code></td><td>Pipeline config: Todoist token, Ollama URL, folder names</td><td><code>email_pipeline.py</code> and <code>review_server.py</code> read this on every run</td></tr>
+        <tr><td><code>~/.phd_os_queue.json</code></td><td>Pending task queue — batches of proposed tasks awaiting review</td><td><code>email_pipeline.py</code> appends; <code>review_server.py</code> reads and clears approved/dismissed tasks</td></tr>
+        <tr><td><code>~/.phd_os_attachments/</code></td><td>Persistent PDF attachment storage</td><td><code>email_pipeline.py</code> copies PDFs here; review UI serves download links from here</td></tr>
+        <tr><td><code>/tmp/phd_os_pipeline.log</code></td><td>Human-readable pipeline run log (cleared on reboot)</td><td><code>email_pipeline.py</code> writes; you can <code>cat</code> it anytime</td></tr>
+        <tr><td><code>/tmp/phd_os_audit.log</code></td><td>JSON-lines audit trail of every read/move/queue action (cleared on reboot)</td><td><code>email_pipeline.py</code> writes; you can inspect it</td></tr>
+        <tr><td><code>~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></td><td>macOS LaunchAgent — schedules <code>email_pipeline.py</code> to run every 2 hours</td><td>macOS reads this; installed by <code>setup.sh</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="data-flow">Data Flow</h2>
+
+    <h3>Website pipeline</h3>
+    <p>This pipeline is purely build-time. Nothing runs on a server at request time.</p>
+    <ol>
+      <li>You write or edit a markdown note in Obsidian (e.g. a new source paper in <code>100 Research/Source Papers/</code>).</li>
+      <li>Obsidian Git pushes the change to <code>main</code> on GitHub (every 10 minutes).</li>
+      <li>GitHub Actions detects the push and runs <code>build_dashboard.py</code>. The script glob-scans the vault folders, reads YAML frontmatter, makes API calls to OpenAlex/Open Library, and writes JSON files (<code>papers.json</code>, <code>lit.json</code>, <code>books.json</code>, <code>recharge.json</code>, <code>discover.json</code>) into <code>_site/</code>. It also copies everything from <code>site/</code> into <code>_site/</code>.</li>
+      <li>GitHub Pages deploys <code>_site/</code> as a static site.</li>
+      <li>When you open a page in your browser, the HTML loads <code>app.js</code> and <code>style.css</code>, then fetches the relevant JSON file (<code>fetch('lit.json')</code>), and renders the data.</li>
+      <li>Live data (Todoist tasks, Google Calendar events) is fetched client-side at runtime using tokens stored in <code>localStorage</code>. This never touches the build.</li>
+    </ol>
+    <div class="docs-callout tip">If a page looks stale, the build is the bottleneck — not the browser cache. Trigger a manual GitHub Actions run to force a rebuild.</div>
+
+    <h3>Email pipeline</h3>
+    <p>This pipeline is entirely local. Each step runs as a separate process on your Mac.</p>
+    <ol>
+      <li><strong>Trigger:</strong> The LaunchAgent fires <code>email_pipeline.py</code> every 2 hours (or you run it manually / click "Run Pipeline Now" in the web UI).</li>
+      <li><strong>Mail open:</strong> If Apple Mail isn't running, the script opens it and waits up to 60 seconds for it to launch, then adds a 15-second delay for Exchange to sync. This is why the pipeline can be slow if Mail was closed.</li>
+      <li><strong>AppleScript fetch:</strong> The script generates an AppleScript and runs it via <code>osascript</code>. The AppleScript iterates all mailboxes to find the one named "LLM Queue", calls <code>synchronize</code> on it, then reads each message: writes the body to a private temp file, saves any PDF attachments to temp, and returns a tab-delimited line per message (id, subject, sender, date, pdf names).</li>
+      <li><strong>Deduplication:</strong> If multiple messages in the queue share the same thread subject (e.g. a back-and-forth), only the most recent one is processed.</li>
+      <li><strong>Ollama parse:</strong> For each email, the script sends a prompt to <code>http://localhost:11434/api/generate</code> with the email content and asks for a JSON object with <code>summary</code> and <code>todos</code>. The model is <code>phd-email-parser</code>.</li>
+      <li><strong>Queue write:</strong> The resulting tasks, a 600-char body snippet, and a list of saved attachment filenames are atomically appended to <code>~/.phd_os_queue.json</code>. PDFs are copied from temp to <code>~/.phd_os_attachments/</code> before cleanup.</li>
+      <li><strong>Move:</strong> A second AppleScript moves all messages from "LLM Queue" to "LLM Processed".</li>
+      <li><strong>Review:</strong> When you open the Review UI, <code>review_server.py</code> reads <code>queue.json</code> and renders the task cards. It also fetches your Todoist project list from the API to populate the project dropdown.</li>
+      <li><strong>Approve:</strong> Clicking "Add to Todoist" sends each checked task (with your selected project ID and due date) to <code>POST https://api.todoist.com/api/v1/tasks</code>. Approved and dismissed tasks are removed from <code>queue.json</code>.</li>
+    </ol>
+
+    <h2 id="debugging">Debugging by Hand</h2>
+    <p>When something breaks, you can inspect every stage of each pipeline independently. You don't need Claude to read logs — all the state is in plain text files.</p>
+
+    <h3>Debugging the email pipeline</h3>
+    <pre><code># 1. Check the last pipeline run log
+cat /tmp/phd_os_pipeline.log
+
+# 2. Check the audit trail (JSON lines — one per action)
+cat /tmp/phd_os_audit.log
+
+# 3. See what's in the queue right now
+python3 -c "
+import json, sys
+q = json.load(open('$HOME/.phd_os_queue.json'))
+for b in q['batches']:
+    print('Batch:', b['run_at'])
+    for e in b['emails']:
+        print(' ', e['from'], '|', e['subject'])
+        for t in e['todos']:
+            print('   -', t['task'], '|', t.get('project_hint'), '|', t.get('due_suggestion'))
+"
+
+# 4. Count pending tasks
+python3 -c "import json; q=json.load(open('$HOME/.phd_os_queue.json')); print(sum(len(e['todos']) for b in q['batches'] for e in b['emails']), 'tasks pending')"
+
+# 5. Run the pipeline manually with dry run (no writes, no moves)
+python3 scripts/email_pipeline.py --dry-run
+
+# 6. Run the pipeline and leave emails in place (process but don't move)
+python3 scripts/email_pipeline.py --no-move
+
+# 7. Check if Ollama is running and the model exists
+curl -s http://localhost:11434/api/tags | python3 -m json.tool
+ollama list
+
+# 8. Test Ollama directly with a fake email
+curl -s http://localhost:11434/api/generate \
+  -d '{"model":"phd-email-parser","prompt":"FROM: test@test.com\nSUBJECT: Test\nBODY: Please review the attached paper by Friday.","stream":false}' \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['response'])"
+
+# 9. Check if the LaunchAgent is loaded and when it last ran
+launchctl list | grep phd-os
+
+# 10. Check Apple Mail is seeing the LLM Queue folder
+osascript -e 'tell application "Mail" to get name of every mailbox of every account' 2>&1 | tr , '\n' | grep -i llm</code></pre>
+
+    <h3>Debugging the website</h3>
+    <pre><code># 1. See the build script output for the last GitHub Actions run
+#    → GitHub → Actions → most recent run → click job name
+
+# 2. Inspect a generated JSON file directly
+curl -s https://USERNAME.github.io/REPO/lit.json | python3 -m json.tool | head -60
+
+# 3. Check a local build (run from vault root)
+python3 .github/workflows/build_dashboard.py
+
+# 4. Validate a frontmatter file is parseable
+python3 -c "
+import frontmatter
+post = frontmatter.load('100 Research/Source Papers/your-paper.md')
+print(post.metadata)
+"
+
+# 5. Test your Todoist token manually
+curl -s https://api.todoist.com/api/v1/projects \
+  -H 'Authorization: Bearer YOUR_TOKEN_HERE' \
+  | python3 -m json.tool | head -40
+
+# 6. Test your Google Calendar token (get it from localStorage in dev tools)
+#    In browser console on the home page:
+#    JSON.parse(localStorage.getItem('phd_gcal_auth'))</code></pre>
+
+    <h3>Common failure signatures</h3>
+    <table class="docs-table">
+      <thead><tr><th>Symptom</th><th>Where to look</th><th>Likely cause</th></tr></thead>
+      <tbody>
+        <tr><td>Pipeline runs but proposes 0 tasks</td><td><code>phd_os_pipeline.log</code></td><td>"LLM Queue is empty" — Mail hasn't synced yet, or rules aren't routing to that folder</td></tr>
+        <tr><td>Tasks created in Todoist with no project</td><td>Review UI — check the project dropdown before approving</td><td>No project was selected; task lands in Inbox</td></tr>
+        <tr><td>Ollama call times out</td><td><code>phd_os_pipeline.log</code> says "Ollama error"</td><td>Ollama isn't running (<code>ollama serve</code>) or model was deleted (<code>ollama list</code>)</td></tr>
+        <tr><td>AppleScript error -1728</td><td><code>phd_os_audit.log</code></td><td>Old bug (fixed 2026-05-17) — if re-appearing, the mailbox iteration loop broke</td></tr>
+        <tr><td>Site shows stale data</td><td>GitHub Actions tab</td><td>Build failed (usually a malformed YAML frontmatter colon)</td></tr>
+        <tr><td>Review UI shows blank project dropdown</td><td>Browser console on <code>localhost:7891</code></td><td>Todoist token missing from <code>~/.phd_os_config.json</code>, or Todoist API unreachable</td></tr>
+        <tr><td>PDF download link returns 404</td><td><code>~/.phd_os_attachments/</code></td><td>Attachment wasn't saved (pipeline ran before this feature was added, or copy failed)</td></tr>
+        <tr><td>LaunchAgent not firing</td><td><code>launchctl list | grep phd-os</code></td><td>Plist not loaded — run <code>launchctl load ~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Reading the queue file by hand</h3>
+    <p><code>~/.phd_os_queue.json</code> is plain JSON. Its structure:</p>
+    <pre><code>{
+  "batches": [
+    {
+      "run_at": "2026-05-21T14:32:00+00:00",
+      "emails": [
+        {
+          "subject": "IRB revision needed",
+          "from": "irb@university.edu",
+          "date": "Wednesday, May 21, 2026 at 9:15:00 AM",
+          "snippet": "First 600 chars of the email body...",
+          "summary": "IRB requires protocol revision before approval.",
+          "attachments": [
+            {"name": "revision-notes.pdf", "file": "12345_revision-notes.pdf"}
+          ],
+          "todos": [
+            {
+              "task": "Submit IRB protocol revision",
+              "priority": 1,
+              "project_hint": "research",
+              "due_suggestion": "this week"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}</code></pre>
+    <p>You can edit this file directly to fix corrupted entries, remove a stuck batch, or clear the whole queue:</p>
+    <pre><code># Clear entire queue (nuclear option)
+echo '{"batches":[]}' > ~/.phd_os_queue.json
+
+# Pretty-print the whole queue
+python3 -m json.tool ~/.phd_os_queue.json</code></pre>
+    <div class="docs-callout warn">The queue file is written atomically via a temp file + rename — but if you edit it by hand while the review server is running, your changes may be overwritten when the server next saves the queue. Stop the server first (<em>Stop Server</em> button), edit, then restart.</div>
+
     <h2 id="troubleshooting">Troubleshooting</h2>
 
     <h3>Site isn't updating after I push</h3>
@@ -420,6 +647,18 @@ python3 scripts/email_pipeline.py --no-move</code></pre>
 
     <h3>Email pipeline: AppleScript permission errors</h3>
     <p>macOS requires explicit permission for scripts to control apps. Go to <strong>System Settings → Privacy &amp; Security → Automation</strong> and make sure Terminal (or whichever app you use to run the pipeline) has permission to control <strong>Mail</strong>. You may also see a one-time permission dialog the first time the script runs — click Allow.</p>
+
+    <h3>Review UI: project dropdown is empty</h3>
+    <p>The dropdown fetches your project list from Todoist on page load. If it's empty, your Todoist token may be missing or expired. Check <code>~/.phd_os_config.json</code> has a valid <code>todoist_token</code>. You can test it manually: <code>curl -s https://api.todoist.com/api/v1/projects -H 'Authorization: Bearer YOUR_TOKEN'</code>. If that returns projects, restart the review server.</p>
+
+    <h3>Review UI: "Show email" section is missing</h3>
+    <p>The email snippet is stored in the queue at parse time. Tasks queued before the snippet feature was added won't have one — approve or dismiss those tasks and the next pipeline run will populate snippets for new emails.</p>
+
+    <h3>Review UI: PDF attachment link returns "Not found"</h3>
+    <p>Attachments are copied from the temp directory to <code>~/.phd_os_attachments/</code> during the pipeline run. Check that directory exists and contains the file. If it's empty, the pipeline either ran before the attachment feature was added, or the PDF copy failed (check <code>/tmp/phd_os_pipeline.log</code> for "WARNING: Could not save attachment").</p>
+
+    <h3>Task appears in Todoist Inbox instead of a project</h3>
+    <p>A task with no project ID goes to Inbox. This happens if you approved the task with "— project —" still selected in the dropdown, or if the project list failed to load. You can move the task in Todoist manually. For future tasks, make sure the project dropdown shows your projects before approving.</p>
   </article>
 
 </div>
