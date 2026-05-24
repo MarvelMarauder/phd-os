@@ -1,12 +1,16 @@
 ---
 title: "Scale development: Theory and applications, 4th edition"
-authors: []
+authors:
+  - DeVellis, Robert F.
+  - Thorpe, Carolyn T.
 journal: ""
-year: null
-doi: null
-stream: null
+year: 2021
+doi:
+stream:
 topic: ""
-keywords: []
+keywords:
+  - Scale development
+  - Measurement
 thoughts: ""
 related-papers: []
 ---

@@ -1,12 +1,15 @@
 ---
 title: "Missing data: Five practical guidelines"
-authors: []
-journal: ""
-year: null
-doi: null
-stream: null
+authors:
+  - Newman, David A.
+journal: Organizational Research Methods
+year: 2014
+doi: https://doi.org/10.1177/1094428114548590
+stream:
 topic: ""
-keywords: []
+keywords:
+  - Data imputation
+  - Missing data
 thoughts: ""
 related-papers: []
 ---

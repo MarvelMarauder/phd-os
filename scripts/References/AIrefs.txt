@@ -1,0 +1,163 @@
+Abbasi, A., Parsons, J., Pant, G., Sheng, O. R. L., & Sarker, S. (2024). Pathways for design research on artificial intelligence. Information Systems Research, 35(2), 441–459.
+
+Abdel-Karim, B. M., Pfeuffer, N., Carl, K. V., & Hinz, O. (2023). How AI-based systems can induce reflections: The case of AI-augmented diagnostic work. MIS Quarterly, 47(4), 1395–1424.
+
+Allen, R., & Choudhury, P. (2022). Algorithm-augmented work and domain experience: The countervailing forces of ability and aversion. Organization Science, 33(1), 149–169.
+
+Ampel, B. M., Samtani, S., Zhu, H., & Chen, H. (2024). Creating proactive cyber threat intelligence with hacker exploit labels: A deep transfer learning approach. MIS Quarterly, 48(1), 137–166.
+
+Anthony, C. (2021). When knowledge work and analytical technologies collide: The practices and consequences of black boxing algorithmic technologies. Administrative Science Quarterly, 66(4), 1173–1212.
+
+Anthony, C., Bechky, B. A., & Fayard, A.-L. (2023). “Collaborating” with AI: Taking a system view to explore the future of work. Organization Science, 34(5), 1672–1694.
+
+Balasubramanian, N., Ye, Y., & Xu, M. (2020). Substituting human decision-making with machine learning: Implications for organizational learning. Academy of Management Review, forthcoming, 1–46.
+
+Bauer, K., & Gill, A. (2024). Mirror, mirror on the wall: Algorithmic assessments, transparency, and self-fulfilling prophecies. Information Systems Research, 35(1), 226–248.
+
+Bauer, K., von Zahn, M., & Hinz, O. (2023). Expl(AI)ned: The impact of explainable artificial intelligence on users’ information processing. Information Systems Research, 34(4), 1582–1602.
+
+Benbya, H., Pachidi, S., & Jarvenpaa, S. (2021). Artificial intelligence in organizations: Implications for information systems research. Journal of the Association for Information Systems, 22(2), 281–303.
+
+Benjamin, V., Valacich, J. S., & Chen, H. (2019). DICE-E: A framework for conducting darknet identification, collection, evaluation with ethics. MIS Quarterly, 43(1).
+
+Bergner, A. S., Hildebrand, C., & Häubl, G. (2023). Machine talk: How verbal embodiment in conversational AI shapes consumer–brand relationships. Journal of Consumer Research, 50(4), 742–764.
+
+Boyacı, T., Canyakmaz, C., & de Véricourt, F. (2024). Human and machine: The impact of machine input on decision making under cognitive limitations. Management Science, 70(2), 1258–1275.
+
+Brendel, A. B., Hildebrandt, F., Dennis, A. R., & Riquel, J. (2023). The paradoxical role of humanness in aggression toward conversational agents. Journal of Management Information Systems, 40(3), 883–913.
+
+Cameron, L. D. (2024). The making of the “good bad” job: How algorithmic management manufactures consent through constant and confined choices. Administrative Science Quarterly, 69(2), 458–514.
+
+Castelo, N., Boegershausen, J., Hildebrand, C., & Henkel, A. P. (2023). Understanding and improving consumer reactions to service bots. Journal of Consumer Research, 50(4), 848–863.
+
+Castelo, N., Bos, M. W., & Lehmann, D. R. (2019). Task-dependent algorithm aversion. Journal of Marketing Research, 56(5), 809–825.
+
+Chandra, S., Shirish, A., & Srivastava, S. C. (2022). To be or not to be… human? Theorizing the role of human-like competencies in conversational artificial intelligence agents. Journal of Management Information Systems, 39(4), 969–1005.
+
+Clegg, M., Hofstetter, R., de Bellis, E., & Schmitt, B. H. (2023). Unveiling the mind of the machine. Journal of Consumer Research, 51(2), 342–361.
+
+Crolic, C., Thomaz, F., Hadi, R., & Stephen, A. T. (2022). Blame the bot: Anthropomorphism and anger in customer–chatbot interactions. Journal of Marketing, 86(1), 132–148.
+
+Dai, T., & Tayur, S. (2022). Designing AI-augmented healthcare delivery systems for physician buy-in and patient acceptance. Production and Operations Management, 31(12), 4443–4451.
+
+Dennis, A. R., Lakhiwal, A., & Sachdeva, A. (2023). AI agents as team members: Effects on satisfaction, conflict, trustworthiness, and willingness to work with. Journal of Management Information Systems, 40(2), 307–337.
+
+Dietvorst, B. J., Simmons, J. P., & Massey, C. (2015). Algorithm aversion: People erroneously avoid algorithms after seeing them err. Journal of Experimental Psychology: General, 144(1), 114–126.
+
+Dietvorst, B. J., Simmons, J. P., & Massey, C. (2018). Overcoming algorithm aversion: People will use imperfect algorithms if they can (even slightly) modify them. Management Science, 64(3), 1155–1170.
+
+Fan, J., Sun, T., Liu, J., Zhao, T., Zhang, B., Chen, Z., Glorioso, M., & Hack, E. (2023). How well can an AI chatbot infer personality? Examining psychometric properties of machine-inferred personality scores. Journal of Applied Psychology, 108(8), 1277–1299.
+
+Fu, R., Aseri, M., Singh, P., & Srinivasan, K. (2021). “Un” fair machine learning algorithms. Management Science, forthcoming, 1–23.
+
+Fügener, A., Grahl, J., Gupta, A., & Ketter, W. (2021a). Cognitive challenges in human–artificial intelligence collaboration: Investigating the path toward productive delegation. Information Systems Research, forthcoming, 1–19.
+
+Fügener, A., Grahl,J., Gupta, A., & Ketter, W. (2021b). Will humans-in-the-loop become borgs? Merits and pitfalls of working with AI. MIS Quarterly, 45(3), 1527–1556.
+
+Garvey, A. M., Kim, T., & Duhachek, A. (2021). Bad news? Send an AI. Good news? Send a human. Journal of Marketing, forthcoming, 1–16.
+
+Glikson, E., & Woolley, A. W. (2020). Human trust in artificial intelligence: Review of empirical research. Academy of Management Annals, 14(2), 627–660.
+
+Gunaratne, J., Zalmanson, L., & Nov, O. (2018). The persuasive power of algorithmic and crowdsourced advice. Journal of Management Information Systems, 35(4), 1092–1120.
+
+Han, E., Yin, D., & Zhang, H. (2023). Bots with feelings: Should AI agents express positive emotion in customer service? Information Systems Research, 34(3), 1296–1311.
+
+Hartmann, J., Heitmann, M., Schamp, C., & Netzer, O. (2021). The power of brand selfies. Journal of Marketing Research, 58(6), 1159–1177.
+
+Huang, M.-H., & Rust, R. T. (2024). The caring machine: Feeling AI for customer care. Journal of Marketing, 88(5), 1–23.
+
+Jia, N., Luo, X., Fang, Z., & Liao, C. (2024). When and how artificial intelligence augments employee creativity. Academy of Management Journal, 67(1), 5–32.
+
+Jussupow, E., Spohrer, K., Heinzl, A., & Gawlitza, J. (2021). Augmenting medical diagnosis decisions? An investigation into physicians’ decision-making process with artificial intelligence. Information Systems Research, 32(3), 713–735.
+
+Kane, G. C., Young, A. G., Majchrzak, A., & Ransbotham, S. (2021). Avoiding an oppressive future of machine learning: A design theory for emancipatory assistants. MIS Quarterly, 45(1), 371–396.
+
+Kawaguchi, K. (2021). When will workers follow an algorithm? A field experiment with a retail business. Management Science, 67(3), 1670–1695.
+
+Kemp, A. (2024). Competitive advantage through artificial intelligence: Toward a theory of situated AI. Academy of Management Review, 49(3), 618–635.
+
+Kordzadeh, N., & Ghasemaghaei, M. (2021). Algorithmic bias: Review, synthesis, and future research directions. European Journal of Information Systems, 31(3), 388–409.
+
+Krakowski, S., Luger, J., & Raisch, S. (2022). Artificial intelligence and the changing sources of competitive advantage. Strategic Management Journal, 1(2), 57–72.
+
+Lambrecht, A., & Tucker, C. (2019). Algorithmic bias? An empirical study of apparent gender-based discrimination in the display of STEM career ads. Management Science, 65(7), 2966–2981.
+
+Leavitt, K., Schabram, K., Hariharan, P., & Barnes, C. M. (2021). Ghost in the machine: On organizational theory in the age of machine learning. Academy of Management Review, 46(4), 750–777.
+
+Lebovitz, S., Levina, N., & Lifshitz-Assaf, H. (2021). Is AI ground truth really “true”? The dangers of training and evaluating AI tools based on experts’ know-what. MIS Quarterly, 45(3), 1501–1525.
+
+Lehmann, C. A., Haubitz, C. B., Fügener, A., & Thonemann, U. W. (2022). The risk of algorithm transparency: How algorithm complexity drives the effects on use of advice. Production and Operations Management, 31(9), 3419–3434.
+
+Logg, J. M., Minson, J. A., & Moore, D. A. (2019). Algorithm appreciation: People prefer algorithmic to human judgment. Organizational Behavior and Human Decision Processes, 151, 90–103.
+
+Longoni, C., Bonezzi, A., & Morewedge, C. K. (2019). Resistance to medical artificial intelligence. Journal of Consumer Research, 46(4), 629–650.
+
+Longoni, C., & Cian, L. (2022). Artificial intelligence in utilitarian vs. hedonic contexts: The “word-of-machine” effect. Journal of Marketing, 86(1), 91–108.
+
+Melzner, J., Bonezzi, A., & Meyvis, T. (2023). Information disclosure in the era of voice technology. Journal of Marketing, 87(4), 491–509.
+
+Mende, M., Scott, M. L., van Doorn, J., Grewal, D., & Shanks, I. (2019). Service robots rising: How humanoid robots influence service experiences and elicit compensatory consumer responses. Journal of Marketing Research, 56(4), 535–556.
+
+Miao, F., Kozlenkova, I. V., Wang, H., Xie, T., & Palmatier, R. W. (2022). An emerging theory of avatar marketing. Journal of Marketing, 86(1), 67–90.
+
+Mikalef, P., Conboy, K., Lundström, J. E., & Popovič, A. (2022). Thinking responsibly about responsible AI and ‘the dark side’ of AI. European Journal of Information Systems, 31(3), 257–268.
+
+Möhlmann, M., Zalmanson, L., Henfridsson, O., & Gregory, R. W. (2021). Algorithmic management of work on online labor platforms: When matching meets control. MIS Quarterly, 45(4), 1999–2022.
+
+Pachidi, S., Berends, H., Faraj, S., & Huysman, M. (2021). Make way for the algorithms: Symbolic actions and change in a regime of knowing. Organization Science, 32(1), 18–41.
+
+Park, E. H., Werder, K., Cao, L., & Ramesh, B. (2022). Why do family members reject AI in health care? Competing effects of emotions. Journal of Management Information Systems, 39(3), 765–792.
+
+Ptaszynski, M., Lempa, P., Masui, F., Kimura, Y., Rzepka, R., Araki, K., Wroczynski, M., & Leliwa, G. (2019). Brute-force sentence pattern extortion from harmful messages for cyberbullying detection. Journal of the Association for Information Systems, 20(8), 1075–1127.
+
+Puntoni, S., Reczek, R. W., Giesler, M., & Botti, S. (2021). Consumers and artificial intelligence: An experiential perspective. Journal of Marketing, 85(1), 131–151.
+
+Qin, S., Jia, N., Luo, X., Liao, C., & Huang, Z. (2023). Perceived fairness of human managers compared with artificial intelligence in employee performance evaluation. Journal of Management Information Systems, 40(4), 1039–1070.
+
+Revilla, E., Saenz, M. J., Seifert, M., & Ma, Y. (2023). Human–artificial intelligence collaboration in prediction: A field experiment in the retail industry. Journal of Management Information Systems, 40(4), 1071–1098.
+
+Samorani, M., Harris, S. L., Blount, L. G., Lu, H., & Santoro, M. A. (2021). Overbooked and overlooked: Machine learning and racial bias in medical appointment scheduling. Manufacturing & Service Operations Management, forthcoming, 1–18.
+
+Schanke, S., Burtch, G., & Ray, G. (2021). Estimating the impact of “humanizing” customer service chatbots. Information Systems Research, 32(3), 736–751.
+
+Schuetz, S., & Venkatesh, V. (2020). The rise of human machines: How cognitive computing systems challenge assumptions of user-system interaction. Journal of the Association for Information Systems, 21(2), 460–482.
+
+Schuetzler, R. M., Grimes, G. M., & Scott Giboney, J. (2020). The impact of chatbot conversational skill on engagement and perceived humanness. Journal of Management Information Systems, 37(3), 875–900.
+
+Seeger, A.-M., Pfeiffer, J., & Heinzl, A. (2021). Texting with humanlike conversational agents: Designing for anthropomorphism. Journal of the Association for Information Systems, 22(4), 931–967.
+
+Seymour, M., Riemer, K., & Kay, J. (2018). Actors, avatars and agents: Potentials and implications of natural face technology for the creation of realistic visual presence. Journal of the Association for Information Systems, 19(10), 953–981.
+
+Shrestha, Y. R., He, V. F., Puranam, P., & von Krogh, G. (2021). Algorithm supported induction for building theory: How can we use prediction models to theorize? Organization Science, 32(3), 856–880.
+
+Sturm, T., Gerlach, J. P., Pumplun, L., Mesbah, N., Peters, F., Tauchert, C., Nan, N., & Buxmann, P. (2021). Coordinating human and machine learning for effective organizational learning. MIS Quarterly, 45(3), 1581–1602.
+
+Susarla, A., Gopal, R., Thatcher, J. B., & Sarker, S. (2023). The Janus effect of generative AI: Charting the path for responsible conduct of scholarly activities in information systems. Information Systems Research, 34(2), 399–408.
+
+Tang, P. M., Koopman, J., Mai, K. M., De Cremer, D., Zhang, J. H., Reynders, P., Ng, C. T. S., & Chen, I. (2023). No person is an island: Unpacking the work and after-work consequences of interacting with artificial intelligence. Journal of Applied Psychology, 108(11), 1766–1789.
+
+Teodorescu, M. H., Morse, L., Awwad, Y., & Kane, G. C. (2021). Failures of fairness in automation require a deeper understanding of human-ML augmentation. MIS Quarterly, 45(3), 1483–1499.
+
+Tremblay, M. C., Kohli, R., & Forsgren, N. (2021). Theories in flux: Reimagining theory building in the age of machine learning. MIS Quarterly, 45(1), 455–459.
+
+Turel, O., & Kalhan, S. (2023). Prejudiced against the machine? Implicit associations and the transience of algorithm aversion. MIS Quarterly, 47(4), 1369–1394.
+
+van den Broek, E., Sergeeva, A., & Huysman, M. (2021). When the machine meets the expert: An ethnography of developing AI for hiring. MIS Quarterly, 45(3), 1557–1580.
+
+Wang, X., Lu, S., Li, X., Khamitov, M., & Bendle, N. (2021). Audio mining: The role of vocal tone in persuasion. Journal of Consumer Research, 48(2), 189–211.
+
+Wei, X., Zhang, Z., Zhang, M., & Zeng, D. D. (2022). Combining crowd and machine intelligence to detect false news in social media. MIS Quarterly, 46, 977–1008.
+
+Xie, J., Zhang, Z., Liu, X., & Zeng, D. (2021). Unveiling the hidden truth of drug addiction: A social media approach using similarity network-based deep learning. Journal of Management Information Systems, 38(1), 166–195.
+
+Yalcin, G., Lim, S., van Osselaer, S. M. J., & Puntoni, S. (2022). Thumbs up or down: Consumer reactions to decisions by algorithms versus humans. Journal of Marketing Research, forthcoming, 1–22.
+
+Yam, K. C., Bigman, Y. E., Tang, P. M., Ilies, R., De Cremer, D., Soh, H., & Gray, K. (2020). Robots at work: People prefer—and forgive—service robots with perceived feelings. Journal of Applied Psychology, 106(10), 1557–1572.
+
+Yam, K. C., Tang, P. M., Jackson, J. C., Su, R., & Gray, K. (2023). The rise of robots increases job insecurity and maladaptive workplace behaviors: Multimethod evidence. Journal of Applied Psychology, 108(5), 850–870.
+
+You, S., & Robert, L. (2017). Emotional attachment, performance, and viability in teams collaborating with embodied physical action (EPA) robots. Journal of the Association for Information Systems, 19(5), 377–407.
+
+You, S., Yang, C. L., & Li, X. (2022). Algorithmic versus human advice: Does presenting prediction performance matter for algorithm appreciation? Journal of Management Information Systems, 39(2), 336–365.
+
+Yu, S., Chai, Y., Chen, H., Brown, R. A., Sherman, S. J., & Nunamaker Jr., J. F. (2021). Fall detection with wearable sensors: A hierarchical attention-based convolutional neural network approach. Journal of Management Information Systems, 38(4), 1095–1121.

@@ -1,12 +1,14 @@
 ---
-title: "Using multitrait–multimethod analyses in testing for evidence of construct validity"
-authors: []
+title: Using multitrait–multimethod analyses in testing for evidence of construct validity
+authors:
+  - Byrne, Barbara M.
 journal: ""
-year: null
-doi: null
-stream: null
+year: 2016
+doi:
+stream:
 topic: ""
-keywords: []
+keywords:
+  - Construct validity
 thoughts: ""
 related-papers: []
 ---

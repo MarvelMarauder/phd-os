@@ -1,6 +1,9 @@
 ---
 title: Fundamentals of item response theory
-authors: []
+authors:
+  - Hambleton, Ronald K.
+  - Swaminathan, H.
+  - Rogers, H. Jane
 journal: Choice Reviews Online
 year: 1992
 doi: 10.5860/choice.29-4185

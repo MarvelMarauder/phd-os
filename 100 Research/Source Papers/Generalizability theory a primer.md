@@ -1,6 +1,7 @@
 ---
 title: "Generalizability theory: a primer"
-authors: []
+authors:
+  - Kane, Michael
 journal: Choice Reviews Online
 year: 1992
 doi: 10.5860/choice.29-4192

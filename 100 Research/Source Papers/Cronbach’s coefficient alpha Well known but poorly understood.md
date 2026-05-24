@@ -1,12 +1,16 @@
 ---
 title: "Cronbach’s coefficient alpha: Well known but poorly understood"
-authors: []
-journal: ""
-year: null
-doi: null
-stream: null
+authors:
+  - Cho, Eunseong
+  - Kim, Seonghoon
+journal: Organizational Research Methods
+year: 2015
+doi: https://doi.org/10.1177/1094428114555994
+stream:
 topic: ""
-keywords: []
+keywords:
+  - Reliability
+  - alpha
 thoughts: ""
 related-papers: []
 ---
