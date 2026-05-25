@@ -29,9 +29,10 @@ import urllib.request
 import urllib.parse
 from pathlib import Path
 
-VAULT_DIR  = Path(__file__).parent.parent
-PAPERS_DIR = VAULT_DIR / "100 Research" / "Source Papers"
-RATE_SECS  = 0.8   # pause between API calls — be polite
+VAULT_DIR   = Path(__file__).parent.parent
+PAPERS_DIR  = VAULT_DIR / "100 Research" / "Source Papers"
+PENDING_DIR = PAPERS_DIR / "_Pending"
+RATE_SECS   = 0.8   # pause between API calls — be polite
 
 
 # ── HTTP helper ───────────────────────────────────────────────────────────────
@@ -270,6 +271,7 @@ def process(text, dry_run=False):
     refs = split_references(text)
     print(f"Found {len(refs)} reference(s).\n")
     PAPERS_DIR.mkdir(parents=True, exist_ok=True)
+    PENDING_DIR.mkdir(parents=True, exist_ok=True)
 
     created, skipped, failed = [], [], []
 
@@ -277,8 +279,9 @@ def process(text, dry_run=False):
         label = ref[:90] + ("…" if len(ref) > 90 else "")
         print(f"[{i}/{len(refs)}] {label}")
 
-        doi  = extract_doi(ref)
-        meta = {}
+        doi      = extract_doi(ref)
+        meta     = {}
+        dest_dir = PAPERS_DIR
 
         if doi:
             print(f"  DOI: {doi}")
@@ -330,10 +333,11 @@ def process(text, dry_run=False):
                     meta["title"] = title
                 print(f"  → {meta.get('title', title)[:70]}")
             else:
-                # Nothing found — create a minimal note from parsed text
-                print(f"  Not found in APIs — creating stub note")
-                meta = {"title": title, "authors": [], "journal": "", "year": "",
-                        "doi": "", "keywords": [], "abstract": ""}
+                # Nothing found — create a minimal note in _Pending for manual review
+                print(f"  Not found in APIs — creating stub note in _Pending/")
+                meta     = {"title": title, "authors": [], "journal": "", "year": "",
+                            "doi": "", "keywords": [], "abstract": ""}
+                dest_dir = PENDING_DIR
 
         if not meta.get("title"):
             meta["title"] = extract_title(ref) or "Untitled"
