@@ -188,6 +188,7 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "scripts/import_refs.py.tmp.77863.539c61615bac",
     "scripts/import_refs.py.tmp.77863.192c418e39da",
     "100 Research/Source Papers/_template.md",
     "100 Research/Source Papers/_dismissed.md",
@@ -222,7 +223,6 @@
     "scripts/References",
     "scripts/email_pipeline.py.tmp.63879.97cd1e74bf60",
     "scripts/email_pipeline.py.tmp.63879.59f2c15ae737",
-    "scripts/email_pipeline.py.tmp.63879.33588f81b243",
-    "site/index.html.tmp.63879.4cdc03ab94de"
+    "scripts/email_pipeline.py.tmp.63879.33588f81b243"
   ]
 }

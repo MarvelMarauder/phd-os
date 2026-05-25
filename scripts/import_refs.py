@@ -343,7 +343,7 @@ def process(text, dry_run=False):
             meta["title"] = extract_title(ref) or "Untitled"
 
         fname = safe_filename(meta["title"])
-        fpath = PAPERS_DIR / fname
+        fpath = dest_dir / fname
 
         if fpath.exists():
             print(f"  Already exists: {fname}")
