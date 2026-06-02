@@ -172,38 +172,71 @@ function initSettings() {
 }
 
 // ── Client-side book cover fetching ───────────────────
+// Strategy: Open Library search → cover_i (their internal cover ID) → direct image URL.
+// This is the programmatic "look up the book, get an ID, fetch the right cover" flow.
+// Falls back to Google Books if OL has no cover for that title.
 const _coverCache = {};
 
 async function fetchBookCover(isbn, title, author) {
-  const cacheKey = isbn ? `isbn:${isbn}` : `t:${title}:${author}`;
+  const cacheKey = isbn ? `isbn:${isbn}` : `book:${title}`;
   if (cacheKey in _coverCache) return _coverCache[cacheKey];
 
-  // Build queries: isbn-specific first, then title+author (sorted by newest edition)
-  const queries = [];
-  if (isbn) queries.push(`isbn:${isbn}`);
-  queries.push(`intitle:"${title}" inauthor:"${author}"`);
+  // 1. If we already have an ISBN, Open Library can serve the cover directly — no search needed.
+  if (isbn) {
+    return (_coverCache[cacheKey] = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`);
+  }
 
-  for (const q of queries) {
+  // 2. Open Library search: finds the book and returns its cover_i (native cover ID).
+  //    cover_i → https://covers.openlibrary.org/b/id/{cover_i}-L.jpg is the most reliable URL.
+  //    We try title+author first, then title only (handles pen names, variant spellings).
+  const olSearch = async (params) => {
     try {
-      const res  = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5` +
-        `&fields=items(volumeInfo(publishedDate,imageLinks))`
+      const r = await fetch(
+        `https://openlibrary.org/search.json?${params}&limit=5&fields=cover_i,isbn`
       );
-      const data = await res.json();
-      const items = [...(data.items || [])].sort((a, b) =>
-        (b.volumeInfo?.publishedDate || '').localeCompare(a.volumeInfo?.publishedDate || '')
-      );
-      for (const item of items) {
-        const links = item.volumeInfo?.imageLinks || {};
-        for (const key of ['large', 'medium', 'thumbnail', 'smallThumbnail']) {
-          if (links[key]) {
-            const url = links[key].replace('http://', 'https://');
-            return (_coverCache[cacheKey] = url);
-          }
+      if (!r.ok) return '';
+      const { docs = [] } = await r.json();
+      for (const doc of docs) {
+        if (doc.cover_i) {
+          return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
         }
+        // Fallback within OL: use any ISBN-13 they have to build a cover URL
+        const isbn13 = (doc.isbn || []).find(i => String(i).length === 13);
+        if (isbn13) return `https://covers.openlibrary.org/b/isbn/${isbn13}-L.jpg`;
       }
     } catch(e) {}
+    return '';
+  };
+
+  const t = encodeURIComponent(title);
+  const a = encodeURIComponent(author || '');
+
+  // Try with author (more precise for common titles like "Gilead")
+  if (author) {
+    const url = await olSearch(`title=${t}&author=${a}`);
+    if (url) return (_coverCache[cacheKey] = url);
   }
+
+  // Try title only (catches pen names and variant author entries)
+  const url2 = await olSearch(`title=${t}`);
+  if (url2) return (_coverCache[cacheKey] = url2);
+
+  // 3. Google Books as a last resort — plain title+author query, no field operators.
+  try {
+    const data = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title + ' ' + (author || ''))}&maxResults=3`
+    ).then(r => r.json());
+    const items = [...(data.items || [])].sort((a, b) =>
+      (b.volumeInfo?.publishedDate || '').localeCompare(a.volumeInfo?.publishedDate || '')
+    );
+    for (const item of items) {
+      const links = item.volumeInfo?.imageLinks || {};
+      for (const key of ['large', 'medium', 'thumbnail', 'smallThumbnail']) {
+        if (links[key]) return (_coverCache[cacheKey] = links[key].replace('http://', 'https://'));
+      }
+    }
+  } catch(e) {}
+
   return (_coverCache[cacheKey] = '');
 }
 
