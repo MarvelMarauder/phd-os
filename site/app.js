@@ -172,46 +172,48 @@ function initSettings() {
 }
 
 // ── Client-side book cover fetching ───────────────────
-// Open Library work-search returns the OLDEST edition's cover_i — wrong for current covers.
-// Google Books search returns multiple editions; sorting by publishedDate desc gives the
-// current trade edition's cover, which is what we want.
+// Verified approach (tested with curl):
+//   - Google Books API returns 429 quota-exceeded without an API key — useless here.
+//   - Open Library search with sort=new returns newest editions first.
+//     The cover_i from a recent edition resolves to the current-print cover image.
+//     Without sort=new, OL returns the most-linked (oldest) edition's cover.
 const _coverCache = {};
 
 async function fetchBookCover(isbn, title, author) {
   const cacheKey = isbn ? `isbn:${isbn}` : `book:${title}|${author}`;
   if (cacheKey in _coverCache) return _coverCache[cacheKey];
 
-  // With a known ISBN: Open Library cover URL is exact and needs no API call.
+  // ISBN known → direct OL cover URL, no search needed, exact edition.
   if (isbn) {
     return (_coverCache[cacheKey] = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`);
   }
 
-  // Without ISBN: Google Books plain-text search, newest edition first.
-  // No intitle:/inauthor: operators (they break when URL-encoded).
-  // No &fields= parameter (it was silently stripping imageLinks from responses).
-  try {
-    const q    = [title, author].filter(Boolean).join(' ');
-    const data = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10`
-    ).then(r => r.json());
-
-    const items = (data.items || [])
-      .filter(item => item.volumeInfo?.imageLinks)           // only items that have a cover
-      .sort((a, b) => {
-        const da = a.volumeInfo?.publishedDate || '0';
-        const db = b.volumeInfo?.publishedDate || '0';
-        return db.localeCompare(da);                         // newest first
-      });
-
-    for (const item of items) {
-      const links = item.volumeInfo.imageLinks;
-      for (const key of ['large', 'medium', 'thumbnail', 'smallThumbnail']) {
-        if (links[key]) return (_coverCache[cacheKey] = links[key].replace('http://', 'https://'));
+  // No ISBN → OL search with sort=new so the newest edition (and its cover) comes first.
+  // Try title+author (precise), fall back to title-only (catches pen names like David Wong).
+  const olSearch = async (params) => {
+    try {
+      const r = await fetch(
+        `https://openlibrary.org/search.json?${params}&sort=new&limit=5&fields=cover_i`
+      );
+      if (!r.ok) return '';
+      const { docs = [] } = await r.json();
+      for (const doc of docs) {
+        if (doc.cover_i) return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
       }
-    }
-  } catch(e) {}
+    } catch(e) {}
+    return '';
+  };
 
-  return (_coverCache[cacheKey] = '');
+  const t = encodeURIComponent(title);
+  const a = encodeURIComponent(author || '');
+
+  if (author) {
+    const url = await olSearch(`title=${t}&author=${a}`);
+    if (url) return (_coverCache[cacheKey] = url);
+  }
+
+  const url2 = await olSearch(`title=${t}`);
+  return (_coverCache[cacheKey] = url2);
 }
 
 function tokenModalHTML() {
