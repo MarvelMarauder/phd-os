@@ -132,7 +132,30 @@ def build_lit():
 
 # ── Books ─────────────────────────────────────────────────────────────────────
 
+def _fetch_gb_cover(isbn, title, author):
+    """Google Books API — much more current cover art than Open Library."""
+    try:
+        q = f"isbn:{isbn}" if isbn else urllib.parse.quote(f'intitle:"{title}" inauthor:"{author}"')
+        url = (f"https://www.googleapis.com/books/v1/volumes"
+               f"?q={q}&maxResults=1&fields=items(volumeInfo/imageLinks)&printType=books")
+        req = urllib.request.Request(url, headers={"User-Agent": "PhD-OS/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            data = json.loads(r.read().decode())
+        items = data.get("items", [])
+        if not items:
+            return ""
+        links = items[0].get("volumeInfo", {}).get("imageLinks", {})
+        for key in ("extraLarge", "large", "medium", "small", "thumbnail", "smallThumbnail"):
+            if links.get(key):
+                # Force https and request a larger zoom than the default thumbnail
+                return links[key].replace("http://", "https://").replace("zoom=1", "zoom=5")
+    except Exception:
+        pass
+    return ""
+
+
 def _fetch_ol_cover(title, author):
+    """Open Library fallback when Google Books has nothing."""
     try:
         q = urllib.parse.quote(f"{title} {author}".strip())
         url = f"https://openlibrary.org/search.json?q={q}&fields=cover_i&limit=1"
@@ -141,7 +164,7 @@ def _fetch_ol_cover(title, author):
             data = json.loads(r.read().decode())
         cover_i = ((data.get("docs") or [{}])[0]).get("cover_i")
         if cover_i:
-            return f"https://covers.openlibrary.org/b/id/{cover_i}-M.jpg"
+            return f"https://covers.openlibrary.org/b/id/{cover_i}-L.jpg"
     except Exception:
         pass
     return ""
@@ -172,15 +195,17 @@ def build_books():
         title  = post.get("title") or os.path.splitext(os.path.basename(filepath))[0]
         author = post.get("author", "")
 
-        # Cover: explicit cover_url > ISBN shortcut > Open Library search
+        # Cover: explicit cover_url > Google Books (ISBN or title) > Open Library fallback
         cover_url = str(post.get("cover_url", "") or "").strip()
         isbn      = str(post.get("isbn", "") or "").strip()
-        if not cover_url and isbn:
-            cover_url = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg"
-        elif not cover_url:
-            cover_url = _fetch_ol_cover(title, author)
+        if not cover_url:
+            cover_url = _fetch_gb_cover(isbn, title, author)
             if cover_url:
-                time.sleep(0.3)  # polite to Open Library
+                time.sleep(0.4)
+            elif not cover_url:
+                cover_url = _fetch_ol_cover(title, author)
+                if cover_url:
+                    time.sleep(0.3)
 
         books.append({
             "title":     title,
