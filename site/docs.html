@@ -20,6 +20,7 @@
       <a href="#overview">Overview</a>
       <a href="#vault-structure">Vault Structure</a>
       <a href="#deployment">Deployment</a>
+      <a href="#theme">Light / Dark Mode</a>
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Website Pages</div>
@@ -29,6 +30,13 @@
       <a href="#page-library">Library</a>
       <a href="#page-books">Books</a>
       <a href="#page-recharge">Recharge</a>
+      <a href="#page-projects">Projects</a>
+      <a href="#page-church">Church</a>
+    </div>
+    <div class="docs-sidebar-section">
+      <div class="docs-sidebar-label">Integrations</div>
+      <a href="#todoist">Todoist</a>
+      <a href="#gcal">Google Calendar</a>
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Content</div>
@@ -36,6 +44,7 @@
       <a href="#adding-lit">Adding Literature</a>
       <a href="#tracking-papers">Tracking Papers</a>
       <a href="#dismissed-papers">Dismissed Papers</a>
+      <a href="#recharge-list">Recharge Activities</a>
     </div>
     <div class="docs-sidebar-section">
       <div class="docs-sidebar-label">Email Pipeline</div>
@@ -55,6 +64,7 @@
       <div class="docs-sidebar-label">Reference</div>
       <a href="#build-script">Build Script</a>
       <a href="#frontmatter">Frontmatter Reference</a>
+      <a href="#localStorage">localStorage Keys</a>
       <a href="#security">Security &amp; Protections</a>
       <a href="#troubleshooting">Troubleshooting</a>
     </div>
@@ -63,268 +73,379 @@
   <!-- Content -->
   <article class="docs-content">
     <h1>PhD OS Documentation</h1>
-    <p class="docs-lead">A personal research operating system built on Obsidian, rendered as a live GitHub Pages site. Everything lives in markdown — the site is just a view over your vault.</p>
+    <p class="docs-lead">A personal research operating system built on Obsidian, rendered as a live GitHub Pages dashboard. Everything lives in markdown — the site is just a view over your vault.</p>
 
     <!-- ── Overview ────────────────────────── -->
     <h2 id="overview">Overview</h2>
-    <p>PhD OS is a daily-driver dashboard for managing your PhD: papers, literature, tasks, books, and recovery — all in one place. The architecture has three layers:</p>
+    <p>PhD OS is a daily-driver dashboard for managing your PhD: tasks, papers, literature, books, calendar, and recovery — all in one place. The architecture has three layers:</p>
     <ol>
       <li><strong>Obsidian vault</strong> — your markdown source of truth. You write notes; the system reads them.</li>
-      <li><strong>GitHub Actions build</strong> — runs daily (and on every push). A Python script reads the vault and writes JSON files.</li>
-      <li><strong>Static site</strong> — vanilla HTML/CSS/JS served via GitHub Pages. Pages fetch the JSON files and render them.</li>
+      <li><strong>GitHub Actions build</strong> — runs on every push (and on a daily schedule). A Python script reads the vault and writes JSON files.</li>
+      <li><strong>Static site</strong> — vanilla HTML/CSS/JS served via GitHub Pages. Pages fetch the JSON files and render them. Live data (Todoist, Google Calendar) is fetched client-side at runtime.</li>
     </ol>
-    <p>Nothing requires a server, database, or login. The Todoist integration is purely client-side (your API token lives in <code>localStorage</code>).</p>
+    <p>Nothing requires a server, database, or login. All secrets (Todoist token, Google Calendar token) live only in your browser's <code>localStorage</code>.</p>
 
     <h3>Tech stack</h3>
     <table class="docs-table">
-      <thead><tr><th>Layer</th><th>What it does</th></tr></thead>
+      <thead><tr><th>Layer</th><th>What it does</th><th>When it runs</th></tr></thead>
       <tbody>
-        <tr><td>Obsidian</td><td>Markdown editor and vault host</td></tr>
-        <tr><td>GitHub Actions</td><td>Daily build trigger</td></tr>
-        <tr><td><code>build_dashboard.py</code></td><td>Vault → JSON</td></tr>
-        <tr><td>OpenAlex API</td><td>Paper discovery for IS journals (build-time)</td></tr>
-        <tr><td>Open Library API</td><td>Book cover images (build-time)</td></tr>
-        <tr><td>Todoist REST API</td><td>Live task data (client-side)</td></tr>
-        <tr><td>Ollama</td><td>Local LLM for email parsing (email pipeline)</td></tr>
+        <tr><td>Obsidian + Obsidian Git</td><td>Markdown editor; auto-pushes to GitHub every 10 min</td><td>Always</td></tr>
+        <tr><td>GitHub Actions</td><td>Runs build script on push + daily schedule</td><td>Build time</td></tr>
+        <tr><td><code>build_dashboard.py</code></td><td>Vault markdown → JSON files</td><td>Build time</td></tr>
+        <tr><td>OpenAlex API</td><td>IS journal paper discovery (<code>discover.json</code>)</td><td>Build time</td></tr>
+        <tr><td>Todoist REST API <code>/api/v1</code></td><td>Live tasks, project list</td><td>Client-side (runtime)</td></tr>
+        <tr><td>Google Calendar API + GIS OAuth</td><td>Today's meetings</td><td>Client-side (runtime)</td></tr>
+        <tr><td>Open Library Search API</td><td>Book cover lookup by title/author/ISBN</td><td>Client-side (runtime, Books page)</td></tr>
+        <tr><td>Ollama (<code>phd-email-parser</code>)</td><td>Local LLM for email-to-task parsing</td><td>Email pipeline (local Mac)</td></tr>
       </tbody>
     </table>
 
     <!-- ── Vault Structure ─────────────────── -->
     <h2 id="vault-structure">Vault Structure</h2>
-    <p>The build script scans these specific folders. Keep your notes in the right place and the site updates automatically.</p>
+    <p>The build script scans specific folders. Keep your notes in the right place and the site updates automatically on the next push.</p>
     <table class="docs-table">
-      <thead><tr><th>Vault folder</th><th>→ JSON file</th><th>Powers page</th></tr></thead>
+      <thead><tr><th>Vault folder / file</th><th>→ JSON output</th><th>Powers page</th></tr></thead>
       <tbody>
-        <tr><td><code>100 Research/My Papers/*.md</code></td><td><code>papers.json</code></td><td>Papers</td></tr>
+        <tr><td><code>100 Research/My Papers/*.md</code></td><td><code>papers.json</code></td><td>Papers, Home dashboard</td></tr>
         <tr><td><code>100 Research/Source Papers/*.md</code></td><td><code>lit.json</code></td><td>Library</td></tr>
-        <tr><td><code>100 Research/Source Papers/_dismissed.md</code></td><td>part of <code>discover.json</code></td><td>Discover (filter)</td></tr>
-        <tr><td><code>400 Personal/Books/*.md</code></td><td><code>books.json</code></td><td>Books</td></tr>
+        <tr><td><code>100 Research/Source Papers/_dismissed.md</code></td><td>part of <code>discover.json</code></td><td>Discover (exclusion filter)</td></tr>
+        <tr><td><code>400 Personal/Books/*.md</code></td><td><code>books.json</code></td><td>Books, Home dashboard</td></tr>
         <tr><td><code>500 Recharge/Recharge List.md</code></td><td><code>recharge.json</code></td><td>Recharge</td></tr>
-        <tr><td>OpenAlex API (fetched at build time)</td><td><code>discover.json</code></td><td>Discover</td></tr>
+        <tr><td>OpenAlex API (fetched at build time)</td><td><code>discover.json</code></td><td>Discover, Home dashboard Article of Day</td></tr>
       </tbody>
     </table>
-    <div class="docs-callout tip">Files starting with <code>_</code> (like <code>_template.md</code> or <code>_dismissed.md</code>) are special — the build script skips them when scanning for content, and reads them explicitly when needed.</div>
+    <div class="docs-callout tip">Files starting with <code>_</code> are special: the build script skips them when scanning for content, and reads them explicitly when needed (e.g. <code>_dismissed.md</code>, <code>_template.md</code>).</div>
 
     <!-- ── Deployment ──────────────────────── -->
     <h2 id="deployment">Deployment</h2>
-    <p>The site deploys automatically via GitHub Actions whenever you push to <code>main</code>. The workflow also runs on a daily schedule so the discovery feed stays fresh even without a push.</p>
+    <p>The site deploys automatically via GitHub Actions whenever you push to <code>main</code>. Obsidian Git auto-pushes every 10 minutes. The workflow also runs on a daily schedule so the Discover feed stays fresh.</p>
+
     <h3>Manual trigger</h3>
-    <p>Go to your repo on GitHub → Actions → <em>Build PhD OS Dashboard</em> → Run workflow. Useful after adding new books or papers when you don't want to wait for the daily run.</p>
+    <p>GitHub → your repo → Actions → <em>Build PhD OS Dashboard</em> → Run workflow. Use this after adding new books or papers when you don't want to wait for the auto-push.</p>
+
     <h3>Checking build logs</h3>
-    <p>Actions → the most recent run → click the job name. The Python script prints a line for each JSON file it writes, so you can confirm your new content was picked up.</p>
+    <p>Actions → most recent run → click the job name. The Python script prints one line per JSON file written — confirm your new content was picked up. If the build failed, the error is here (usually a malformed YAML frontmatter colon in one of your notes).</p>
+
+    <h3>Local build (for debugging)</h3>
+    <p>Run from the vault root:</p>
+    <pre><code>python3 .github/workflows/build_dashboard.py</code></pre>
+    <p>This writes <code>_site/</code> locally so you can inspect the generated JSON without waiting for a GitHub build.</p>
+
+    <!-- ── Theme ──────────────────────────── -->
+    <h2 id="theme">Light / Dark Mode</h2>
+    <p>PhD OS respects your OS color scheme by default. To force light mode regardless of OS preference, click the <strong>☀</strong> button in the top nav bar. Click the <strong>🌙</strong> that replaces it to return to system default. The preference is saved in <code>localStorage</code> under <code>phd_theme</code> and persists across all pages and sessions.</p>
+    <p>The early-load script <code>theme.js</code> (loaded synchronously in each page's <code>&lt;head&gt;</code>) applies the theme class before first paint, preventing flash.</p>
 
     <!-- ── Pages ───────────────────────────── -->
     <h2 id="page-home">Home Dashboard</h2>
-    <p>Live task view pulled directly from Todoist. Shows tasks due today, tasks due this week, and all active tasks grouped by project. Requires your Todoist API token (stored in your browser — never sent anywhere except Todoist).</p>
-    <p>Find your token at <strong>todoist.com → Settings → Integrations → Developer</strong>. Click the settings gear (⚙) in the top nav to clear and re-enter it.</p>
+    <p>The home page is a read-only, at-a-glance business-style dashboard. It loads from <code>index.html</code> and shows six cards in a two-column grid:</p>
+    <table class="docs-table">
+      <thead><tr><th>Card</th><th>Data source</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Tasks Today</td><td>Todoist API (live)</td><td>Tasks due today or overdue. Checkboxes work — completing a task calls <code>POST /tasks/{id}/close</code>. Requires Todoist token.</td></tr>
+        <tr><td>Today's Meetings</td><td>Google Calendar API (live)</td><td>All calendars, today's events sorted by start time. Shows Meet/Zoom badge. Requires one-time Google sign-in.</td></tr>
+        <tr><td>Article of the Day</td><td><code>discover.json</code> (IS journals section)</td><td>One IS journal paper per day, rotating by day-of-year. "+ Add to read list" creates a Todoist task. Updates whenever the build runs.</td></tr>
+        <tr><td>Currently Reading</td><td><code>books.json</code> (client cover fetch)</td><td>First book with <code>status: currently-reading</code>. Cover loaded client-side via Open Library.</td></tr>
+        <tr><td>Today's Thought</td><td>Hardcoded in <code>app.js</code></td><td>50 General Conference quotes rotating daily by day-of-year. No API call.</td></tr>
+        <tr><td>Recharge</td><td><code>localStorage</code></td><td>Shows active break timer (if running) or time since last break. Links to Recharge page.</td></tr>
+      </tbody>
+    </table>
+    <p>The header shows today's date and a task count summary. The dashboard is intentionally read-only — use the individual pages for adding content.</p>
 
     <h2 id="page-papers">Papers</h2>
-    <p>A pipeline view of all your research papers, grouped by research stream and sorted by stage. Each paper is a markdown file in <code>100 Research/My Papers/</code>. The Kanban-style columns show the stage of each paper from ideation to published.</p>
+    <p>A pipeline view of all your active research papers, grouped by stream and sorted by stage. Each paper is a markdown file in <code>100 Research/My Papers/</code>. A progress bar shows position in the pipeline from ideation to published. Papers with <code>status: active</code> are shown; <code>paused</code> or <code>abandoned</code> are hidden.</p>
+    <p>The Projects page also shows a stream summary (paper count + stage pills per stream) and upcoming research tasks from Todoist filtered to the Research project and its sub-projects.</p>
 
     <h2 id="page-discover">Discover</h2>
-    <p>A daily-refreshed feed of new papers from the 11 top IS journals, fetched from OpenAlex at build time. Three sections: recent issues (last 6 months), trending this year (most-cited), and per-stream keyword searches.</p>
-    <p>Click <strong>→ Library</strong> on any card to jump to the Library page with the paper's metadata pre-filled. Click <strong>✕</strong> to hide a paper for the session. To permanently hide it, add its DOI to <code>_dismissed.md</code> and push — it will be filtered out at the next build.</p>
+    <p>A daily-refreshed feed of IS journal papers fetched from OpenAlex at build time. Four sections: recent issues (last 6 months, newest first), trending this year (most-cited), AI Companions keyword search, and JudgyAI keyword search.</p>
+    <p>Click <strong>→ Library</strong> on any card to jump to the Library page with the paper pre-filled. Click <strong>✕</strong> to hide a paper for the browser session. To permanently hide it, add its DOI to <code>_dismissed.md</code> in Source Papers and push — it is filtered at the next build.</p>
+    <p>The Article of the Day on the Home dashboard draws from the IS journals section of <code>discover.json</code> — it picks <code>dayIndex % papers.length</code>, so a new paper appears each day as long as the pool has papers.</p>
 
     <h2 id="page-library">Library</h2>
-    <p>Two parts: a Quick Add form at the top (paste a DOI → fetches metadata from CrossRef → generates a YAML frontmatter block you can paste into a new note), and your full literature library below it, filterable by stream and searchable by keyword.</p>
+    <p>Two sections: Quick Add at the top, and your full literature library below with stream/keyword/related-paper filters.</p>
+    <h3>Quick Add (DOI lookup)</h3>
+    <p>Paste a DOI (or doi.org URL, ACM link, etc.) → click Look up → CrossRef returns title, authors, journal, year → OpenAlex is queried non-blocking for keywords → you adjust the fields → click Copy frontmatter. Paste the YAML into a new note in <code>100 Research/Source Papers/</code> and push.</p>
+    <p>You can also pre-fill the form from the Discover page by clicking <strong>→ Library</strong> on any discovery card.</p>
 
     <h2 id="page-books">Books</h2>
-    <p>Visual bookshelf grid showing all books in <code>400 Personal/Books/</code>. Hover any cover to see details. Three sections: Currently Reading, Finished (sorted newest first), and Want to Read.</p>
-    <p>Cover images are fetched at build time from Open Library using the ISBN (if provided) or a title+author search. If no cover is found, a colored placeholder with the book's initial is shown instead.</p>
+    <p>A visual bookshelf showing all books in <code>400 Personal/Books/</code>. Three sections: Currently Reading, Finished (sorted newest first), and Want to Read. Hover any cover for a popup with title, author, dates, and your snippet.</p>
+
+    <h3>Cover images</h3>
+    <p>Covers are fetched <strong>client-side at runtime</strong> — not at build time. When the page loads, each book spine without a manually-set <code>cover_url</code> triggers an asynchronous lookup:</p>
+    <ol>
+      <li>If <code>isbn</code> is set in the note: <code>https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg</code> directly.</li>
+      <li>If no ISBN: Open Library search API with <code>title</code> + <code>author</code> and <code>sort=new</code> (newest editions first). The first result with a <code>cover_i</code> is used — that cover ID reliably maps to a current-edition cover.</li>
+      <li>Covers fade in as they load. If all sources fail, a colored placeholder with the book's first letter is shown.</li>
+    </ol>
+    <p>Cover results are cached in <code>_coverCache</code> (in-memory, per page load) so navigating away and back doesn't re-fetch.</p>
+
+    <h3>Quick Add (edition picker)</h3>
+    <p>The Quick Add form at the top of the Books page lets you look up any book and generate Obsidian frontmatter with the correct cover URL, ISBN, and metadata.</p>
+    <ol>
+      <li>Type a title (and optionally author) → click Search.</li>
+      <li>Open Library is queried for up to 3 matching works. Their editions are fetched in parallel and merged into one list sorted newest-first.</li>
+      <li>A grid of edition cover thumbnails appears. Each card shows the edition-specific cover, year, publisher, and ISBN-13. <strong>Pick the edition whose cover matches your copy.</strong></li>
+      <li>A preview panel appears with the full cover and fields to fill in: title, author (editable), status, star rating, and tags.</li>
+      <li>Click Copy frontmatter → paste into a new note in <code>400 Personal/Books/</code> → push.</li>
+    </ol>
+    <p>The <code>cover_url</code> in the copied YAML points to that specific edition's cover via Open Library's cover ID. This bypasses the search-based lookup on future page loads — the URL is stored directly.</p>
 
     <h2 id="page-recharge">Recharge</h2>
-    <p>A curated list of activities to decompress. Reads from <code>500 Recharge/Recharge List.md</code> — headings become section titles, bullet points become items. Useful for ADHD-friendly context switching.</p>
+    <p>A break timer backed by your activity list in <code>500 Recharge/Recharge List.md</code>. Headings in that file become category labels; bullet points become activities.</p>
+    <h3>How to use it</h3>
+    <ol>
+      <li>Browse the activity list and click <strong>Start</strong> next to what you want to do.</li>
+      <li>A timer starts counting up and appears prominently at the top of the page. The timer persists across page navigations — <code>startedAt</code> is stored in <code>localStorage</code>, so the elapsed time is always computed from the saved start time, not a running interval.</li>
+      <li>When done, click <strong>Stop &amp; Log</strong>. The session (activity, category, start/end time, duration) is saved to your session log in <code>localStorage</code>.</li>
+      <li><strong>Cancel</strong> discards the session without logging it.</li>
+    </ol>
+    <p>Today's sessions are shown at the bottom of the page with total minutes. The Home dashboard Recharge card shows the active timer (if running) or time since your last break, linking to this page.</p>
+    <p>To add or change activities: edit <code>500 Recharge/Recharge List.md</code> in Obsidian (use markdown headings for categories, bullet points for items) and push. The page reads <code>recharge.json</code> which is rebuilt on each push.</p>
+
+    <h2 id="page-projects">Projects</h2>
+    <p>Shows your PhD program milestones (hardcoded in <code>projects.html</code> — edit the <code>mi-done</code> / <code>mi-active</code> / <code>mi-future</code> class on each item as you advance), a stream summary card from <code>papers.json</code>, and upcoming research tasks from Todoist filtered to the Research project hierarchy.</p>
+
+    <h2 id="page-church">Church</h2>
+    <p>A reference hub for your Stake Executive Secretary role. All data is stored in <code>localStorage</code> — nothing is committed to git.</p>
+    <ul>
+      <li><strong>Contacts</strong> — dynamic cards stored in <code>localStorage.phd_church_contacts</code>. Pre-seeded on first visit. Click ✎ on any card to edit phone/email. Add/delete via the Add Contact button.</li>
+      <li><strong>Meetings</strong> — 8 accordions with Zoom buttons (read from Credentials), checklists, and attendee lists.</li>
+      <li><strong>Credentials</strong> — 13 private fields (church login, Zoom links/IDs/dial-ins, Drive URLs). Stored in <code>localStorage.phd_church_credentials</code>. Click Edit to fill them in. Never in git.</li>
+      <li><strong>Resources</strong> — LCR and Drive links rendered from Credentials.</li>
+      <li><strong>Upcoming Tasks</strong> — Todoist tasks from the Church project, live.</li>
+    </ul>
+
+    <!-- ── Integrations ──────────────────── -->
+    <h2 id="todoist">Todoist Integration</h2>
+    <p>The website fetches live task and project data from Todoist's REST API (<code>https://api.todoist.com/api/v1</code>). Your API token is stored in <code>localStorage</code> under <code>phd_todoist_token</code> and is never sent anywhere except directly to Todoist over HTTPS.</p>
+    <h3>Finding your token</h3>
+    <p>todoist.com → Settings → Integrations → Developer → API token. Copy it and paste it into the modal that appears on first visit (or after clearing it).</p>
+    <h3>Clearing / re-entering</h3>
+    <p>Click the ⚙ gear icon in the top nav → confirm → the token is cleared and you'll be prompted on the next page load.</p>
+    <h3>API endpoints used</h3>
+    <table class="docs-table">
+      <thead><tr><th>Endpoint</th><th>Used by</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /tasks?limit=200</code></td><td>Home dashboard, Papers page</td></tr>
+        <tr><td><code>POST /tasks/{id}/close</code></td><td>Task checkboxes on any page</td></tr>
+        <tr><td><code>GET /projects?limit=200</code></td><td>Projects page, Review UI project dropdown</td></tr>
+        <tr><td><code>GET /reminders?limit=200</code></td><td>Reminder badges on task cards (gracefully skips if not on paid plan)</td></tr>
+        <tr><td><code>POST /tasks</code></td><td>"+ Add to read list" on Article of Day card</td></tr>
+      </tbody>
+    </table>
+    <div class="docs-callout info">The API base URL is <code>https://api.todoist.com/api/v1</code> (the v1 endpoint). Responses are wrapped in a <code>results</code> array — the app handles both array and wrapped formats.</div>
+
+    <h2 id="gcal">Google Calendar Integration</h2>
+    <p>The Home dashboard "Today's Meetings" card fetches events from all your Google Calendars using the Google Calendar REST API with OAuth 2.0 implicit flow.</p>
+
+    <h3>One-time setup</h3>
+    <ol>
+      <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>.</li>
+      <li>Create a new project → enable the <strong>Google Calendar API</strong>.</li>
+      <li>Credentials → Create Credentials → OAuth Client ID → Web application.</li>
+      <li>Under <em>Authorized JavaScript origins</em>, add your GitHub Pages URL (e.g. <code>https://marvelmarauder.github.io</code>). You can also add <code>http://localhost</code> for local testing.</li>
+      <li>Copy the Client ID — it looks like <code>123456789-abc.apps.googleusercontent.com</code>.</li>
+      <li>In <code>site/app.js</code>, find <code>const GCAL_CLIENT_ID = '...'</code> near the bottom and paste your Client ID.</li>
+      <li>Push to main. On next load, click <strong>Connect Google Calendar</strong>.</li>
+    </ol>
+    <div class="docs-callout tip">The Client ID is not a secret — it is safe to commit to a public repo. It only works from the authorized origin you registered.</div>
+
+    <h3>Token persistence and silent refresh</h3>
+    <p>After you connect, the OAuth access token is stored in <code>localStorage</code> as <code>phd_gcal_auth</code> (access token + expiry). Tokens expire after 1 hour. On each page load, if a previous connection exists (<code>phd_gcal_connected = 1</code> in localStorage), the site attempts a <strong>silent token refresh</strong> via <code>requestAccessToken({prompt:''})</code> before showing a reconnect button. If you are still signed into Google in your browser, this is invisible. The reconnect button only appears if your Google session itself has ended.</p>
+
+    <h3>What it reads</h3>
+    <p>All calendars in your Google account with <code>selected !== false</code> (i.e. everything checked in your calendar list). Events for today only (<code>timeMin</code> = start of today, <code>timeMax</code> = start of tomorrow). All-day events show "All day"; timed events show the start time. Meet/Zoom badges are detected from <code>hangoutLink</code> or the event's location URL.</p>
 
     <!-- ── Content guides ──────────────────── -->
     <h2 id="adding-books">Adding Books</h2>
-    <p>Create a new markdown file in <code>400 Personal/Books/</code>. Use <code>_template.md</code> as a starting point. The first paragraph of the note body becomes the hover snippet on the Books page.</p>
+    <p>The fastest way: use the <strong>Quick Add</strong> form at the top of the Books page. Search a title, pick your edition from the cover grid, set status and tags, then copy the generated frontmatter into a new <code>.md</code> file in <code>400 Personal/Books/</code> and push.</p>
+    <p>Alternatively, create the file manually using <code>_template.md</code> as a starting point. The first paragraph of the note body becomes the hover snippet.</p>
 
-    <h3>Frontmatter fields</h3>
+    <h3>Book frontmatter fields</h3>
     <table class="docs-table">
       <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td><code>title</code></td><td>string</td><td>Book title (falls back to filename)</td></tr>
+        <tr><td><code>title</code></td><td>string</td><td>Book title (falls back to filename if missing)</td></tr>
         <tr><td><code>author</code></td><td>string</td><td>Author name</td></tr>
         <tr><td><code>status</code></td><td>string</td><td><code>want-to-read</code> · <code>currently-reading</code> · <code>read</code></td></tr>
-        <tr><td><code>rating</code></td><td>1–5</td><td>Shows as filled dots on the Finished shelf</td></tr>
-        <tr><td><code>started</code></td><td>date or <code>true</code></td><td>Date started, or <code>true</code> if you forgot the date</td></tr>
-        <tr><td><code>finished</code></td><td>date or <code>true</code></td><td>Date finished</td></tr>
-        <tr><td><code>isbn</code></td><td>string</td><td>ISBN-10 or ISBN-13 for cover lookup</td></tr>
-        <tr><td><code>cover_url</code></td><td>URL</td><td>Override: paste a direct image URL to use instead</td></tr>
-        <tr><td><code>tags</code></td><td>list</td><td>Show as chips in the hover popup</td></tr>
+        <tr><td><code>rating</code></td><td>stars string</td><td><code>"*"</code> through <code>"*****"</code> — shows as filled dots on the Finished shelf</td></tr>
+        <tr><td><code>started</code></td><td>date or <code>true</code></td><td>Date started, or <code>true</code> if you don't remember the exact date</td></tr>
+        <tr><td><code>finished</code></td><td>date or <code>true</code></td><td>Date finished — used to sort the Finished shelf newest-first</td></tr>
+        <tr><td><code>isbn</code></td><td>string</td><td>ISBN-10 or ISBN-13. If set, cover is fetched by direct ISBN URL (most reliable). Quick Add fills this automatically.</td></tr>
+        <tr><td><code>cover_url</code></td><td>URL</td><td>Direct image URL. If set, skips all cover lookups entirely. Use this to pin a specific cover image.</td></tr>
+        <tr><td><code>tags</code></td><td>list</td><td>Genre tags shown in the hover popup. Valid values: <code>fiction</code>, <code>nonfiction</code>, <code>self-help</code>, <code>psychology</code>, <code>research</code>, <code>history</code>, <code>biography</code>, <code>horror</code>, <code>spiritual</code>.</td></tr>
       </tbody>
     </table>
-    <div class="docs-callout tip">The fastest way to get a good cover: find the book on Open Library, copy the cover ID from the URL, and set <code>isbn</code> to your book's ISBN. The build script handles the rest.</div>
+    <div class="docs-callout tip">If you want a specific cover and Quick Add doesn't give you the right one, find the book on <a href="https://openlibrary.org" target="_blank" rel="noopener">openlibrary.org</a>, find the edition's cover ID from the URL, and set <code>cover_url: https://covers.openlibrary.org/b/id/{cover_id}-L.jpg</code> directly in the frontmatter.</div>
 
     <h2 id="adding-lit">Adding Literature</h2>
-    <p>Create a markdown file in <code>100 Research/Source Papers/</code>. The Quick Add form on the Library page generates the frontmatter block for you — paste a DOI, click Lookup, then copy the YAML and paste it into a new note.</p>
-    <p>The first paragraph of the body becomes the snippet shown in the library card. Use it for your initial take on the paper.</p>
+    <p>Use the Quick Add form on the Library page: paste a DOI → CrossRef returns metadata → OpenAlex fetches keywords → copy the YAML frontmatter → paste into a new <code>.md</code> file in <code>100 Research/Source Papers/</code> → push. The first paragraph of the note body becomes the snippet shown on library cards.</p>
+    <p>You can also bulk-import a reference list using <code>scripts/import_refs.py</code>:</p>
+    <pre><code># Dry run (prints what would be created)
+python3 scripts/import_refs.py refs.txt --dry-run
 
-    <h3>Key frontmatter fields</h3>
+# Create the notes
+python3 scripts/import_refs.py refs.txt</code></pre>
+    <p>The script parses APA/Chicago/MLA/numbered reference lists, looks up DOIs via CrossRef and OpenAlex, and creates stub notes with full frontmatter. Supports accented author names and handles numbered reference lists.</p>
+
+    <h3>Source paper frontmatter fields</h3>
     <table class="docs-table">
       <thead><tr><th>Field</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>title</code></td><td>Paper title</td></tr>
-        <tr><td><code>authors</code></td><td>List or comma-separated string</td></tr>
-        <tr><td><code>journal</code></td><td>Journal name (shown as a badge)</td></tr>
+        <tr><td><code>authors</code></td><td>List or semicolon-separated string: <code>Last, First; Last2, First2</code></td></tr>
+        <tr><td><code>journal</code></td><td>Journal name (shown as a badge on library cards)</td></tr>
         <tr><td><code>year</code></td><td>Publication year (integer)</td></tr>
         <tr><td><code>doi</code></td><td>DOI without the <code>https://doi.org/</code> prefix</td></tr>
-        <tr><td><code>stream</code></td><td><code>ai-companions</code> or <code>judgy-ai</code> (used for filtering)</td></tr>
-        <tr><td><code>topic</code></td><td>Freeform topic tag</td></tr>
-        <tr><td><code>thoughts</code></td><td>One-line summary of your take</td></tr>
+        <tr><td><code>stream</code></td><td><code>ai-companions</code> · <code>judgy-ai</code> · <code>general-is</code> — used for library filter chips</td></tr>
+        <tr><td><code>topic</code></td><td>Freeform concept tag (e.g. "social presence", "trust")</td></tr>
+        <tr><td><code>keywords</code></td><td>List of keyword strings — used for the keyword search filter</td></tr>
+        <tr><td><code>related-papers</code></td><td>List of working paper titles — used for the Related to filter</td></tr>
+        <tr><td><code>thoughts</code></td><td>One-line take on why this paper matters — shown on the card</td></tr>
       </tbody>
     </table>
 
     <h2 id="tracking-papers">Tracking Your Papers</h2>
-    <p>Your own papers live in <code>100 Research/My Papers/</code>. Each file represents one research project and appears as a card in the pipeline view on the Papers page.</p>
+    <p>Your own papers live in <code>100 Research/My Papers/</code>. Each file appears as a card on the Papers page with a pipeline progress bar.</p>
     <table class="docs-table">
       <thead><tr><th>Field</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>title</code></td><td>Working title (falls back to filename)</td></tr>
         <tr><td><code>stream</code></td><td><code>ai-companions</code> or <code>judgy-ai</code></td></tr>
-        <tr><td><code>stage</code></td><td>See pipeline stages below</td></tr>
+        <tr><td><code>stage</code></td><td>Current pipeline stage (see below)</td></tr>
         <tr><td><code>co-authors</code></td><td>List of co-author names</td></tr>
         <tr><td><code>target-journal</code></td><td>Target journal abbreviation</td></tr>
         <tr><td><code>deadline</code></td><td>Submission deadline date</td></tr>
-        <tr><td><code>todoist-project</code></td><td>Todoist project ID for this paper's tasks</td></tr>
-        <tr><td><code>status</code></td><td><code>active</code> · <code>paused</code> · <code>abandoned</code></td></tr>
+        <tr><td><code>todoist-project</code></td><td>Todoist project name for this paper's tasks</td></tr>
+        <tr><td><code>status</code></td><td><code>active</code> · <code>paused</code> · <code>abandoned</code>. Only <code>active</code> papers are shown.</td></tr>
       </tbody>
     </table>
-    <h3>Pipeline stages</h3>
-    <p>In order: <code>ideation</code> → <code>lit-search</code> → <code>fleshing-out</code> → <code>method</code> → <code>data-collection</code> → <code>data-analysis</code> → <code>writeup</code> → <code>under-review</code> → <code>published</code></p>
+    <h3>Pipeline stages (in order)</h3>
+    <p><code>ideation</code> → <code>lit-search</code> → <code>fleshing-out</code> → <code>method</code> → <code>data-collection</code> → <code>data-analysis</code> → <code>writeup</code> → <code>under-review</code> → <code>published</code></p>
 
     <h2 id="dismissed-papers">Dismissed Papers</h2>
-    <p>Papers you permanently hide from the Discover feed are stored in <code>100 Research/Source Papers/_dismissed.md</code>. The build script reads this file and filters out matching DOIs before writing <code>discover.json</code>.</p>
+    <p>Papers you permanently hide from the Discover feed are listed in <code>100 Research/Source Papers/_dismissed.md</code>:</p>
     <pre><code>---
 dismissed:
   - 10.1016/j.im.2025.104012
   - 10.17705/1jais.00801
 ---</code></pre>
-    <p>To add a paper: click ✕ on a Discover card, then copy the DOI from the toast notification that appears. Add it to the YAML list above and push. It will be gone on the next build.</p>
-    <div class="docs-callout warn">Session-dismissed papers (✕ without adding to the file) only last until you clear your browser cache. The vault file is the permanent record.</div>
+    <p>To add one: click ✕ on a Discover card, copy the DOI from the toast notification, add it to the YAML list, and push. Session-dismissed papers (click ✕ without editing the file) last until the browser cache is cleared.</p>
+
+    <h2 id="recharge-list">Recharge Activities</h2>
+    <p>Edit <code>500 Recharge/Recharge List.md</code> in Obsidian. Use markdown headings (any level, <code>#</code> through <code>###</code>) for categories, and bullet points (<code>-</code> or <code>*</code>) for individual activities:</p>
+    <pre><code>## DS Games
+- Stardew Valley
+- Pokémon
+
+## Reading
+- Fiction novel
+- Comic book
+
+## Outside
+- Walk around the block
+- Sit in the sun</code></pre>
+    <p>Push after editing. The build script parses this file into <code>recharge.json</code> on every push.</p>
 
     <!-- ── Email Pipeline ──────────────────── -->
     <h2 id="pipeline-overview">Email Pipeline — Overview</h2>
-    <p>The email pipeline reads emails from a designated Apple Mail folder, runs them through a local LLM (Ollama), and accumulates proposed to-do items in a queue file. You review and approve the queue through a local web UI whenever you want — the pipeline runs automatically every two hours in the background.</p>
-    <p>All processing is local. Emails never leave your Mac. The only data that leaves is the task text you explicitly approve, which goes to Todoist. See <a href="#security">Security &amp; Protections</a> for a full breakdown of what the pipeline can and cannot do.</p>
+    <p>The email pipeline reads emails from a designated Apple Mail folder, runs them through a local LLM, accumulates proposed tasks in a queue, and lets you review and approve them through a local web UI. Everything runs on your Mac — emails never leave it. The only data that goes anywhere is the task text you explicitly approve, which goes to Todoist.</p>
     <h3>How it works</h3>
     <ol>
-      <li>Create a folder called <strong>LLM Queue</strong> in Apple Mail. Set up rules in Outlook to forward emails you want processed into it — they sync to Apple Mail automatically.</li>
-      <li>A LaunchAgent runs <code>email_pipeline.py</code> every 2 hours. If Apple Mail isn't open, it launches it and waits for Exchange to sync before reading.</li>
-      <li>Each email is parsed by the <code>phd-email-parser</code> Ollama model. Proposed tasks, an email snippet, and any PDF attachments are saved to <code>~/.phd_os_queue.json</code> and <code>~/.phd_os_attachments/</code>.</li>
-      <li>Emails are moved to <strong>LLM Processed</strong> immediately after parsing (so the queue folder stays clean).</li>
-      <li>Open <strong>PhD OS Review.app</strong> from your Dock to launch the review web UI. Select a project and due date for each task, read the email snippet if you need context, download any PDF attachments, then click <em>Add to Todoist</em>.</li>
+      <li>You create a folder called <strong>LLM Queue</strong> in Apple Mail and set up Outlook rules to route emails there.</li>
+      <li>A LaunchAgent runs <code>email_pipeline.py</code> every 2 hours. Mail opens automatically if closed.</li>
+      <li>Emails are parsed by the <code>phd-email-parser</code> Ollama model. Proposed tasks, a 600-char snippet, and any PDF attachments are written to <code>~/.phd_os_queue.json</code> and <code>~/.phd_os_attachments/</code>.</li>
+      <li>Emails are moved to <strong>LLM Processed</strong> immediately after parsing.</li>
+      <li>Open <strong>PhD OS Review.app</strong> from your Dock. Select project + due date for each task, read the email snippet, download PDFs, then click <em>Add to Todoist</em>.</li>
     </ol>
 
     <h2 id="pipeline-setup">Email Pipeline — Setup</h2>
-    <div class="docs-callout info">Before running setup, make sure Ollama is installed. Download it at <strong>ollama.com</strong>.</div>
+    <div class="docs-callout info">Install Ollama first. Download at <strong>ollama.com</strong>.</div>
 
     <h3>Step 1 — Pull the base model</h3>
-    <p>In terminal:</p>
     <pre><code>ollama pull llama3.2:3b</code></pre>
-    <p>This downloads a ~2GB model that fits comfortably in 16GB RAM and runs fast on Apple Silicon.</p>
 
-    <h3>Step 2 — Run the setup script</h3>
+    <h3>Step 2 — Run setup</h3>
     <pre><code>bash scripts/setup.sh</code></pre>
-    <p>The script will:</p>
+    <p>Creates <code>~/.phd_os_config.json</code>, builds the custom model, installs the LaunchAgent.</p>
+
+    <h3>Step 3 — Add Exchange account to Apple Mail</h3>
+    <p>System Settings → Internet Accounts → Add Account → Microsoft Exchange. You don't need to use Mail as your primary client — just add the account so it syncs in the background. IMAP and the new Outlook's API are both blocked by university IT; Apple Mail + AppleScript is the only path.</p>
+
+    <h3>Step 4 — Create folders and rules in Outlook</h3>
+    <p>Create two folders: <strong>LLM Queue</strong> and <strong>LLM Processed</strong>. They sync to Apple Mail. Set up Outlook rules to route emails into LLM Queue. Suggested tiers:</p>
     <ul>
-      <li>Create <code>~/.phd_os_config.json</code> with your Todoist token</li>
-      <li>Build the custom <code>phd-email-parser</code> Ollama model</li>
-      <li>Install and load the LaunchAgent (runs every 2 hours)</li>
+      <li><strong>Senders:</strong> advisor, committee, department admin → LLM Queue</li>
+      <li><strong>Keywords:</strong> "deadline", "action required", "review", "submit" → LLM Queue</li>
+      <li><strong>Journal alerts:</strong> misq.org, aisnet.org, etc. with "new issue" → LLM Queue</li>
     </ul>
 
-    <h3>Step 3 — Add your university account to Apple Mail</h3>
-    <p>The pipeline reads emails via Apple Mail's AppleScript API (the new Outlook for Mac removed AppleScript support). You don't need to use Apple Mail as your main client — just add the account so it syncs in the background.</p>
-    <p>Go to <strong>System Settings → Internet Accounts → Add Account → Microsoft Exchange</strong> and sign in with your university credentials. Once connected, your Outlook folders (including LLM Queue) will be visible in Apple Mail.</p>
-
-    <h3>Step 4 — Set up folders and rules in Outlook</h3>
-    <p>Create two folders in Outlook: <strong>LLM Queue</strong> and <strong>LLM Processed</strong>. They will automatically sync to Apple Mail. Then set up rules in Outlook to move emails you want parsed into LLM Queue. Suggested rule tiers:</p>
-    <ul>
-      <li><strong>Tier 1 (senders):</strong> advisor, committee members, department admin → always route to LLM Queue</li>
-      <li><strong>Tier 2 (keywords):</strong> subject contains "deadline", "action required", "review", "submit" → route to LLM Queue</li>
-      <li><strong>Tier 3 (journal alerts):</strong> from misq.org, aisnet.org, springer.com with "new issue" or "table of contents" → route to LLM Queue</li>
-    </ul>
-
-    <h3>Config file reference</h3>
-    <p>Located at <code>~/.phd_os_config.json</code>:</p>
+    <h3>Config reference</h3>
+    <p><code>~/.phd_os_config.json</code>:</p>
     <pre><code>{
   "todoist_token": "your-todoist-api-token",
   "ollama_model": "phd-email-parser",
   "ollama_url": "http://localhost:11434/api/generate",
   "outlook_queue_folder": "LLM Queue",
-  "outlook_processed_folder": "LLM Processed"
+  "outlook_processed_folder": "LLM Processed",
+  "max_emails_per_run": 20
 }</code></pre>
 
     <h2 id="pipeline-daily">Email Pipeline — Daily Use</h2>
-    <p>You don't need to do anything for the pipeline to run — it fires automatically every 2 hours when your Mac is on. Apple Mail opens itself if it's closed.</p>
-    <p>When you're ready to review accumulated tasks, click <strong>PhD OS Review.app</strong> in your Dock. It opens a local web UI at <code>http://localhost:7891</code> in your browser. If the server is already running, it goes straight to the browser.</p>
-    <p>To rebuild the app (e.g. if the vault path changed):</p>
-    <pre><code>bash scripts/build_app.sh</code></pre>
-    <p>If you prefer the terminal:</p>
-    <pre><code>python3 scripts/review_server.py</code></pre>
-    <p>There is also a minimal CLI fallback if the web UI isn't available:</p>
-    <pre><code>python3 scripts/review_tasks.py</code></pre>
-    <h3>Useful terminal commands</h3>
-    <pre><code># Check the pipeline log
-cat /tmp/phd_os_pipeline.log
+    <p>The pipeline runs automatically every 2 hours. When ready to review, open <strong>PhD OS Review.app</strong> from your Dock — it opens <code>http://localhost:7891</code>. If the server is already running, it goes straight to the browser.</p>
+    <pre><code># Rebuild the Dock app (e.g. if vault path changed)
+bash scripts/build_app.sh
 
-# Run the pipeline manually right now
+# Run the server manually
+python3 scripts/review_server.py
+
+# CLI fallback (no web UI needed)
+python3 scripts/review_tasks.py
+
+# Run pipeline manually right now
 python3 scripts/email_pipeline.py
 
-# Run without moving emails (process but leave in LLM Queue)
+# Process but leave emails in LLM Queue
 python3 scripts/email_pipeline.py --no-move
 
-# Parse emails and print proposed tasks — write nothing, move nothing
+# Parse and print — write nothing, move nothing
 python3 scripts/email_pipeline.py --dry-run
 
-# See how many tasks are pending
-python3 -c "import json; q=json.load(open('$HOME/.phd_os_queue.json')); print(sum(len(e['todos']) for b in q['batches'] for e in b['emails']), 'pending')"
+# View the last run log
+cat /tmp/phd_os_pipeline.log
 
 # Uninstall the LaunchAgent
 launchctl unload ~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></pre>
 
     <h2 id="pipeline-review-ui">Email Pipeline — Review UI</h2>
-    <p>The review UI is a local web app served by <code>review_server.py</code> on port 7891. It has three tabs.</p>
+    <p>Local web app served by <code>review_server.py</code> on port 7891. Three tabs.</p>
 
     <h3>Task Queue tab</h3>
-    <p>This is the main working view. Each batch shows the emails processed in that run, grouped as cards. For each email you see:</p>
+    <p>Each batch shows one card per email. The card header shows sender + subject. Below that:</p>
     <ul>
-      <li><strong>From / Subject</strong> — sender name and subject line in the card header.</li>
-      <li><strong>Summary</strong> — one-sentence LLM summary of what the email is about and what action it requires, shown in italics below the header.</li>
-      <li><strong>Show email</strong> — a collapsible that reveals the first ~600 characters of the email body so you can read the actual context without switching to Mail.</li>
-      <li><strong>📎 attachment links</strong> — if the email had PDF attachments, download links appear here. Attachments are stored in <code>~/.phd_os_attachments/</code> and survive between sessions.</li>
+      <li><strong>Summary</strong> — LLM one-sentence summary of required action.</li>
+      <li><strong>Show email</strong> — collapsible showing first 600 chars of the body.</li>
+      <li><strong>📎 links</strong> — PDF attachment downloads (stored in <code>~/.phd_os_attachments/</code>).</li>
     </ul>
-    <p>Each proposed task appears below its email card as a row with:</p>
-    <ul>
-      <li><strong>Checkbox</strong> — checked by default. Uncheck to exclude a task from the current approval batch without dismissing it.</li>
-      <li><strong>Editable task text</strong> — click to edit before approving. Changes are sent to Todoist as-is.</li>
-      <li><strong>Priority badge</strong> — Urgent / High / Normal / Low, set by the LLM.</li>
-      <li><strong>Project dropdown</strong> — your full Todoist project list, loaded from the API on page open. The LLM's <code>project_hint</code> pre-selects the closest match; change it before approving. <em>This is the most important field to review</em> — a task sent without a project lands in Todoist's inbox.</li>
-      <li><strong>Due date input</strong> — pre-filled with the LLM's suggestion. Accepts natural language (today, this week, Friday, 2026-06-15). Clear it to create the task with no due date.</li>
-      <li><strong>× dismiss button</strong> — removes the task. A reason field appears; your reason is saved to <code>scripts/model/corrections.md</code> and gets baked into the model on the next rebuild, creating a feedback loop.</li>
-    </ul>
-    <p>Click <strong>Add to Todoist</strong> in the bottom bar to create all checked tasks at once. The bar shows how many tasks are selected. Tasks are removed from the queue immediately after creation.</p>
-    <p>The <strong>Run Pipeline Now</strong> button at the top triggers <code>email_pipeline.py</code> in the background and streams its log output below the button. Useful if you want to process new emails without waiting for the next 2-hour automatic run.</p>
+    <p>Each proposed task row has: checkbox (checked by default), editable task text, priority badge, project dropdown (populated from Todoist API — this is the most important field to review), due date input, and × dismiss button.</p>
+    <p>Dismissing a task shows a reason field. The reason is appended to <code>scripts/model/corrections.md</code> and baked into the model on the next rebuild — this is how the model improves over time.</p>
+    <p>Click <strong>Add to Todoist</strong> to create all checked tasks. <strong>Run Pipeline Now</strong> triggers <code>email_pipeline.py</code> immediately and streams its log. <strong>Stop Server</strong> shuts down the server gracefully.</p>
 
     <h3>Add Example tab</h3>
-    <p>Paste in a real email, write the correct summary and tasks, and save it to <code>scripts/model/examples.md</code>. These become few-shot examples baked into the model. Use this when you encounter an email the LLM handled badly. After adding examples, go to the Model tab and rebuild.</p>
+    <p>Paste a real email, write the correct output (summary + tasks), save to <code>scripts/model/examples.md</code>. Use this when the LLM handled an email badly. Rebuild the model after adding examples.</p>
 
     <h3>Model tab</h3>
-    <p>Rebuilds the <code>phd-email-parser</code> Ollama model from <code>scripts/model/Modelfile</code>, <code>examples.md</code>, and <code>corrections.md</code>. Takes about 30–60 seconds. The rebuild log streams to the page so you can see when it finishes.</p>
-    <div class="docs-callout tip">Click <strong>Stop Server</strong> in the header to shut down the web server gracefully when you're done. You don't need to keep it running — the pipeline runs independently of the review server.</div>
+    <p>Rebuilds <code>phd-email-parser</code> from the Modelfile, examples, and corrections. Takes 30–60 seconds. Rebuild log streams to the page.</p>
 
     <h2 id="pipeline-model">Fine-Tuning the Model</h2>
-    <p>The <code>phd-email-parser</code> model is a customized version of <code>llama3.2:3b</code> with your research context and task categories baked in. You can sharpen it over time by adding examples — no GPU or training required.</p>
-
-    <h3>How it works</h3>
-    <p>The model is defined by two files in <code>scripts/model/</code>:</p>
+    <p>The model is a customized <code>llama3.2:3b</code> with your context baked in via two files in <code>scripts/model/</code>:</p>
     <ul>
-      <li><code>Modelfile</code> — sets the system prompt, temperature, and baked-in context about you and your work</li>
-      <li><code>examples.md</code> — email→task pairs you curate. These become few-shot examples embedded in the model.</li>
+      <li><code>Modelfile</code> — system prompt, temperature, base model declaration</li>
+      <li><code>examples.md</code> — email→task pairs (few-shot examples)</li>
+      <li><code>corrections.md</code> — rejection reasons from the review UI (auto-populated)</li>
     </ul>
 
-    <h3>Adding examples</h3>
-    <p>Open <code>scripts/model/examples.md</code> and add a new block following this format:</p>
+    <h3>Example format for examples.md</h3>
     <pre><code>## Example N — brief description
 
 INPUT:
@@ -345,177 +466,146 @@ OUTPUT:
     }
   ]
 }</code></pre>
-    <p>After adding examples, rebuild the model:</p>
-    <pre><code>bash scripts/model/build_model.sh</code></pre>
-    <div class="docs-callout tip">The best examples come from real emails the model got wrong. When you review a task and have to heavily edit it, that's a sign the original email would make a good training example.</div>
+    <pre><code># Rebuild after adding examples
+bash scripts/model/build_model.sh</code></pre>
+    <p>Edit <code>Modelfile</code> directly to update the system prompt — e.g. to add new task categories, recurring sender context, or updated research stream descriptions.</p>
 
-    <h3>Editing the system prompt</h3>
-    <p>Open <code>scripts/model/Modelfile</code> directly to adjust the system prompt — for example, to add new task categories, update your research stream descriptions, or add recurring sender context (e.g. "emails from church@example.org are always church admin"). Rebuild after any changes.</p>
-
-    <!-- ── Reference ────────────────────────── -->
-    <h2 id="build-script">Build Script</h2>
-    <p>Located at <code>.github/workflows/build_dashboard.py</code>. Runs from the repo root in GitHub Actions. Key functions:</p>
-    <table class="docs-table">
-      <thead><tr><th>Function</th><th>Reads</th><th>Writes</th></tr></thead>
-      <tbody>
-        <tr><td><code>build_papers()</code></td><td><code>100 Research/My Papers/*.md</code></td><td><code>papers.json</code></td></tr>
-        <tr><td><code>build_lit()</code></td><td><code>100 Research/Source Papers/*.md</code></td><td><code>lit.json</code></td></tr>
-        <tr><td><code>build_books()</code></td><td><code>400 Personal/Books/*.md</code></td><td><code>books.json</code></td></tr>
-        <tr><td><code>build_recharge()</code></td><td><code>500 Recharge/Recharge List.md</code></td><td><code>recharge.json</code></td></tr>
-        <tr><td><code>build_discover()</code></td><td>OpenAlex API + <code>_dismissed.md</code></td><td><code>discover.json</code></td></tr>
-      </tbody>
-    </table>
-    <p>The script copies everything from <code>site/</code> into <code>_site/</code>, then writes the JSON files alongside the HTML. GitHub Actions deploys <code>_site/</code> as the Pages root.</p>
-
-    <h2 id="frontmatter">Frontmatter Reference</h2>
-    <p>Quick reference for all YAML frontmatter fields the build script reads. For full details see the per-content-type sections above.</p>
-    <table class="docs-table">
-      <thead><tr><th>File location</th><th>Required fields</th><th>Optional fields</th></tr></thead>
-      <tbody>
-        <tr><td>My Papers</td><td><code>title</code>, <code>stage</code></td><td><code>stream</code>, <code>co-authors</code>, <code>target-journal</code>, <code>deadline</code>, <code>todoist-project</code>, <code>status</code></td></tr>
-        <tr><td>Source Papers</td><td><code>title</code></td><td><code>authors</code>, <code>journal</code>, <code>year</code>, <code>doi</code>, <code>stream</code>, <code>topic</code>, <code>thoughts</code></td></tr>
-        <tr><td>Books</td><td><code>title</code>, <code>status</code></td><td><code>author</code>, <code>rating</code>, <code>started</code>, <code>finished</code>, <code>isbn</code>, <code>cover_url</code>, <code>tags</code></td></tr>
-      </tbody>
-    </table>
-
-    <h2 id="security">Security &amp; Protections</h2>
-    <p>PhD OS runs with elevated trust on your Mac — it can control Apple Mail via AppleScript and write to Todoist. The following protections limit what it can actually do.</p>
-
-    <h3>macOS automation permission scope</h3>
-    <p>When macOS asks whether Terminal/Python can control Mail, that permission is broad — it technically allows any script to read or send any email. The email pipeline limits itself well below that ceiling:</p>
-    <ul>
-      <li>Reads <strong>only</strong> from the folder named in <code>outlook_queue_folder</code> (default: LLM Queue)</li>
-      <li>Moves <strong>only</strong> to the folder named in <code>outlook_processed_folder</code> (default: LLM Processed)</li>
-      <li>Never sends email, never deletes email, never reads Inbox or any other folder</li>
-      <li>Never accesses Contacts, Calendar, or any other app</li>
-    </ul>
-    <div class="docs-callout warn">The permission macOS shows you is intentionally broad — Apple does not offer per-folder granularity. The limitations above are enforced by the script, not by the OS.</div>
-
-    <h3>AppleScript injection prevention</h3>
-    <p>Folder names from <code>~/.phd_os_config.json</code> are embedded into AppleScript strings at runtime. A crafted folder name could escape the string and execute arbitrary AppleScript.</p>
-    <p>The pipeline prevents this with a strict regex before touching anything: folder names may only contain <strong>letters, digits, spaces, hyphens, and underscores</strong>. Any other character causes the script to exit with an error before any AppleScript runs. Common system folder names (Inbox, Sent, Drafts, Trash, etc.) are also blocked.</p>
-
-    <h3>Dry-run and no-move modes</h3>
-    <p>You can always verify what the pipeline would do before it does anything:</p>
-    <pre><code># Read and parse emails, print proposed tasks — write nothing, move nothing
-python3 scripts/email_pipeline.py --dry-run
-
-# Process and queue tasks, but leave emails in LLM Queue
-python3 scripts/email_pipeline.py --no-move</code></pre>
-
-    <h3>Human approval before any Todoist write</h3>
-    <p>The pipeline never creates Todoist tasks automatically. Every proposed task goes through <code>review_tasks.py</code>, which shows you each task individually (approve / edit / skip), then prints a final summary of everything about to be created and asks for confirmation before making a single API call.</p>
-
-    <h3>Private temp directory</h3>
-    <p>Email bodies and PDF attachments are written to a private temp directory created at the start of each pipeline run with mode <code>700</code> (readable only by you). The directory and all its files are deleted in a <code>finally</code> block that runs even if the script crashes. Other users on the same machine cannot read your email content while the pipeline is running.</p>
-
-    <h3>Config file permissions</h3>
-    <p><code>~/.phd_os_config.json</code> contains your Todoist API token. <code>setup.sh</code> creates it with mode <code>600</code> (owner read/write only). If you create or edit the file manually, verify the permissions with:</p>
-    <pre><code>ls -l ~/.phd_os_config.json
-# Should show: -rw------- (600)</code></pre>
-    <p>If it shows anything else: <code>chmod 600 ~/.phd_os_config.json</code></p>
-
-    <h3>Token not echoed during setup</h3>
-    <p><code>setup.sh</code> uses <code>read -s</code> when prompting for the Todoist token, so it is never displayed on screen. The token is passed to Python via an environment variable (not shell interpolation), so it is JSON-encoded correctly even if it contains special characters.</p>
-
-    <h3>Atomic queue file writes</h3>
-    <p>The pending task queue (<code>~/.phd_os_queue.json</code>) is written atomically: the script writes to a <code>.tmp</code> file first, then does an <code>os.replace()</code> to swap it in. A crash mid-write leaves the old queue intact rather than producing a corrupted file. The queue file is also created with mode <code>600</code>.</p>
-
-    <h3>Email cap</h3>
-    <p>The pipeline processes at most <code>max_emails_per_run</code> emails per run (default: 20). A flooded LLM Queue folder — from a runaway forwarding rule, for example — cannot cause unbounded API calls or runaway Ollama usage. Override in <code>~/.phd_os_config.json</code>:</p>
-    <pre><code>"max_emails_per_run": 10</code></pre>
-
-    <h3>Audit log</h3>
-    <p>Every action taken by the pipeline is written as a JSON line to <code>/tmp/phd_os_audit.log</code>: which emails were read, when they were moved, how many tasks were queued. You can inspect it at any time:</p>
-    <pre><code>cat /tmp/phd_os_audit.log | python3 -m json.tool --no-indent | head -40</code></pre>
-    <div class="docs-callout info">The audit log lives in <code>/tmp</code> and is cleared on reboot. It is not a tamper-proof security record — it is a convenience log for your own review.</div>
-
-    <h3>Cover image URL scheme validation</h3>
-    <p>Book cover URLs from <code>books.json</code> are validated before being placed in an <code>&lt;img src&gt;</code> attribute. Only <code>http://</code> and <code>https://</code> URLs are accepted; anything else (including <code>javascript:</code> or <code>data:</code> URLs) is silently replaced with a colored placeholder. All other user-controlled strings rendered into HTML go through <code>escHtml()</code>.</p>
-
-    <h3>Todoist token storage</h3>
-    <p>The Todoist API token used by the website is stored in your browser's <code>localStorage</code> for the site's origin. It is never sent anywhere except directly to the Todoist API over HTTPS. There is no third-party JavaScript on any page, so there is no script that could exfiltrate it. It is visible in browser developer tools — treat it like a password and don't use a shared machine.</p>
-
-    <h3>What is NOT protected</h3>
-    <p>Being honest about limitations:</p>
-    <ul>
-      <li>The macOS automation permission cannot be scoped to specific folders — a malicious script running as you could abuse it. Revoke it in <strong>System Settings → Privacy &amp; Security → Automation</strong> if the pipeline is not in use.</li>
-      <li>The audit log in <code>/tmp</code> is not append-only or cryptographically signed — it can be modified or deleted.</li>
-      <li>The Todoist token in <code>localStorage</code> is visible to browser dev tools. On a shared machine, clear it with the ⚙ button in the nav when done.</li>
-      <li>The pipeline scripts have not been independently security-audited.</li>
-    </ul>
-
-    <!-- ── Architecture ──────────────────────── -->
+    <!-- ── Architecture ────────────────────── -->
     <h2 id="system-map">System Map</h2>
-    <p>PhD OS has two completely independent pipelines that share nothing at runtime. The website pipeline is cloud-based and stateless. The email pipeline is local and stateful.</p>
+    <p>PhD OS has two completely independent pipelines that share no runtime state. The website pipeline is cloud-based and stateless. The email pipeline is local and stateful.</p>
 
     <h3>All files at a glance</h3>
     <table class="docs-table">
-      <thead><tr><th>File / Location</th><th>What it is</th><th>Who reads/writes it</th></tr></thead>
+      <thead><tr><th>File / Location</th><th>What it is</th><th>Who reads / writes it</th></tr></thead>
       <tbody>
-        <tr><td><code>site/*.html</code></td><td>Static page templates — source of truth for all pages</td><td>Build script copies to <code>_site/</code>; browser renders</td></tr>
-        <tr><td><code>site/app.js</code></td><td>Shared JS: nav bar, Todoist API calls, Google Calendar auth</td><td>Every page loads this; build copies to <code>_site/</code></td></tr>
-        <tr><td><code>site/style.css</code></td><td>All CSS for the site</td><td>Every page; build copies to <code>_site/</code></td></tr>
-        <tr><td><code>.github/workflows/build_dashboard.py</code></td><td>Build script — reads vault markdown, writes JSON to <code>_site/</code></td><td>GitHub Actions runs it on every push</td></tr>
-        <tr><td><code>.github/workflows/dashboard.yml</code></td><td>CI/CD config — triggers the build and deploys to Pages</td><td>GitHub reads this automatically</td></tr>
-        <tr><td><code>_site/</code></td><td>Build output — what GitHub Pages actually serves</td><td>Build script writes; Pages serves; never edit directly</td></tr>
-        <tr><td><code>scripts/email_pipeline.py</code></td><td>Headless runner — reads Apple Mail via AppleScript, calls Ollama, writes queue</td><td>LaunchAgent runs it every 2 hrs; you can run it manually</td></tr>
-        <tr><td><code>scripts/review_server.py</code></td><td>Web UI server on port 7891 — task approval interface</td><td>PhD OS Review.app launches it; you can run it manually</td></tr>
-        <tr><td><code>scripts/review_tasks.py</code></td><td>CLI fallback for task approval</td><td>You run it manually in terminal if the web UI isn't available</td></tr>
-        <tr><td><code>scripts/model/Modelfile</code></td><td>Ollama model definition — system prompt and base model</td><td>You edit this; <code>build_model.sh</code> compiles it into Ollama</td></tr>
-        <tr><td><code>scripts/model/examples.md</code></td><td>Few-shot email→task training examples</td><td>You add examples via the Review UI or by hand; <code>build_model.sh</code> reads it</td></tr>
-        <tr><td><code>scripts/model/corrections.md</code></td><td>Rejection reasons from dismissed tasks</td><td>Review UI appends to it; <code>build_model.sh</code> injects it as corrections</td></tr>
-        <tr><td><code>~/.phd_os_config.json</code></td><td>Pipeline config: Todoist token, Ollama URL, folder names</td><td><code>email_pipeline.py</code> and <code>review_server.py</code> read this on every run</td></tr>
-        <tr><td><code>~/.phd_os_queue.json</code></td><td>Pending task queue — batches of proposed tasks awaiting review</td><td><code>email_pipeline.py</code> appends; <code>review_server.py</code> reads and clears approved/dismissed tasks</td></tr>
-        <tr><td><code>~/.phd_os_attachments/</code></td><td>Persistent PDF attachment storage</td><td><code>email_pipeline.py</code> copies PDFs here; review UI serves download links from here</td></tr>
-        <tr><td><code>/tmp/phd_os_pipeline.log</code></td><td>Human-readable pipeline run log (cleared on reboot)</td><td><code>email_pipeline.py</code> writes; you can <code>cat</code> it anytime</td></tr>
-        <tr><td><code>/tmp/phd_os_audit.log</code></td><td>JSON-lines audit trail of every read/move/queue action (cleared on reboot)</td><td><code>email_pipeline.py</code> writes; you can inspect it</td></tr>
-        <tr><td><code>~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></td><td>macOS LaunchAgent — schedules <code>email_pipeline.py</code> to run every 2 hours</td><td>macOS reads this; installed by <code>setup.sh</code></td></tr>
+        <tr><td><code>site/index.html</code></td><td>Home dashboard page (6-card grid: tasks, meetings, article, reading, quote, recharge)</td><td>Build copies to <code>_site/</code>; browser renders</td></tr>
+        <tr><td><code>site/dashboard.html</code></td><td>Redirect to <code>index.html</code> (in case of stale bookmarks)</td><td>Build copies to <code>_site/</code></td></tr>
+        <tr><td><code>site/*.html</code> (all other pages)</td><td>Static page templates</td><td>Build copies to <code>_site/</code>; browser renders</td></tr>
+        <tr><td><code>site/app.js</code></td><td>Shared JS — nav, Todoist API, GCal auth/silent refresh, cover fetch, recharge helpers, LDS quotes, theme management, easter egg</td><td>Every page loads this; build copies to <code>_site/</code></td></tr>
+        <tr><td><code>site/theme.js</code></td><td>Tiny blocking script — reads <code>phd_theme</code> from localStorage and applies theme class to <code>&lt;html&gt;</code> before first paint</td><td>Every page loads this in <code>&lt;head&gt;</code>; build copies to <code>_site/</code></td></tr>
+        <tr><td><code>site/style.css</code></td><td>All CSS — including <code>html.theme-light</code> overrides, animation keyframes, dashboard grid, edition picker, recharge timer</td><td>Every page; build copies to <code>_site/</code></td></tr>
+        <tr><td><code>.github/workflows/build_dashboard.py</code></td><td>Build script — reads vault markdown, fetches OpenAlex data, writes JSON to <code>_site/</code></td><td>GitHub Actions on every push</td></tr>
+        <tr><td><code>.github/workflows/dashboard.yml</code></td><td>CI/CD config — triggers build, deploys <code>_site/</code> to Pages</td><td>GitHub reads automatically</td></tr>
+        <tr><td><code>_site/</code></td><td>Build output (never edit directly) — what GitHub Pages actually serves</td><td>Build script writes; Pages serves</td></tr>
+        <tr><td><code>scripts/email_pipeline.py</code></td><td>Reads Apple Mail via AppleScript, calls Ollama, writes queue and attachments</td><td>LaunchAgent every 2 hrs; can run manually</td></tr>
+        <tr><td><code>scripts/review_server.py</code></td><td>Web UI on port 7891 — task approval, project dropdown, attachment downloads, pipeline trigger</td><td>PhD OS Review.app; can run manually</td></tr>
+        <tr><td><code>scripts/review_tasks.py</code></td><td>CLI fallback for task approval</td><td>Run manually in terminal</td></tr>
+        <tr><td><code>scripts/import_refs.py</code></td><td>Bulk literature import — parses APA/MLA reference lists, fetches DOIs, creates Source Paper notes</td><td>Run manually: <code>python3 scripts/import_refs.py refs.txt</code></td></tr>
+        <tr><td><code>scripts/build_app.sh</code></td><td>Creates <code>~/Applications/PhD OS Review.app</code> via <code>osacompile</code></td><td>Run manually after vault path changes</td></tr>
+        <tr><td><code>scripts/model/Modelfile</code></td><td>Ollama model definition — system prompt, base model, temperature</td><td>You edit; <code>build_model.sh</code> compiles</td></tr>
+        <tr><td><code>scripts/model/examples.md</code></td><td>Few-shot email→task training examples</td><td>You add via Review UI or by hand; <code>build_model.sh</code> reads</td></tr>
+        <tr><td><code>scripts/model/corrections.md</code></td><td>Rejection reasons from dismissed tasks — auto-populated by Review UI</td><td>Review UI appends; <code>build_model.sh</code> injects as corrections</td></tr>
+        <tr><td><code>~/.phd_os_config.json</code></td><td>Pipeline config: Todoist token, Ollama URL, folder names, email cap. Permissions: 600.</td><td><code>email_pipeline.py</code> and <code>review_server.py</code> read on every run</td></tr>
+        <tr><td><code>~/.phd_os_queue.json</code></td><td>Pending task queue — JSON batches of proposed tasks awaiting review. Written atomically.</td><td><code>email_pipeline.py</code> appends; <code>review_server.py</code> reads and removes approved/dismissed entries</td></tr>
+        <tr><td><code>~/.phd_os_attachments/</code></td><td>Persistent PDF storage — survives between sessions</td><td><code>email_pipeline.py</code> copies PDFs here; Review UI serves download links</td></tr>
+        <tr><td><code>/tmp/phd_os_pipeline.log</code></td><td>Human-readable run log (cleared on reboot)</td><td><code>email_pipeline.py</code> writes; you can <code>cat</code> anytime</td></tr>
+        <tr><td><code>/tmp/phd_os_audit.log</code></td><td>JSON-lines audit trail of every read/move/queue action (cleared on reboot)</td><td><code>email_pipeline.py</code> writes; inspect anytime</td></tr>
+        <tr><td><code>~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></td><td>macOS LaunchAgent — fires <code>email_pipeline.py</code> every 2 hours</td><td>macOS reads; installed by <code>setup.sh</code></td></tr>
+        <tr><td><code>~/Applications/PhD OS Review.app</code></td><td>Compiled AppleScript applet — launches review server or opens browser if already running. Drag to Dock.</td><td>You click it; rebuild with <code>bash scripts/build_app.sh</code></td></tr>
       </tbody>
     </table>
 
     <h2 id="data-flow">Data Flow</h2>
 
     <h3>Website pipeline</h3>
-    <p>This pipeline is purely build-time. Nothing runs on a server at request time.</p>
+    <p>Entirely build-time for vault content. Runtime for live data (Todoist, GCal, book covers).</p>
     <ol>
-      <li>You write or edit a markdown note in Obsidian (e.g. a new source paper in <code>100 Research/Source Papers/</code>).</li>
-      <li>Obsidian Git pushes the change to <code>main</code> on GitHub (every 10 minutes).</li>
-      <li>GitHub Actions detects the push and runs <code>build_dashboard.py</code>. The script glob-scans the vault folders, reads YAML frontmatter, makes API calls to OpenAlex/Open Library, and writes JSON files (<code>papers.json</code>, <code>lit.json</code>, <code>books.json</code>, <code>recharge.json</code>, <code>discover.json</code>) into <code>_site/</code>. It also copies everything from <code>site/</code> into <code>_site/</code>.</li>
-      <li>GitHub Pages deploys <code>_site/</code> as a static site.</li>
-      <li>When you open a page in your browser, the HTML loads <code>app.js</code> and <code>style.css</code>, then fetches the relevant JSON file (<code>fetch('lit.json')</code>), and renders the data.</li>
-      <li>Live data (Todoist tasks, Google Calendar events) is fetched client-side at runtime using tokens stored in <code>localStorage</code>. This never touches the build.</li>
+      <li>You edit a markdown note in Obsidian (e.g. add a source paper).</li>
+      <li>Obsidian Git pushes to <code>main</code> on GitHub (auto, every 10 min).</li>
+      <li>GitHub Actions runs <code>build_dashboard.py</code>:
+        <ul>
+          <li>Glob-scans vault folders, reads YAML frontmatter from each note.</li>
+          <li>Calls OpenAlex API for IS journal discovery papers and stream searches → <code>discover.json</code>.</li>
+          <li>Writes <code>papers.json</code>, <code>lit.json</code>, <code>books.json</code>, <code>recharge.json</code>, <code>discover.json</code> into <code>_site/</code>.</li>
+          <li>Copies all files from <code>site/</code> → <code>_site/</code>.</li>
+          <li><strong>Note:</strong> <code>build_books()</code> does NOT fetch cover images from any API. It only passes through <code>isbn</code> and any manually-set <code>cover_url</code> from the note frontmatter. Covers are loaded client-side.</li>
+        </ul>
+      </li>
+      <li>GitHub Pages deploys <code>_site/</code>.</li>
+      <li>Browser renders a page:
+        <ul>
+          <li><code>theme.js</code> runs synchronously — applies <code>theme-light</code> class if stored preference exists.</li>
+          <li><code>app.js</code> and <code>style.css</code> load.</li>
+          <li>Page-specific JS fetches the relevant JSON file (<code>fetch('books.json')</code>, etc.) and renders it.</li>
+          <li><strong>Todoist:</strong> <code>GET /api/v1/tasks</code> called live with token from <code>localStorage</code>.</li>
+          <li><strong>Google Calendar:</strong> If <code>phd_gcal_connected</code> is set, silent token refresh is attempted via GIS. If successful, events are fetched from the Calendar API. If the Google session has ended, a reconnect button appears.</li>
+          <li><strong>Book covers:</strong> Each <code>.book-spine</code> without <code>data-cover-loaded</code> triggers <code>fetchBookCover(isbn, title, author)</code> — searches Open Library with <code>sort=new</code>, gets <code>cover_i</code>, constructs the cover URL. Results are cached in <code>_coverCache</code> for the session.</li>
+          <li><strong>Article of Day:</strong> Reads <code>discover.json</code> journals section, picks <code>papers[dayIndex % papers.length]</code>.</li>
+          <li><strong>LDS Quote:</strong> Reads hardcoded 50-quote array in <code>app.js</code>, picks <code>LDS_QUOTES[dayIndex % 50]</code>. No network call.</li>
+        </ul>
+      </li>
     </ol>
-    <div class="docs-callout tip">If a page looks stale, the build is the bottleneck — not the browser cache. Trigger a manual GitHub Actions run to force a rebuild.</div>
 
     <h3>Email pipeline</h3>
-    <p>This pipeline is entirely local. Each step runs as a separate process on your Mac.</p>
+    <p>Entirely local. Nothing leaves your Mac except task text approved to Todoist.</p>
     <ol>
-      <li><strong>Trigger:</strong> The LaunchAgent fires <code>email_pipeline.py</code> every 2 hours (or you run it manually / click "Run Pipeline Now" in the web UI).</li>
-      <li><strong>Mail open:</strong> If Apple Mail isn't running, the script opens it and waits up to 60 seconds for it to launch, then adds a 15-second delay for Exchange to sync. This is why the pipeline can be slow if Mail was closed.</li>
-      <li><strong>AppleScript fetch:</strong> The script generates an AppleScript and runs it via <code>osascript</code>. The AppleScript iterates all mailboxes to find the one named "LLM Queue", calls <code>synchronize</code> on it, then reads each message: writes the body to a private temp file, saves any PDF attachments to temp, and returns a tab-delimited line per message (id, subject, sender, date, pdf names).</li>
-      <li><strong>Deduplication:</strong> If multiple messages in the queue share the same thread subject (e.g. a back-and-forth), only the most recent one is processed.</li>
-      <li><strong>Ollama parse:</strong> For each email, the script sends a prompt to <code>http://localhost:11434/api/generate</code> with the email content and asks for a JSON object with <code>summary</code> and <code>todos</code>. The model is <code>phd-email-parser</code>.</li>
-      <li><strong>Queue write:</strong> The resulting tasks, a 600-char body snippet, and a list of saved attachment filenames are atomically appended to <code>~/.phd_os_queue.json</code>. PDFs are copied from temp to <code>~/.phd_os_attachments/</code> before cleanup.</li>
-      <li><strong>Move:</strong> A second AppleScript moves all messages from "LLM Queue" to "LLM Processed".</li>
-      <li><strong>Review:</strong> When you open the Review UI, <code>review_server.py</code> reads <code>queue.json</code> and renders the task cards. It also fetches your Todoist project list from the API to populate the project dropdown.</li>
-      <li><strong>Approve:</strong> Clicking "Add to Todoist" sends each checked task (with your selected project ID and due date) to <code>POST https://api.todoist.com/api/v1/tasks</code>. Approved and dismissed tasks are removed from <code>queue.json</code>.</li>
+      <li><strong>Trigger:</strong> LaunchAgent fires every 2 hrs, or you run manually / click Run Pipeline Now in the UI.</li>
+      <li><strong>Mail open:</strong> If Mail isn't running, script opens it, polls up to 60s, then waits 15s for Exchange to sync.</li>
+      <li><strong>AppleScript fetch:</strong> Script generates and runs an AppleScript via <code>osascript</code> (Popen-based polling loop — avoids the macOS hang where <code>communicate()</code> after <code>kill()</code> blocks indefinitely). The AppleScript iterates all mailboxes of each Exchange account to find "LLM Queue" (direct mailbox lookup fails on Exchange with error -1728 — iteration is the fix), synchronizes it, then reads each message: writes body to a private temp dir (mode 700), saves PDF attachments, returns a tab-delimited line per message (id, subject, sender, date, pdf names).</li>
+      <li><strong>Deduplication:</strong> Emails sharing a normalized thread subject (Re:/Fwd: stripped) keep only the most recent message.</li>
+      <li><strong>Ollama parse:</strong> Each email sent to <code>http://localhost:11434/api/generate</code> with model <code>phd-email-parser</code>. Parses the JSON response for <code>summary</code> and <code>todos</code>.</li>
+      <li><strong>Queue write:</strong> Tasks, 600-char snippet, and attachment filenames atomically appended to <code>~/.phd_os_queue.json</code> (written to <code>.tmp</code> file first, then <code>os.replace()</code>). PDFs copied from temp to <code>~/.phd_os_attachments/</code> before cleanup.</li>
+      <li><strong>Move:</strong> Second AppleScript moves all processed messages to "LLM Processed".</li>
+      <li><strong>Review:</strong> <code>review_server.py</code> reads <code>queue.json</code> and renders task cards. Fetches Todoist project list for the dropdown.</li>
+      <li><strong>Approve:</strong> <code>POST https://api.todoist.com/api/v1/tasks</code> with <code>project_id</code> and <code>due_string</code>. Approved + dismissed tasks removed from <code>queue.json</code>.</li>
     </ol>
 
     <h2 id="debugging">Debugging by Hand</h2>
-    <p>When something breaks, you can inspect every stage of each pipeline independently. You don't need Claude to read logs — all the state is in plain text files.</p>
+
+    <h3>Debugging the website</h3>
+    <pre><code># Check build output (GitHub → Actions → most recent run → click job)
+
+# Run a local build and inspect generated JSON
+python3 .github/workflows/build_dashboard.py
+cat _site/books.json | python3 -m json.tool | head -40
+cat _site/discover.json | python3 -m json.tool | head -40
+
+# Validate a frontmatter file
+python3 -c "
+import frontmatter
+post = frontmatter.load('100 Research/Source Papers/some-paper.md')
+print(post.metadata)
+"
+
+# Test Todoist token
+curl -s https://api.todoist.com/api/v1/projects \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  | python3 -m json.tool | head -20
+
+# Inspect browser localStorage (open DevTools → Console on any page)
+# Todoist token:
+localStorage.getItem('phd_todoist_token')
+# GCal token + expiry:
+JSON.parse(localStorage.getItem('phd_gcal_auth'))
+# GCal connected flag:
+localStorage.getItem('phd_gcal_connected')
+# Theme preference:
+localStorage.getItem('phd_theme')
+# Active recharge timer:
+JSON.parse(localStorage.getItem('phd_recharge_active'))
+# Recharge session log:
+JSON.parse(localStorage.getItem('phd_recharge_log'))
+# Church credentials:
+JSON.parse(localStorage.getItem('phd_church_credentials'))
+
+# Test Open Library cover lookup for a book
+curl -s "https://openlibrary.org/search.json?title=Gilead&author=Marilynne+Robinson&sort=new&limit=3&fields=cover_i,first_publish_year" \
+  | python3 -m json.tool
+
+# Check a cover URL resolves to a real image
+curl -sI "https://covers.openlibrary.org/b/id/14848625-L.jpg" | grep -E "HTTP|content-type|location"</code></pre>
 
     <h3>Debugging the email pipeline</h3>
-    <pre><code># 1. Check the last pipeline run log
+    <pre><code># Last run log
 cat /tmp/phd_os_pipeline.log
 
-# 2. Check the audit trail (JSON lines — one per action)
+# Audit trail (JSON lines)
 cat /tmp/phd_os_audit.log
 
-# 3. See what's in the queue right now
+# Queue contents
 python3 -c "
-import json, sys
-q = json.load(open('$HOME/.phd_os_queue.json'))
+import json, os
+q = json.load(open(os.path.expanduser('~/.phd_os_queue.json')))
 for b in q['batches']:
     print('Batch:', b['run_at'])
     for e in b['emails']:
@@ -524,83 +614,64 @@ for b in q['batches']:
             print('   -', t['task'], '|', t.get('project_hint'), '|', t.get('due_suggestion'))
 "
 
-# 4. Count pending tasks
-python3 -c "import json; q=json.load(open('$HOME/.phd_os_queue.json')); print(sum(len(e['todos']) for b in q['batches'] for e in b['emails']), 'tasks pending')"
+# Count pending tasks
+python3 -c "
+import json, os
+q = json.load(open(os.path.expanduser('~/.phd_os_queue.json')))
+print(sum(len(e['todos']) for b in q['batches'] for e in b['emails']), 'tasks pending')
+"
 
-# 5. Run the pipeline manually with dry run (no writes, no moves)
+# Dry run (no writes, no moves)
 python3 scripts/email_pipeline.py --dry-run
 
-# 6. Run the pipeline and leave emails in place (process but don't move)
-python3 scripts/email_pipeline.py --no-move
-
-# 7. Check if Ollama is running and the model exists
+# Test Ollama is running and model exists
 curl -s http://localhost:11434/api/tags | python3 -m json.tool
 ollama list
 
-# 8. Test Ollama directly with a fake email
+# Test the model directly
 curl -s http://localhost:11434/api/generate \
-  -d '{"model":"phd-email-parser","prompt":"FROM: test@test.com\nSUBJECT: Test\nBODY: Please review the attached paper by Friday.","stream":false}' \
+  -d '{"model":"phd-email-parser","prompt":"FROM: test@test.com\nSUBJECT: Review deadline\nBODY: Please review the draft by Friday.","stream":false}' \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['response'])"
 
-# 9. Check if the LaunchAgent is loaded and when it last ran
+# Check LaunchAgent status
 launchctl list | grep phd-os
 
-# 10. Check Apple Mail is seeing the LLM Queue folder
-osascript -e 'tell application "Mail" to get name of every mailbox of every account' 2>&1 | tr , '\n' | grep -i llm</code></pre>
+# Verify Apple Mail sees LLM Queue
+osascript -e 'tell application "Mail" to get name of every mailbox of every account' 2>&1 | tr , '\n' | grep -i llm
 
-    <h3>Debugging the website</h3>
-    <pre><code># 1. See the build script output for the last GitHub Actions run
-#    → GitHub → Actions → most recent run → click job name
-
-# 2. Inspect a generated JSON file directly
-curl -s https://USERNAME.github.io/REPO/lit.json | python3 -m json.tool | head -60
-
-# 3. Check a local build (run from vault root)
-python3 .github/workflows/build_dashboard.py
-
-# 4. Validate a frontmatter file is parseable
-python3 -c "
-import frontmatter
-post = frontmatter.load('100 Research/Source Papers/your-paper.md')
-print(post.metadata)
-"
-
-# 5. Test your Todoist token manually
-curl -s https://api.todoist.com/api/v1/projects \
-  -H 'Authorization: Bearer YOUR_TOKEN_HERE' \
-  | python3 -m json.tool | head -40
-
-# 6. Test your Google Calendar token (get it from localStorage in dev tools)
-#    In browser console on the home page:
-#    JSON.parse(localStorage.getItem('phd_gcal_auth'))</code></pre>
+# Clear the queue (nuclear option)
+echo '{"batches":[]}' > ~/.phd_os_queue.json</code></pre>
 
     <h3>Common failure signatures</h3>
     <table class="docs-table">
       <thead><tr><th>Symptom</th><th>Where to look</th><th>Likely cause</th></tr></thead>
       <tbody>
-        <tr><td>Pipeline runs but proposes 0 tasks</td><td><code>phd_os_pipeline.log</code></td><td>"LLM Queue is empty" — Mail hasn't synced yet, or rules aren't routing to that folder</td></tr>
-        <tr><td>Tasks created in Todoist with no project</td><td>Review UI — check the project dropdown before approving</td><td>No project was selected; task lands in Inbox</td></tr>
-        <tr><td>Ollama call times out</td><td><code>phd_os_pipeline.log</code> says "Ollama error"</td><td>Ollama isn't running (<code>ollama serve</code>) or model was deleted (<code>ollama list</code>)</td></tr>
-        <tr><td>AppleScript error -1728</td><td><code>phd_os_audit.log</code></td><td>Old bug (fixed 2026-05-17) — if re-appearing, the mailbox iteration loop broke</td></tr>
-        <tr><td>Site shows stale data</td><td>GitHub Actions tab</td><td>Build failed (usually a malformed YAML frontmatter colon)</td></tr>
-        <tr><td>Review UI shows blank project dropdown</td><td>Browser console on <code>localhost:7891</code></td><td>Todoist token missing from <code>~/.phd_os_config.json</code>, or Todoist API unreachable</td></tr>
-        <tr><td>PDF download link returns 404</td><td><code>~/.phd_os_attachments/</code></td><td>Attachment wasn't saved (pipeline ran before this feature was added, or copy failed)</td></tr>
-        <tr><td>LaunchAgent not firing</td><td><code>launchctl list | grep phd-os</code></td><td>Plist not loaded — run <code>launchctl load ~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></td></tr>
+        <tr><td>Pipeline runs, 0 tasks proposed</td><td><code>phd_os_pipeline.log</code></td><td>"LLM Queue is empty" — Mail hasn't synced, or Outlook rules aren't routing to that folder</td></tr>
+        <tr><td>Tasks land in Todoist Inbox</td><td>Review UI project dropdown</td><td>No project selected before approving; change the dropdown first</td></tr>
+        <tr><td>Ollama call times out</td><td><code>phd_os_pipeline.log</code></td><td>Ollama not running — <code>ollama serve</code> or check menu bar app</td></tr>
+        <tr><td>AppleScript error -1728</td><td><code>phd_os_audit.log</code></td><td>Exchange mailbox lookup failure — fixed 2026-05-17 via iteration; if re-appearing, the loop may have broken</td></tr>
+        <tr><td>Site shows stale data</td><td>GitHub Actions tab</td><td>Build failed — usually malformed YAML (unquoted colon in a title)</td></tr>
+        <tr><td>Book covers not loading</td><td>Browser DevTools → Network tab</td><td>Open Library rate-limited or unreachable; covers will retry on next page load</td></tr>
+        <tr><td>Article of Day never changes</td><td><code>_site/discover.json</code></td><td>Only 1 paper in the journals section — OpenAlex fetch may have returned few results; trigger a manual build</td></tr>
+        <tr><td>Calendar says "Reconnect"</td><td>Browser — are you signed into Google?</td><td>Google session ended; click Reconnect once. Silent refresh will handle it going forward.</td></tr>
+        <tr><td>Light mode not persisting</td><td>DevTools Console: <code>localStorage.getItem('phd_theme')</code></td><td>Should return <code>'light'</code>. If null, the theme button event listener may not be wired. Check that <code>initSettings()</code> is called on the page.</td></tr>
+        <tr><td>Review UI project dropdown empty</td><td>Browser console on <code>localhost:7891</code></td><td>Todoist token missing from <code>~/.phd_os_config.json</code></td></tr>
+        <tr><td>LaunchAgent not firing</td><td><code>launchctl list | grep phd-os</code></td><td>Plist not loaded — <code>launchctl load ~/Library/LaunchAgents/com.phd-os.email-pipeline.plist</code></td></tr>
       </tbody>
     </table>
 
-    <h3>Reading the queue file by hand</h3>
-    <p><code>~/.phd_os_queue.json</code> is plain JSON. Its structure:</p>
+    <h3>Queue file structure</h3>
+    <p><code>~/.phd_os_queue.json</code> is plain JSON — safe to read and edit directly (stop the review server first):</p>
     <pre><code>{
   "batches": [
     {
-      "run_at": "2026-05-21T14:32:00+00:00",
+      "run_at": "2026-06-02T14:32:00+00:00",
       "emails": [
         {
           "subject": "IRB revision needed",
           "from": "irb@university.edu",
-          "date": "Wednesday, May 21, 2026 at 9:15:00 AM",
-          "snippet": "First 600 chars of the email body...",
+          "date": "Monday, June 2, 2026 at 9:15 AM",
+          "snippet": "First 600 chars of email body…",
           "summary": "IRB requires protocol revision before approval.",
           "attachments": [
             {"name": "revision-notes.pdf", "file": "12345_revision-notes.pdf"}
@@ -618,48 +689,122 @@ curl -s https://api.todoist.com/api/v1/projects \
     }
   ]
 }</code></pre>
-    <p>You can edit this file directly to fix corrupted entries, remove a stuck batch, or clear the whole queue:</p>
-    <pre><code># Clear entire queue (nuclear option)
-echo '{"batches":[]}' > ~/.phd_os_queue.json
 
-# Pretty-print the whole queue
-python3 -m json.tool ~/.phd_os_queue.json</code></pre>
-    <div class="docs-callout warn">The queue file is written atomically via a temp file + rename — but if you edit it by hand while the review server is running, your changes may be overwritten when the server next saves the queue. Stop the server first (<em>Stop Server</em> button), edit, then restart.</div>
+    <!-- ── Reference ───────────────────────── -->
+    <h2 id="build-script">Build Script</h2>
+    <p>Located at <code>.github/workflows/build_dashboard.py</code>. Runs from the repo root. Key functions:</p>
+    <table class="docs-table">
+      <thead><tr><th>Function</th><th>Reads</th><th>Writes</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>build_papers()</code></td><td><code>100 Research/My Papers/*.md</code></td><td><code>papers.json</code></td><td>Sorts by stream, then by stage index</td></tr>
+        <tr><td><code>build_lit()</code></td><td><code>100 Research/Source Papers/*.md</code></td><td><code>lit.json</code></td><td>First paragraph of body becomes <code>snippet</code></td></tr>
+        <tr><td><code>build_books()</code></td><td><code>400 Personal/Books/*.md</code></td><td><code>books.json</code></td><td><strong>Does NOT fetch covers.</strong> Passes through <code>isbn</code> and any manually-set <code>cover_url</code> only. Cover images are loaded client-side at runtime.</td></tr>
+        <tr><td><code>build_recharge()</code></td><td><code>500 Recharge/Recharge List.md</code></td><td><code>recharge.json</code></td><td>Headings → section titles; bullets → items</td></tr>
+        <tr><td><code>build_discover()</code></td><td>OpenAlex API + <code>_dismissed.md</code></td><td><code>discover.json</code></td><td>4 sections: recent IS journal issues, trending, AI Companions keyword, JudgyAI keyword</td></tr>
+      </tbody>
+    </table>
+    <p>The script copies all files from <code>site/</code> to <code>_site/</code>, then writes the JSON files. GitHub Pages serves <code>_site/</code> as the root.</p>
+    <p><strong>IS journal ISSNs</strong> hardcoded in the build script: DSS, EJIS, I&amp;M, I&amp;O, ISJ, ISR, JIT, JMIS, JAIS, JSIS, MISQ. Edit the <code>IS_ISSNS</code> list to add or remove journals.</p>
+
+    <h2 id="frontmatter">Frontmatter Reference</h2>
+    <table class="docs-table">
+      <thead><tr><th>File location</th><th>Required</th><th>Optional</th></tr></thead>
+      <tbody>
+        <tr><td>My Papers</td><td><code>title</code>, <code>stage</code></td><td><code>stream</code>, <code>co-authors</code>, <code>target-journal</code>, <code>deadline</code>, <code>todoist-project</code>, <code>status</code></td></tr>
+        <tr><td>Source Papers</td><td><code>title</code></td><td><code>authors</code>, <code>journal</code>, <code>year</code>, <code>doi</code>, <code>stream</code>, <code>topic</code>, <code>keywords</code>, <code>related-papers</code>, <code>thoughts</code></td></tr>
+        <tr><td>Books</td><td><code>title</code>, <code>status</code></td><td><code>author</code>, <code>rating</code>, <code>started</code>, <code>finished</code>, <code>isbn</code>, <code>cover_url</code>, <code>tags</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="localStorage">localStorage Keys Reference</h2>
+    <p>All site state that persists across visits lives in <code>localStorage</code> under the site's origin. You can inspect or clear any key from the browser DevTools Console.</p>
+    <table class="docs-table">
+      <thead><tr><th>Key</th><th>Contents</th><th>Set by</th></tr></thead>
+      <tbody>
+        <tr><td><code>phd_todoist_token</code></td><td>Todoist API token (plain string)</td><td>Token modal on first visit</td></tr>
+        <tr><td><code>phd_gcal_auth</code></td><td>JSON: <code>{access_token, expires_at}</code></td><td>Google sign-in flow</td></tr>
+        <tr><td><code>phd_gcal_connected</code></td><td><code>"1"</code> (flag)</td><td>Set on first successful GCal auth; enables silent refresh on future loads</td></tr>
+        <tr><td><code>phd_theme</code></td><td><code>"light"</code> or <code>"dark"</code> — absent means follow OS</td><td>☀/🌙 button in nav</td></tr>
+        <tr><td><code>phd_recharge_active</code></td><td>JSON: <code>{item, category, startedAt}</code> — the currently running break timer</td><td>Recharge page Start button</td></tr>
+        <tr><td><code>phd_recharge_log</code></td><td>JSON array of <code>{item, category, startedAt, endedAt, duration}</code> — last 100 sessions</td><td>Recharge page Stop &amp; Log button</td></tr>
+        <tr><td><code>phd_church_credentials</code></td><td>JSON: 13 credential fields (Zoom links, passwords, Drive URLs)</td><td>Church page Edit button</td></tr>
+        <tr><td><code>phd_church_contacts</code></td><td>JSON array of contact objects</td><td>Church page Add/Edit contact modals</td></tr>
+      </tbody>
+    </table>
+    <div class="docs-callout warn">Clearing browser site data or using a private window removes all localStorage keys. Re-enter the Todoist token and reconnect Google Calendar. Church credentials and recharge sessions are also lost — export them if they matter.</div>
+
+    <h2 id="security">Security &amp; Protections</h2>
+    <p>PhD OS runs with elevated trust on your Mac. The following protections limit what it can actually do.</p>
+
+    <h3>macOS automation permission scope</h3>
+    <p>The pipeline reads <em>only</em> from the LLM Queue folder and moves <em>only</em> to LLM Processed. It never sends email, deletes email, reads Inbox, or accesses Contacts or Calendar. The macOS permission dialog is intentionally broad — per-folder scoping is not offered by Apple. The limitations above are enforced by the script, not the OS.</p>
+
+    <h3>AppleScript injection prevention</h3>
+    <p>Folder names from <code>~/.phd_os_config.json</code> are embedded into AppleScript strings. A strict regex allows only letters, digits, spaces, hyphens, and underscores — any other character exits before any AppleScript runs. Common system folder names (Inbox, Sent, Drafts, Trash) are also blocked.</p>
+
+    <h3>Atomic queue writes</h3>
+    <p><code>~/.phd_os_queue.json</code> is always written to a <code>.tmp</code> file first, then swapped in via <code>os.replace()</code>. A crash mid-write leaves the previous queue intact.</p>
+
+    <h3>Private temp directory</h3>
+    <p>Email bodies and PDF attachments are written to a temp dir with mode <code>700</code> (owner read/write only), deleted in a <code>finally</code> block even if the script crashes. PDFs are copied to <code>~/.phd_os_attachments/</code> before temp cleanup.</p>
+
+    <h3>Config file permissions</h3>
+    <p><code>~/.phd_os_config.json</code> is created with mode <code>600</code> by <code>setup.sh</code>. Verify: <code>ls -l ~/.phd_os_config.json</code> should show <code>-rw-------</code>. Fix: <code>chmod 600 ~/.phd_os_config.json</code>.</p>
+
+    <h3>Cover image URL validation</h3>
+    <p>Cover URLs from <code>books.json</code> are validated before use in <code>&lt;img src&gt;</code> — only <code>http://</code> and <code>https://</code> schemes are accepted. <code>javascript:</code> and <code>data:</code> URLs are silently replaced with a placeholder. All other user-controlled strings go through <code>escHtml()</code>.</p>
+
+    <h3>Todoist token storage</h3>
+    <p>Stored in <code>localStorage</code> for the site's origin only. Sent only to <code>api.todoist.com</code> over HTTPS. No third-party JS on any page. Visible in DevTools — treat it like a password.</p>
+
+    <h3>Human approval gate</h3>
+    <p>The pipeline never creates Todoist tasks automatically. Every proposed task goes through the review UI (or CLI) before any API call.</p>
+
+    <h3>Email cap</h3>
+    <p>Default: 20 emails per run. Override in config: <code>"max_emails_per_run": 10</code>. Prevents runaway processing from flooded queue folders.</p>
 
     <h2 id="troubleshooting">Troubleshooting</h2>
 
-    <h3>Site isn't updating after I push</h3>
-    <p>Check the Actions tab on GitHub. If the build failed, click the run to see the error. Common cause: a malformed YAML frontmatter block in one of your notes (e.g. an unquoted colon in a title).</p>
+    <h3>Site shows stale data after push</h3>
+    <p>Check the Actions tab on GitHub. If the build failed, click the run — the error is usually a malformed YAML frontmatter block (unquoted colon in a title field). Fix the note and push again.</p>
 
-    <h3>Book cover isn't showing</h3>
-    <p>The cover is fetched at build time, not runtime. If you added the book recently, trigger a manual build. If it still doesn't show, try adding the <code>isbn</code> field — the ISBN lookup is more reliable than the title search. As a last resort, find a cover image URL and set <code>cover_url</code> directly.</p>
+    <h3>Book covers not loading or showing wrong cover</h3>
+    <p>Covers are fetched client-side from Open Library at page load time. If covers aren't appearing: open DevTools → Network tab → look for failed requests to <code>openlibrary.org</code>. If Open Library is unreachable or rate-limiting, covers will fail silently and show placeholders — try again later.</p>
+    <p>If the cover is showing the wrong edition: use the <strong>Quick Add</strong> form on the Books page to find your edition and copy its frontmatter — the <code>cover_url</code> in the generated YAML pins the exact cover and bypasses the search entirely.</p>
+    <p>If you know the exact cover you want: find it on openlibrary.org, get the cover ID from the URL, and set <code>cover_url: https://covers.openlibrary.org/b/id/{id}-L.jpg</code> directly in the book's frontmatter.</p>
 
-    <h3>Discover feed shows no papers</h3>
-    <p>The OpenAlex fetch happens at build time. If a build ran while OpenAlex was unreachable, <code>discover.json</code> may have empty sections. Trigger a manual build to refresh.</p>
+    <h3>Light mode not persisting between pages</h3>
+    <p>Check <code>localStorage.getItem('phd_theme')</code> in the browser console — it should return <code>'light'</code> after you click ☀. If it does but pages still go dark, check that <code>theme.js</code> is present in <code>_site/</code> (it should be — the build script copies all of <code>site/</code>). The class <code>html.theme-light</code> must be applied before CSS renders; <code>theme.js</code> runs synchronously in <code>&lt;head&gt;</code> for this reason.</p>
 
-    <h3>Todoist token keeps getting cleared</h3>
-    <p>The token lives in <code>localStorage</code> for your browser profile. If you switch browsers, use a private window, or clear site data, you'll need to re-enter it. This is intentional — the token is never sent to any server other than Todoist.</p>
+    <h3>Google Calendar keeps asking to reconnect</h3>
+    <p>The OAuth token expires every hour. Silent refresh should handle this automatically if you're still signed into Google in the browser. If you keep seeing the reconnect button: check <code>localStorage.getItem('phd_gcal_connected')</code> — should be <code>'1'</code>. If it's null, the silent refresh can't try. Connect once manually and it will be set.</p>
 
-    <h3>Email pipeline: "No emails in queue"</h3>
-    <p>Check that your Outlook rules are routing emails to the <strong>LLM Queue</strong> folder (not a subfolder with a different name). The folder name must match exactly what's in <code>~/.phd_os_config.json</code> (default: <code>LLM Queue</code>).</p>
+    <h3>Article of the Day not updating</h3>
+    <p>The article rotates daily using <code>dayIndex % papers.length</code> from the IS journals section of <code>discover.json</code>. If the same article appears for many days, the pool is small — trigger a manual GitHub Actions build to refresh <code>discover.json</code> with new OpenAlex results.</p>
+
+    <h3>Recharge timer lost after closing browser</h3>
+    <p>The active timer is stored in <code>localStorage.phd_recharge_active</code> as <code>{item, category, startedAt}</code>. Closing the browser preserves this — it will resume on next visit. If it's gone, check DevTools → Application → Local Storage. The timer was likely stopped or the localStorage was cleared.</p>
+
+    <h3>Discover feed empty</h3>
+    <p>The OpenAlex fetch happens at build time. If a build ran while OpenAlex was unreachable, sections may be empty. Trigger a manual build to refresh.</p>
+
+    <h3>Todoist token reset after switching browsers</h3>
+    <p>The token lives in <code>localStorage</code> scoped to the specific browser and profile. Private/incognito windows don't share it. Re-enter it in the new browser; it takes about 5 seconds.</p>
+
+    <h3>Email pipeline: 0 tasks proposed every run</h3>
+    <p>Check <code>/tmp/phd_os_pipeline.log</code> for the specific message. Most common: "LLM Queue is empty" (Outlook rules aren't routing emails there, or Mail hasn't synced yet). Also check the folder name in <code>~/.phd_os_config.json</code> matches exactly — it's case-sensitive.</p>
 
     <h3>Email pipeline: Ollama errors</h3>
-    <p>Make sure Ollama is running: <code>ollama serve</code> in a terminal, or check that the Ollama menu bar app is active. Then verify the model exists: <code>ollama list</code> should show <code>phd-email-parser</code>. If not, run <code>bash scripts/model/build_model.sh</code> again.</p>
+    <p><code>ollama serve</code> in terminal, or check the Ollama menu bar app. Then <code>ollama list</code> — <code>phd-email-parser</code> must appear. If missing: <code>bash scripts/model/build_model.sh</code>.</p>
 
     <h3>Email pipeline: AppleScript permission errors</h3>
-    <p>macOS requires explicit permission for scripts to control apps. Go to <strong>System Settings → Privacy &amp; Security → Automation</strong> and make sure Terminal (or whichever app you use to run the pipeline) has permission to control <strong>Mail</strong>. You may also see a one-time permission dialog the first time the script runs — click Allow.</p>
+    <p>System Settings → Privacy &amp; Security → Automation → make sure Terminal (or your Python launcher) has permission to control Mail. A one-time dialog may appear the first time — click Allow.</p>
 
-    <h3>Review UI: project dropdown is empty</h3>
-    <p>The dropdown fetches your project list from Todoist on page load. If it's empty, your Todoist token may be missing or expired. Check <code>~/.phd_os_config.json</code> has a valid <code>todoist_token</code>. You can test it manually: <code>curl -s https://api.todoist.com/api/v1/projects -H 'Authorization: Bearer YOUR_TOKEN'</code>. If that returns projects, restart the review server.</p>
+    <h3>Review UI: project dropdown empty</h3>
+    <p>The dropdown fetches from Todoist on page load. Check <code>~/.phd_os_config.json</code> has a valid <code>todoist_token</code>. Test: <code>curl -s https://api.todoist.com/api/v1/projects -H 'Authorization: Bearer YOUR_TOKEN'</code>. If that returns data, restart the review server.</p>
 
-    <h3>Review UI: "Show email" section is missing</h3>
-    <p>The email snippet is stored in the queue at parse time. Tasks queued before the snippet feature was added won't have one — approve or dismiss those tasks and the next pipeline run will populate snippets for new emails.</p>
-
-    <h3>Review UI: PDF attachment link returns "Not found"</h3>
-    <p>Attachments are copied from the temp directory to <code>~/.phd_os_attachments/</code> during the pipeline run. Check that directory exists and contains the file. If it's empty, the pipeline either ran before the attachment feature was added, or the PDF copy failed (check <code>/tmp/phd_os_pipeline.log</code> for "WARNING: Could not save attachment").</p>
-
-    <h3>Task appears in Todoist Inbox instead of a project</h3>
-    <p>A task with no project ID goes to Inbox. This happens if you approved the task with "— project —" still selected in the dropdown, or if the project list failed to load. You can move the task in Todoist manually. For future tasks, make sure the project dropdown shows your projects before approving.</p>
+    <h3>Church page: Zoom buttons say "Not set"</h3>
+    <p>Zoom links live in Credentials (<code>localStorage.phd_church_credentials</code>). Click Edit on the Church page to fill them in. They never persist to git — re-enter them if you clear localStorage or use a different browser.</p>
   </article>
 
 </div>
@@ -667,9 +812,10 @@ python3 -m json.tool ~/.phd_os_queue.json</code></pre>
 <script src="app.js"></script>
 <script>
 document.getElementById('nav').innerHTML = navHTML('docs');
+initSettings();
 
 // Sidebar active link tracking
-const headings = document.querySelectorAll('.docs-content h2[id], .docs-content h3[id]');
+const headings    = document.querySelectorAll('.docs-content h2[id], .docs-content h3[id]');
 const sidebarLinks = document.querySelectorAll('.docs-sidebar a');
 
 const obs = new IntersectionObserver(entries => {
