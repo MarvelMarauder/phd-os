@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PhD OS — Books</title>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -81,6 +82,7 @@ function bookSpineHtml(b, opts = {}) {
   const color       = placeholderColor(b.title);
   const initial     = (b.title || '?')[0].toUpperCase();
 
+  // Always start with placeholder; cover gets fetched async by loadCovers()
   const safeUrl = safeSrc(b.cover_url);
   const coverInner = safeUrl
     ? `<img class="book-cover-img" src="${escHtml(safeUrl)}"
@@ -98,7 +100,11 @@ function bookSpineHtml(b, opts = {}) {
     : '';
 
   return `
-    <div class="book-spine${isCurrently ? ' book-spine-current' : ''}">
+    <div class="book-spine${isCurrently ? ' book-spine-current' : ''}"
+         data-cover-isbn="${escHtml(b.isbn||'')}"
+         data-cover-title="${escHtml(b.title)}"
+         data-cover-author="${escHtml(b.author||'')}"
+         ${safeUrl ? 'data-cover-loaded="1"' : ''}>
       <div class="book-cover-wrap">
         ${coverInner}
         <div class="book-popup">
@@ -173,7 +179,35 @@ async function loadBooks() {
   }
 }
 
-loadBooks();
+// After all grids render, fetch covers client-side from Google Books
+async function loadCovers() {
+  const spines = document.querySelectorAll('.book-spine:not([data-cover-loaded])');
+  for (const spine of spines) {
+    const { coverIsbn: isbn, coverTitle: title, coverAuthor: author } = spine.dataset;
+    if (!title) continue;
+    const url = await fetchBookCover(isbn || '', title, author || '');
+    if (!url) continue;
+    const wrap = spine.querySelector('.book-cover-wrap');
+    if (!wrap) continue;
+    const ph = wrap.querySelector('.book-cover-placeholder');
+    if (!ph) continue;
+    const img = document.createElement('img');
+    img.className = 'book-cover-img';
+    img.alt = title;
+    img.dataset.title = title;
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.4s ease';
+    img.addEventListener('load',  () => { img.style.opacity = '1'; });
+    img.addEventListener('error', () => {
+      img.replaceWith(ph);
+    });
+    img.src = url;
+    ph.replaceWith(img);
+    spine.setAttribute('data-cover-loaded', '1');
+  }
+}
+
+loadBooks().then(loadCovers);
 </script>
 </body>
 </html>

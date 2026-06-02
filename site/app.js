@@ -138,7 +138,30 @@ function showTokenModal(onConnect) {
   backdrop.querySelector('#token-input').focus();
 }
 
+// ── Theme ─────────────────────────────────────────────
+function getTheme() { return localStorage.getItem('phd_theme') || 'system'; }
+function setTheme(t) {
+  if (t === 'system') localStorage.removeItem('phd_theme');
+  else localStorage.setItem('phd_theme', t);
+  document.documentElement.classList.remove('theme-light', 'theme-dark');
+  if (t === 'light') document.documentElement.classList.add('theme-light');
+  if (t === 'dark')  document.documentElement.classList.add('theme-dark');
+}
+function initTheme() {
+  const btn = document.getElementById('nav-theme-btn');
+  if (!btn) return;
+  const refresh = () => {
+    const forced = getTheme() === 'light';
+    btn.textContent = forced ? '🌙' : '☀';
+    btn.title       = forced ? 'Return to system theme' : 'Force light mode';
+  };
+  refresh();
+  btn.addEventListener('click', () => { setTheme(getTheme() === 'light' ? 'system' : 'light'); refresh(); });
+}
+
+// ── Settings gear ─────────────────────────────────────
 function initSettings() {
+  initTheme();
   const btn = document.querySelector('.settings-btn');
   if (!btn) return;
   btn.addEventListener('click', () => {
@@ -146,6 +169,42 @@ function initSettings() {
       clearToken(); location.reload();
     }
   });
+}
+
+// ── Client-side book cover fetching ───────────────────
+const _coverCache = {};
+
+async function fetchBookCover(isbn, title, author) {
+  const cacheKey = isbn ? `isbn:${isbn}` : `t:${title}:${author}`;
+  if (cacheKey in _coverCache) return _coverCache[cacheKey];
+
+  // Build queries: isbn-specific first, then title+author (sorted by newest edition)
+  const queries = [];
+  if (isbn) queries.push(`isbn:${isbn}`);
+  queries.push(`intitle:"${title}" inauthor:"${author}"`);
+
+  for (const q of queries) {
+    try {
+      const res  = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5` +
+        `&fields=items(volumeInfo(publishedDate,imageLinks))`
+      );
+      const data = await res.json();
+      const items = [...(data.items || [])].sort((a, b) =>
+        (b.volumeInfo?.publishedDate || '').localeCompare(a.volumeInfo?.publishedDate || '')
+      );
+      for (const item of items) {
+        const links = item.volumeInfo?.imageLinks || {};
+        for (const key of ['large', 'medium', 'thumbnail', 'smallThumbnail']) {
+          if (links[key]) {
+            const url = links[key].replace('http://', 'https://');
+            return (_coverCache[cacheKey] = url);
+          }
+        }
+      }
+    } catch(e) {}
+  }
+  return (_coverCache[cacheKey] = '');
 }
 
 function tokenModalHTML() {
@@ -560,5 +619,6 @@ function navHTML(active) {
       <div class="api-dot"></div>
       <span class="api-label">Todoist</span>
     </div>
+    <button class="theme-btn" id="nav-theme-btn" title="Force light mode">☀</button>
     <button class="settings-btn" title="Clear Todoist token">⚙</button>`;
 }

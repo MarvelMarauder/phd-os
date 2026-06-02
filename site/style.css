@@ -30,6 +30,35 @@
   --radius-sm: 9px;
 }
 
+/* Force light mode — overrides dark media query (html.theme-light has higher specificity than :root) */
+html.theme-light {
+  color-scheme: light;
+  --bg: #f5f3ff;
+  --surface: #ffffff;
+  --surface-hover: #ede9fe;
+  --border: #ddd6fe;
+  --border-strong: #c4b5fd;
+  --text: #1e1340;
+  --text-muted: #4c3d82;
+  --text-subtle: #9580cc;
+  --accent: #0d9488;
+  --accent-dim: #ccfbf1;
+  --brand: #7c3aed;
+  --brand-dim: #ede9fe;
+  --gold: #d97706;
+  --gold-dim: #fef3c7;
+  --blue: #2563eb;
+  --blue-dim: #dbeafe;
+  --purple: #9333ea;
+  --purple-dim: #f3e8ff;
+  --rose: #e11d48;
+  --rose-dim: #ffe4e6;
+  --danger: #dc2626;
+  --shadow-sm: 0 1px 4px rgba(124,58,237,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(124,58,237,0.13), 0 1px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 32px rgba(124,58,237,0.20), 0 2px 8px rgba(0,0,0,0.07);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0d0b1a;
@@ -151,6 +180,19 @@ nav a.active::after {
 
 .api-dot.connected { background: var(--accent); }
 .api-dot.error { background: var(--danger); }
+
+.theme-btn {
+  font-size: 15px;
+  color: var(--text-subtle);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: 7px;
+  line-height: 1;
+  transition: background 0.12s, color 0.12s, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.theme-btn:hover { background: var(--bg); color: var(--gold); transform: scale(1.2) rotate(20deg); }
 
 .settings-btn {
   font-size: 15px;
