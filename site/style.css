@@ -1,28 +1,30 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #f3efe9;
-  --surface: #fffefb;
-  --surface-hover: #f7f4ef;
-  --border: #e2dbd1;
-  --border-strong: #ccc5ba;
-  --text: #1a1714;
-  --text-muted: #6b6460;
-  --text-subtle: #aaa39a;
-  --accent: #2a7a50;
-  --accent-dim: #ddf0e6;
-  --brand: #b04820;
-  --brand-dim: #f5e7e0;
-  --gold: #c07808;
-  --gold-dim: #fef3d4;
-  --blue: #2c5fa0;
-  --blue-dim: #dde8f8;
-  --purple: #7040a8;
-  --purple-dim: #eee0f8;
-  --danger: #c0392b;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 3px 10px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05);
-  --shadow-lg: 0 6px 24px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+  --bg: #f5f3ff;
+  --surface: #ffffff;
+  --surface-hover: #ede9fe;
+  --border: #ddd6fe;
+  --border-strong: #c4b5fd;
+  --text: #1e1340;
+  --text-muted: #4c3d82;
+  --text-subtle: #9580cc;
+  --accent: #0d9488;
+  --accent-dim: #ccfbf1;
+  --brand: #7c3aed;
+  --brand-dim: #ede9fe;
+  --gold: #d97706;
+  --gold-dim: #fef3c7;
+  --blue: #2563eb;
+  --blue-dim: #dbeafe;
+  --purple: #9333ea;
+  --purple-dim: #f3e8ff;
+  --rose: #e11d48;
+  --rose-dim: #ffe4e6;
+  --danger: #dc2626;
+  --shadow-sm: 0 1px 4px rgba(124,58,237,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(124,58,237,0.13), 0 1px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 32px rgba(124,58,237,0.20), 0 2px 8px rgba(0,0,0,0.07);
   --nav-h: 56px;
   --radius: 14px;
   --radius-sm: 9px;
@@ -30,28 +32,30 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1a1814;
-    --surface: #232018;
-    --surface-hover: #2a261e;
-    --border: #38332c;
-    --border-strong: #4a443b;
-    --text: #edeae3;
-    --text-muted: #8a847a;
-    --text-subtle: #524e48;
-    --accent: #3d9060;
-    --accent-dim: #142a1e;
-    --brand: #d06030;
-    --brand-dim: #2a1608;
-    --gold: #d4920a;
-    --gold-dim: #2a1e04;
-    --blue: #5080c8;
-    --blue-dim: #0e1e3a;
-    --purple: #9060d0;
-    --purple-dim: #200c38;
-    --danger: #e05a4e;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-    --shadow-md: 0 3px 10px rgba(0,0,0,0.35);
-    --shadow-lg: 0 6px 24px rgba(0,0,0,0.4);
+    --bg: #0d0b1a;
+    --surface: #17143a;
+    --surface-hover: #1f1b4b;
+    --border: #2e2860;
+    --border-strong: #4a3f88;
+    --text: #ede9fe;
+    --text-muted: #a89fd4;
+    --text-subtle: #5e5690;
+    --accent: #14b8a6;
+    --accent-dim: #0a2420;
+    --brand: #a78bfa;
+    --brand-dim: #1e1445;
+    --gold: #fbbf24;
+    --gold-dim: #2d1f06;
+    --blue: #60a5fa;
+    --blue-dim: #0d1f45;
+    --purple: #c084fc;
+    --purple-dim: #2a0a42;
+    --rose: #fb7185;
+    --rose-dim: #2d0a14;
+    --danger: #f87171;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.45);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.55);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.65);
   }
 }
 
@@ -83,11 +87,18 @@ nav {
 .brand {
   font-weight: 800;
   font-size: 16px;
-  color: var(--brand);
   text-decoration: none;
   margin-right: 16px;
   letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--rose) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  cursor: pointer;
+  transition: opacity 0.15s, filter 0.15s;
+  display: inline-block;
 }
+.brand:hover { opacity: 0.8; filter: brightness(1.15); }
 
 nav a {
   font-size: 13px;
@@ -95,16 +106,28 @@ nav a {
   text-decoration: none;
   padding: 5px 12px;
   border-radius: 8px;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
   font-weight: 500;
+  position: relative;
 }
 
-nav a:hover { background: var(--bg); color: var(--text); }
+nav a:hover { background: var(--bg); color: var(--text); transform: scale(1.05); }
 
 nav a.active {
   background: var(--brand-dim);
   color: var(--brand);
   font-weight: 700;
+}
+
+nav a.active::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--brand);
 }
 
 .nav-spacer { flex: 1; }
@@ -141,7 +164,10 @@ nav a.active {
   transition: background 0.12s, color 0.12s;
 }
 
-.settings-btn:hover { background: var(--bg); color: var(--text-muted); }
+.settings-btn {
+  transition: background 0.12s, color 0.12s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.settings-btn:hover { background: var(--bg); color: var(--brand); transform: rotate(90deg); }
 
 /* ── Layout ─────────────────────────────────────────── */
 main {
@@ -200,14 +226,15 @@ section h2::before {
   border-radius: var(--radius-sm);
   background: var(--surface);
   border: 1px solid var(--border);
-  transition: background 0.12s, box-shadow 0.12s, border-color 0.12s;
+  transition: background 0.15s, box-shadow 0.2s, border-color 0.2s, transform 0.15s;
   box-shadow: var(--shadow-sm);
 }
 
 .task-item:hover {
   background: var(--surface-hover);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-md);
+  border-color: var(--accent);
+  box-shadow: -3px 0 0 var(--accent), var(--shadow-md);
+  transform: translateX(3px);
 }
 
 .task-check {
@@ -233,7 +260,14 @@ section h2::before {
 .task-check.checked {
   background: var(--accent);
   border-color: var(--accent);
-  transform: scale(1);
+  animation: checkBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes checkBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.4); }
+  70%  { transform: scale(0.88); }
+  100% { transform: scale(1); }
 }
 
 .task-check.checked::after {
@@ -362,12 +396,13 @@ section h2::before {
   padding: 16px 18px;
   margin-bottom: 8px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.15s, border-color 0.15s;
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
 }
 
 .paper-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
+  border-color: var(--brand);
+  transform: translateY(-2px);
 }
 
 .paper-card:last-child { margin-bottom: 0; }
@@ -416,8 +451,13 @@ section h2::before {
 }
 
 .progress-step.current {
-  background: linear-gradient(90deg, var(--accent) 0%, #4ab878 100%);
-  box-shadow: 0 0 6px rgba(42,122,80,0.4);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--brand) 100%);
+  animation: progressGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes progressGlow {
+  0%, 100% { box-shadow: 0 0 4px color-mix(in srgb, var(--accent) 60%, transparent); }
+  50%       { box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 80%, transparent); opacity: 0.85; }
 }
 
 /* ── Stage pill colors (light) ── */
@@ -816,12 +856,13 @@ details[open] .rc-accordion-hd {
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
-  transition: transform 0.18s, filter 0.18s;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s;
+  transform-style: preserve-3d;
 }
 
 .book-spine:hover .book-cover-wrap {
-  transform: translateY(-4px) scale(1.03);
-  filter: brightness(1.04);
+  transform: perspective(600px) rotateY(-10deg) translateY(-5px) scale(1.05);
+  filter: brightness(1.08);
 }
 
 .book-cover-img {
@@ -2644,4 +2685,167 @@ a.db-article-title:hover { text-decoration: underline; color: var(--blue); }
   color: var(--text-subtle);
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* ══════════════════════════════════════════════════════
+   ANIMATIONS & MICRO-INTERACTIONS
+   ══════════════════════════════════════════════════════ */
+
+/* Dashboard cards — staggered fade-in on page load */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.db-card {
+  animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease,
+              border-color 0.2s ease;
+}
+
+.db-card:nth-child(1) { animation-delay: 0.04s; }
+.db-card:nth-child(2) { animation-delay: 0.10s; }
+.db-card:nth-child(3) { animation-delay: 0.16s; }
+.db-card:nth-child(4) { animation-delay: 0.22s; }
+.db-card:nth-child(5) { animation-delay: 0.28s; }
+.db-card:nth-child(6) { animation-delay: 0.34s; }
+
+/* Each dashboard card hover gets its own accent glow */
+.db-card:hover { transform: translateY(-4px); }
+
+.db-card-tasks:hover    { border-color: var(--accent);  box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 22%, transparent); }
+.db-card:nth-child(2):hover { border-color: var(--blue); box-shadow: 0 8px 28px color-mix(in srgb, var(--blue) 22%, transparent); }
+.db-card-article:hover  { border-color: var(--rose);   box-shadow: 0 8px 28px color-mix(in srgb, var(--rose) 22%, transparent); }
+.db-card-reading:hover  { border-color: var(--gold);   box-shadow: 0 8px 28px color-mix(in srgb, var(--gold) 22%, transparent); }
+.db-card-quote:hover    { border-color: var(--purple); box-shadow: 0 8px 28px color-mix(in srgb, var(--purple) 22%, transparent); }
+.db-card-recharge:hover { border-color: var(--brand);  box-shadow: 0 8px 28px color-mix(in srgb, var(--brand) 22%, transparent); }
+
+/* Event items slide on hover */
+.event-item {
+  transition: background 0.15s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.event-item:hover {
+  background: var(--surface-hover);
+  border-color: var(--blue);
+  box-shadow: -3px 0 0 var(--blue), var(--shadow-sm);
+  transform: translateX(3px);
+}
+
+/* Recharge timer — breathing glow */
+.rc-timer-display {
+  animation: timerBreath 2.5s ease-in-out infinite;
+}
+@keyframes timerBreath {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50%       { text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 65%, transparent); }
+}
+
+/* Activity items hover — slide like tasks */
+.rc-activity-item {
+  transition: background 0.15s, border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.rc-activity-item:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: -3px 0 0 var(--accent), var(--shadow-sm);
+  transform: translateX(3px);
+}
+
+/* API status dot pulse when connected */
+.api-dot.connected {
+  animation: dotPulse 3s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+  50%       { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+/* Milestone active pulse — upgrade from gold to brand-colored */
+.mi-active {
+  animation: miPulse 2.2s ease-in-out infinite;
+}
+@keyframes miPulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--gold-dim); }
+  50%       { box-shadow: 0 0 0 7px color-mix(in srgb, var(--gold) 10%, transparent); }
+}
+
+/* Lit/Discover cards hover */
+.discover-card {
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+.discover-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  z-index: 1;
+}
+
+/* Contact cards hover — church page */
+.contact-card {
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+.contact-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+/* Subtask check bounce */
+.subtask-check.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  animation: subtaskPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes subtaskPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+/* Lib/lit cards hover */
+.lit-card {
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.lit-card:hover {
+  border-color: var(--brand);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(2px);
+}
+
+/* Button press feel on all .btn */
+.btn { transition: opacity 0.1s, transform 0.1s, box-shadow 0.1s; }
+.btn:hover { box-shadow: var(--shadow-sm); }
+.btn:active { transform: scale(0.96) !important; }
+
+/* ── Easter egg: confetti pieces ─────────────────────── */
+.confetti-piece {
+  position: fixed;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: confettiFall var(--dur, 1.4s) cubic-bezier(0.25, 0.46, 0.45, 0.94) var(--delay, 0s) both;
+}
+
+@keyframes confettiFall {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(720deg) scale(0.2); opacity: 0; }
+}
+
+/* Dark mode: stage pill colors */
+@media (prefers-color-scheme: dark) {
+  .s-ideation        { background: var(--blue-dim);   color: #93c5fd; }
+  .s-lit-search      { background: var(--accent-dim); color: var(--accent); }
+  .s-fleshing-out    { background: #0e2a0a;            color: #86efac; }
+  .s-method          { background: var(--gold-dim);    color: var(--gold); }
+  .s-data-collection { background: #2a1500;            color: #fb923c; }
+  .s-data-analysis   { background: #2a0a00;            color: #f87171; }
+  .s-writeup         { background: var(--rose-dim);    color: var(--rose); }
+  .s-under-review    { background: var(--purple-dim);  color: var(--purple); }
+  .s-published       { background: var(--accent-dim);  color: var(--accent); }
+  .discover-card-title:hover { color: var(--blue); }
+  a.lit-title:hover { color: var(--blue); }
 }

@@ -133,22 +133,49 @@ def build_lit():
 # ── Books ─────────────────────────────────────────────────────────────────────
 
 def _fetch_gb_cover(isbn, title, author):
-    """Google Books API — much more current cover art than Open Library."""
-    try:
-        q = f"isbn:{isbn}" if isbn else urllib.parse.quote(f'intitle:"{title}" inauthor:"{author}"')
+    """Fetch cover from Google Books API.
+
+    Strategy: ISBN lookup first (most accurate edition), then title+author
+    with orderBy=newest so the most recent edition's cover wins.
+    zoom=1 in the URL is the thumbnail (128px); replace with zoom=0 for the
+    full-size original, which Google Books serves at ~500px.
+    """
+    def _get_cover_url(query, order=""):
+        order_param = f"&orderBy={order}" if order else ""
         url = (f"https://www.googleapis.com/books/v1/volumes"
-               f"?q={q}&maxResults=1&fields=items(volumeInfo/imageLinks)&printType=books")
+               f"?q={query}&maxResults=3{order_param}"
+               f"&fields=items(volumeInfo(imageLinks,publishedDate))&printType=books")
         req = urllib.request.Request(url, headers={"User-Agent": "PhD-OS/1.0"})
         with urllib.request.urlopen(req, timeout=8) as r:
             data = json.loads(r.read().decode())
         items = data.get("items", [])
         if not items:
             return ""
-        links = items[0].get("volumeInfo", {}).get("imageLinks", {})
-        for key in ("extraLarge", "large", "medium", "small", "thumbnail", "smallThumbnail"):
-            if links.get(key):
-                # Force https and request a larger zoom than the default thumbnail
-                return links[key].replace("http://", "https://").replace("zoom=1", "zoom=5")
+        # Among results, prefer the most recently published edition
+        items_sorted = sorted(
+            items,
+            key=lambda x: x.get("volumeInfo", {}).get("publishedDate", "0"),
+            reverse=True,
+        )
+        for item in items_sorted:
+            links = item.get("volumeInfo", {}).get("imageLinks", {})
+            for key in ("extraLarge", "large", "medium", "thumbnail", "smallThumbnail"):
+                if links.get(key):
+                    # zoom=0 returns the largest available image (~500px)
+                    return (links[key]
+                            .replace("http://", "https://")
+                            .replace("zoom=1", "zoom=0")
+                            .replace("zoom=5", "zoom=0"))
+        return ""
+
+    try:
+        if isbn:
+            url = _get_cover_url(f"isbn:{isbn}")
+            if url:
+                return url
+        # Fall back to title+author, newest edition first
+        q = urllib.parse.quote(f'intitle:"{title}" inauthor:"{author}"')
+        return _get_cover_url(q, order="newest")
     except Exception:
         pass
     return ""

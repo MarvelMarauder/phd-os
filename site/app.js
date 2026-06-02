@@ -495,13 +495,51 @@ document.addEventListener('DOMContentLoaded', () => {
   footer.className = 'site-footer';
   footer.innerHTML = footerHTML();
   document.body.appendChild(footer);
+
+  // ── Easter egg: click the brand logo 7 times quickly ──
+  let _brandClicks = 0, _brandTimer;
+  document.querySelector('.brand')?.addEventListener('click', e => {
+    e.preventDefault();
+    _brandClicks++;
+    clearTimeout(_brandTimer);
+    _brandTimer = setTimeout(() => { _brandClicks = 0; }, 700);
+    if (_brandClicks >= 7) {
+      _brandClicks = 0;
+      _confettiBurst();
+    }
+  });
 });
+
+function _confettiBurst() {
+  const colors = ['#7c3aed','#e11d48','#0d9488','#d97706','#2563eb','#9333ea','#14b8a6','#fbbf24'];
+  const origin = { x: window.innerWidth / 2, y: 56 };
+  for (let i = 0; i < 32; i++) {
+    const el    = document.createElement('div');
+    el.className = 'confetti-piece';
+    const angle  = (i / 32) * Math.PI * 2;
+    const spread = 0.6 + Math.random() * 0.4;
+    const dist   = 90 + Math.random() * 140;
+    const dur    = 1.1 + Math.random() * 0.7;
+    const delay  = i * 0.018;
+    el.style.cssText = [
+      `left:${origin.x + Math.cos(angle) * 12}px`,
+      `top:${origin.y}px`,
+      `background:${colors[i % colors.length]}`,
+      `border-radius:${Math.random() > 0.5 ? '50%' : '2px'}`,
+      `--dx:${(Math.cos(angle) * dist * spread).toFixed(1)}px`,
+      `--dy:${(Math.sin(angle) * dist * 0.8 + 60 + Math.random() * 60).toFixed(1)}px`,
+      `--dur:${dur.toFixed(2)}s`,
+      `--delay:${delay.toFixed(3)}s`,
+    ].join(';');
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
 
 // ── Standard nav HTML ─────────────────────────────────
 function navHTML(active) {
   const pages = [
     ['index.html',     'home',      'Home'],
-    ['dashboard.html', 'dashboard', 'Dashboard'],
     ['papers.html',    'papers',    'Papers'],
     ['lit.html',       'lit',       'Discover'],
     ['library.html',   'library',   'Library'],

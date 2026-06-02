@@ -11,135 +11,270 @@
 
 <nav id="nav"></nav>
 
-<main>
-  <p class="page-title" id="date-display"></p>
-  <p class="page-sub" id="day-display"></p>
+<div class="db-page">
 
-  <section id="calendar-section">
-    <h2>Today's Meetings</h2>
-    <ul class="event-list" id="event-list">
-      <li class="loading">Loading meetings…</li>
-    </ul>
-  </section>
-
-  <section id="tasks-section">
-    <h2>Today</h2>
-    <ul class="task-list" id="task-list">
-      <li class="loading">Loading tasks…</li>
-    </ul>
-  </section>
-
-  <section id="upcoming-section">
-    <h2>Next 7 Days</h2>
-    <ul class="task-list" id="upcoming-list">
-      <li class="loading">Loading…</li>
-    </ul>
-  </section>
-
-  <section>
-    <h2>Papers</h2>
-    <div id="papers-summary">
-      <p class="loading">Loading…</p>
+  <!-- ── Header ─────────────────────────────────────── -->
+  <div class="db-header">
+    <div>
+      <div class="db-header-date" id="db-date"></div>
+      <div class="db-header-day"  id="db-day"></div>
     </div>
-  </section>
+    <div class="db-header-status" id="db-status"></div>
+  </div>
 
-</main>
+  <!-- ── Grid ───────────────────────────────────────── -->
+  <div class="db-grid">
+
+    <!-- Tasks Today -->
+    <div class="db-card db-card-tasks">
+      <div class="db-card-header">
+        <span class="db-card-dot" style="background:var(--accent)"></span>
+        Tasks Today
+        <span class="db-task-count" id="db-task-count"></span>
+      </div>
+      <ul class="task-list" id="db-task-list">
+        <li class="loading">Loading…</li>
+      </ul>
+    </div>
+
+    <!-- Today's Meetings -->
+    <div class="db-card">
+      <div class="db-card-header">
+        <span class="db-card-dot" style="background:var(--blue)"></span>
+        Today's Meetings
+      </div>
+      <ul class="event-list" id="db-event-list">
+        <li class="loading">Loading…</li>
+      </ul>
+    </div>
+
+    <!-- Article of the Day -->
+    <div class="db-card db-card-span2 db-card-article">
+      <div class="db-card-header">
+        <span class="db-card-dot" style="background:var(--rose)"></span>
+        Article of the Day
+        <span class="db-article-journal" id="db-article-journal"></span>
+      </div>
+      <div id="db-article-body">
+        <p class="loading">Loading…</p>
+      </div>
+    </div>
+
+    <!-- Currently Reading -->
+    <div class="db-card db-card-reading">
+      <div class="db-card-header">
+        <span class="db-card-dot" style="background:var(--gold)"></span>
+        Currently Reading
+      </div>
+      <div id="db-reading-body">
+        <p class="loading">Loading…</p>
+      </div>
+    </div>
+
+    <!-- LDS Quote -->
+    <div class="db-card db-card-quote">
+      <div class="db-card-header">
+        <span class="db-card-dot" style="background:var(--purple)"></span>
+        Today's Thought
+      </div>
+      <div id="db-quote-body"></div>
+    </div>
+
+    <!-- Recharge -->
+    <div class="db-card db-card-recharge db-card-span2">
+      <div class="db-card-header">
+        <span class="db-card-dot" style="background:var(--brand)"></span>
+        Recharge
+        <span class="db-recharge-status" id="db-recharge-status"></span>
+      </div>
+      <div id="db-recharge-body"></div>
+    </div>
+
+  </div><!-- /db-grid -->
+</div><!-- /db-page -->
 
 <div id="token-modal-placeholder"></div>
 
 <script src="app.js"></script>
 <script>
-// ── Nav ──────────────────────────────────────────────
 document.getElementById('nav').innerHTML = navHTML('home');
 initSettings();
 
-// ── Date header ──────────────────────────────────────
+// ── Header ────────────────────────────────────────────
 const now = new Date();
-document.getElementById('date-display').textContent =
-  now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-document.getElementById('day-display').textContent =
-  now.toLocaleDateString('en-US', { weekday: 'long' });
+document.getElementById('db-date').textContent =
+  now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+document.getElementById('db-day').textContent =
+  now.toLocaleDateString('en-US', { year: 'numeric' });
 
-async function loadTasks() {
+// ── Tasks Today ───────────────────────────────────────
+async function loadDashTasks() {
+  const listEl  = document.getElementById('db-task-list');
+  const countEl = document.getElementById('db-task-count');
   if (!hasToken()) {
-    document.getElementById('task-list').innerHTML =
-      '<li class="empty">Connect Todoist to see tasks.</li>';
-    document.getElementById('upcoming-list').innerHTML = '';
-    document.getElementById('upcoming-section').style.display = 'none';
+    listEl.innerHTML = '<li class="empty">Connect Todoist to see tasks.</li>';
+    document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
+    showTokenModal(() => loadDashTasks());
     return;
   }
-
   try {
     const [all, reminders] = await Promise.all([fetchTasks(), fetchReminders()]);
     setApiStatus('connected');
     const reminderMap = buildReminderMap(reminders);
-
-    const today    = all.filter(t => isDueNow(t));
-    const upcoming = all.filter(t => isDueWithin(t, 7));
-
-    renderTaskList('task-list', today, all, false, reminderMap);
-    if (upcoming.length) {
-      renderTaskList('upcoming-list', upcoming, all, true, reminderMap);
-    } else {
-      document.getElementById('upcoming-list').innerHTML =
-        '<li class="empty">Nothing else this week.</li>';
-    }
+    const today = all.filter(t => isDueNow(t));
+    countEl.textContent = today.length || '';
+    renderTaskList('db-task-list', today, all, false, reminderMap);
+    document.getElementById('db-status').textContent =
+      today.length ? `${today.length} task${today.length !== 1 ? 's' : ''} today` : 'Clear today';
   } catch(e) {
     setApiStatus('error');
-    if (e.message === 'bad_token') {
-      document.getElementById('task-list').innerHTML =
-        '<li class="error">Invalid token — click ⚙ to reset.</li>';
-    } else {
-      document.getElementById('task-list').innerHTML =
-        '<li class="error">Could not reach Todoist. Check connection.</li>';
-    }
-    document.getElementById('upcoming-list').innerHTML = '';
-  }
-}
-
-// ── Papers summary ────────────────────────────────────
-async function loadPapers() {
-  const el = document.getElementById('papers-summary');
-  try {
-    const data = await fetch('papers.json').then(r => r.json());
-    const active = data.papers.filter(p => p.status === 'active');
-    if (!active.length) { el.innerHTML = '<p class="empty">No active papers.</p>'; return; }
-
-    el.innerHTML = active.map(p => {
-      const si = stageIndex(p.stage);
-      const steps = STAGES.map((_, i) => {
-        if (i < si)  return '<div class="progress-step past"></div>';
-        if (i === si) return '<div class="progress-step current"></div>';
-        return '<div class="progress-step"></div>';
-      }).join('');
-      return `
-        <div class="paper-card">
-          <div class="paper-header">
-            <span class="paper-title">${escHtml(p.title)}</span>
-            <span class="stage-pill ${stageClass(p.stage)}">${p.stage}</span>
-          </div>
-          <div class="paper-progress">${steps}</div>
-        </div>`;
-    }).join('');
-  } catch(e) {
-    el.innerHTML = '<p class="error">Could not load papers.json</p>';
+    listEl.innerHTML = e.message === 'bad_token'
+      ? '<li class="error">Invalid token — click ⚙ to reset.</li>'
+      : '<li class="error">Could not reach Todoist.</li>';
   }
 }
 
 // ── Calendar ──────────────────────────────────────────
-function loadCalendar() {
-  loadCalendarInto(document.getElementById('event-list'));
+loadCalendarInto(document.getElementById('db-event-list'));
+
+// ── Article of the Day ────────────────────────────────
+async function loadArticle() {
+  const el  = document.getElementById('db-article-body');
+  const jel = document.getElementById('db-article-journal');
+  try {
+    const data    = await fetch('discover.json').then(r => r.json());
+    const article = getArticleOfDay(data);
+    if (!article) { el.innerHTML = '<p class="empty">No IS journal articles cached yet — push to trigger a build.</p>'; return; }
+
+    jel.textContent = article.journal_abbrev || article.journal || '';
+
+    const authStr = (article.authors || []).slice(0,4).join(', ') +
+                    (article.authors?.length > 4 ? ' et al.' : '');
+    const doiUrl  = article.doi ? `https://doi.org/${article.doi}` : '';
+    const titleEl = doiUrl
+      ? `<a class="db-article-title" href="${escHtml(doiUrl)}" target="_blank" rel="noopener">${escHtml(article.title)}</a>`
+      : `<span class="db-article-title">${escHtml(article.title)}</span>`;
+
+    el.innerHTML = `
+      <div class="db-article-title-row">${titleEl}</div>
+      <div class="db-article-meta">
+        <span class="db-article-authors">${escHtml(authStr)}</span>
+        ${article.year ? `<span class="db-article-year">${article.year}</span>` : ''}
+      </div>
+      <p class="db-article-abstract">${escHtml(article.abstract || '')}</p>
+      <div class="db-article-actions">
+        ${doiUrl ? `<a class="db-article-btn" href="${escHtml(doiUrl)}" target="_blank" rel="noopener">Open article</a>` : ''}
+        <button class="db-article-btn db-article-btn-todoist" id="db-article-todoist" ${hasToken() ? '' : 'disabled'}>+ Add to read list</button>
+      </div>`;
+
+    document.getElementById('db-article-todoist')?.addEventListener('click', async function() {
+      this.disabled = true; this.textContent = 'Adding…';
+      try {
+        await apiPost('/tasks', { content: `Read: ${article.title}`, description: doiUrl || '' });
+        this.textContent = 'Added ✓';
+      } catch(e) { this.textContent = 'Failed'; this.disabled = false; }
+    });
+  } catch(e) {
+    el.innerHTML = '<p class="error">Could not load discover.json.</p>';
+  }
+}
+
+// ── Currently Reading ─────────────────────────────────
+async function loadReading() {
+  const el = document.getElementById('db-reading-body');
+  try {
+    const data    = await fetch('books.json').then(r => r.json());
+    const reading = (data.books || []).filter(b => b.status === 'currently-reading' || b.status === 'reading');
+    if (!reading.length) { el.innerHTML = '<p class="empty">No book marked as currently reading.</p>'; return; }
+
+    const b = reading[0];
+    const safeUrl = (() => {
+      if (!b.cover_url) return '';
+      try { const u = new URL(b.cover_url); return (u.protocol==='https:'||u.protocol==='http:') ? b.cover_url : ''; } catch { return ''; }
+    })();
+
+    el.innerHTML = `
+      <div class="db-reading-inner">
+        ${safeUrl
+          ? `<img class="db-reading-cover" src="${escHtml(safeUrl)}" alt="${escHtml(b.title)}">`
+          : `<div class="db-reading-cover-ph">${escHtml((b.title||'?')[0].toUpperCase())}</div>`}
+        <div class="db-reading-info">
+          <div class="db-reading-title">${escHtml(b.title)}</div>
+          <div class="db-reading-author">${escHtml(b.author || '')}</div>
+          ${reading.length > 1 ? `<div class="db-reading-more">+${reading.length-1} more</div>` : ''}
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = '<p class="error">Could not load books.json.</p>';
+  }
+}
+
+// ── LDS Quote ─────────────────────────────────────────
+function loadQuote() {
+  const q = getQuoteOfDay();
+  document.getElementById('db-quote-body').innerHTML = `
+    <blockquote class="db-quote-text">${escHtml(q.text)}</blockquote>
+    <div class="db-quote-attr">— ${escHtml(q.attr)}</div>`;
+}
+
+// ── Recharge card ─────────────────────────────────────
+function loadRechargeCard() {
+  const el       = document.getElementById('db-recharge-body');
+  const statusEl = document.getElementById('db-recharge-status');
+  const active   = getRechargeActive();
+  const log      = getRechargeLog();
+
+  if (active) {
+    const elapsed = Math.round((Date.now() - new Date(active.startedAt).getTime()) / 1000);
+    statusEl.textContent = 'in progress';
+    statusEl.className   = 'db-recharge-status active';
+    el.innerHTML = `
+      <div class="db-recharge-active">
+        <div class="db-recharge-label">${escHtml(active.category)} · ${escHtml(active.item)}</div>
+        <div class="db-recharge-timer" id="db-rc-timer">${formatElapsed(elapsed)}</div>
+        <a href="recharge.html" class="db-article-btn">View timer</a>
+      </div>`;
+    let s = elapsed;
+    setInterval(() => {
+      s++;
+      const t = document.getElementById('db-rc-timer');
+      if (t) t.textContent = formatElapsed(s);
+    }, 1000);
+    return;
+  }
+
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayLog   = log.filter(e => new Date(e.endedAt) >= todayStart);
+  const last       = todayLog[0];
+
+  if (last) {
+    const mins = Math.round(last.duration / 60);
+    statusEl.textContent = formatAgo(last.endedAt);
+    statusEl.className   = 'db-recharge-status';
+    el.innerHTML = `
+      <div class="db-recharge-row">
+        <div>
+          <div class="db-recharge-label">Last break: ${escHtml(last.item)}</div>
+          <div class="db-recharge-sub">${mins} min · ${todayLog.length} break${todayLog.length!==1?'s':''} today</div>
+        </div>
+        <a href="recharge.html" class="db-article-btn">Take another</a>
+      </div>`;
+  } else {
+    statusEl.textContent = '';
+    el.innerHTML = `
+      <div class="db-recharge-row">
+        <div class="db-recharge-label db-recharge-none">No breaks logged today</div>
+        <a href="recharge.html" class="db-article-btn">Take a break</a>
+      </div>`;
+  }
 }
 
 // ── Init ──────────────────────────────────────────────
-if (!hasToken()) {
-  document.getElementById('token-modal-placeholder').innerHTML = tokenModalHTML();
-  showTokenModal(() => loadTasks());
-}
-
-loadTasks();
-loadPapers();
-loadCalendar();
+loadDashTasks();
+loadArticle();
+loadReading();
+loadQuote();
+loadRechargeCard();
 </script>
 </body>
 </html>
