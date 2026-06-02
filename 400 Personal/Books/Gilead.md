@@ -9,6 +9,7 @@ isbn:
 cover_url:
 tags:
   - fiction
+  - spiritual
 ---
 
 Absolutely amazing. No notes.
