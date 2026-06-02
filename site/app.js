@@ -172,65 +172,39 @@ function initSettings() {
 }
 
 // ── Client-side book cover fetching ───────────────────
-// Strategy: Open Library search → cover_i (their internal cover ID) → direct image URL.
-// This is the programmatic "look up the book, get an ID, fetch the right cover" flow.
-// Falls back to Google Books if OL has no cover for that title.
+// Open Library work-search returns the OLDEST edition's cover_i — wrong for current covers.
+// Google Books search returns multiple editions; sorting by publishedDate desc gives the
+// current trade edition's cover, which is what we want.
 const _coverCache = {};
 
 async function fetchBookCover(isbn, title, author) {
-  const cacheKey = isbn ? `isbn:${isbn}` : `book:${title}`;
+  const cacheKey = isbn ? `isbn:${isbn}` : `book:${title}|${author}`;
   if (cacheKey in _coverCache) return _coverCache[cacheKey];
 
-  // 1. If we already have an ISBN, Open Library can serve the cover directly — no search needed.
+  // With a known ISBN: Open Library cover URL is exact and needs no API call.
   if (isbn) {
     return (_coverCache[cacheKey] = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`);
   }
 
-  // 2. Open Library search: finds the book and returns its cover_i (native cover ID).
-  //    cover_i → https://covers.openlibrary.org/b/id/{cover_i}-L.jpg is the most reliable URL.
-  //    We try title+author first, then title only (handles pen names, variant spellings).
-  const olSearch = async (params) => {
-    try {
-      const r = await fetch(
-        `https://openlibrary.org/search.json?${params}&limit=5&fields=cover_i,isbn`
-      );
-      if (!r.ok) return '';
-      const { docs = [] } = await r.json();
-      for (const doc of docs) {
-        if (doc.cover_i) {
-          return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`;
-        }
-        // Fallback within OL: use any ISBN-13 they have to build a cover URL
-        const isbn13 = (doc.isbn || []).find(i => String(i).length === 13);
-        if (isbn13) return `https://covers.openlibrary.org/b/isbn/${isbn13}-L.jpg`;
-      }
-    } catch(e) {}
-    return '';
-  };
-
-  const t = encodeURIComponent(title);
-  const a = encodeURIComponent(author || '');
-
-  // Try with author (more precise for common titles like "Gilead")
-  if (author) {
-    const url = await olSearch(`title=${t}&author=${a}`);
-    if (url) return (_coverCache[cacheKey] = url);
-  }
-
-  // Try title only (catches pen names and variant author entries)
-  const url2 = await olSearch(`title=${t}`);
-  if (url2) return (_coverCache[cacheKey] = url2);
-
-  // 3. Google Books as a last resort — plain title+author query, no field operators.
+  // Without ISBN: Google Books plain-text search, newest edition first.
+  // No intitle:/inauthor: operators (they break when URL-encoded).
+  // No &fields= parameter (it was silently stripping imageLinks from responses).
   try {
+    const q    = [title, author].filter(Boolean).join(' ');
     const data = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title + ' ' + (author || ''))}&maxResults=3`
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10`
     ).then(r => r.json());
-    const items = [...(data.items || [])].sort((a, b) =>
-      (b.volumeInfo?.publishedDate || '').localeCompare(a.volumeInfo?.publishedDate || '')
-    );
+
+    const items = (data.items || [])
+      .filter(item => item.volumeInfo?.imageLinks)           // only items that have a cover
+      .sort((a, b) => {
+        const da = a.volumeInfo?.publishedDate || '0';
+        const db = b.volumeInfo?.publishedDate || '0';
+        return db.localeCompare(da);                         // newest first
+      });
+
     for (const item of items) {
-      const links = item.volumeInfo?.imageLinks || {};
+      const links = item.volumeInfo.imageLinks;
       for (const key of ['large', 'medium', 'thumbnail', 'smallThumbnail']) {
         if (links[key]) return (_coverCache[cacheKey] = links[key].replace('http://', 'https://'));
       }
