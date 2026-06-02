@@ -15,6 +15,89 @@
   <p class="page-title">Books</p>
   <p class="page-sub">What I'm reading, have read, and want to read · hover a cover for details</p>
 
+  <!-- ── Quick Add ──────────────────────────────────── -->
+  <section>
+    <h2>Quick Add</h2>
+    <div class="doi-form" id="bqa-form">
+
+      <div class="book-search-row">
+        <input class="form-input" type="text" id="bqa-title"
+               placeholder="Book title…" autocomplete="off" spellcheck="false">
+        <input class="form-input" type="text" id="bqa-author"
+               placeholder="Author (optional)" autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="bqa-search-btn">Search</button>
+      </div>
+      <div id="bqa-status"></div>
+
+      <!-- Edition picker -->
+      <div id="bqa-editions" class="hidden">
+        <p class="bqa-step-label">Pick your edition — covers are edition-specific:</p>
+        <div class="bqa-ed-grid" id="bqa-ed-grid"></div>
+      </div>
+
+      <!-- Form fields (shown after edition selected) -->
+      <div id="bqa-fields" class="doi-fields hidden">
+        <div id="bqa-preview-wrap"></div>
+
+        <div class="form-row">
+          <div class="form-field" style="flex:3">
+            <label class="form-label">Title <span class="form-hint">editable</span></label>
+            <input class="form-input" type="text" id="bqa-f-title">
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Author <span class="form-hint">editable</span></label>
+          <input class="form-input" type="text" id="bqa-f-author">
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="bqa-f-status">
+              <option value="want-to-read">Want to Read</option>
+              <option value="currently-reading">Currently Reading</option>
+              <option value="read">Read</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Rating</label>
+            <div class="bqa-rating-row" id="bqa-rating-row">
+              <button class="bqa-rating-pill" data-val="1">★</button>
+              <button class="bqa-rating-pill" data-val="2">★★</button>
+              <button class="bqa-rating-pill" data-val="3">★★★</button>
+              <button class="bqa-rating-pill" data-val="4">★★★★</button>
+              <button class="bqa-rating-pill" data-val="5">★★★★★</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Tags</label>
+          <div class="bqa-tags-row">
+            <label class="bqa-tag-chip"><input type="checkbox" value="fiction"> fiction</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="nonfiction"> nonfiction</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="self-help"> self-help</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="psychology"> psychology</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="research"> research</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="history"> history</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="biography"> biography</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="horror"> horror</label>
+            <label class="bqa-tag-chip"><input type="checkbox" value="spiritual"> spiritual</label>
+          </div>
+        </div>
+
+        <input type="hidden" id="bqa-f-isbn">
+        <input type="hidden" id="bqa-f-coverurl">
+
+        <div class="doi-actions" style="margin-top:18px">
+          <button class="btn btn-primary" id="bqa-copy-btn">Copy frontmatter</button>
+        </div>
+        <div class="doi-copy-hint">
+          Paste into a new note in <code>400 Personal/Books/</code> and push to main.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- Currently Reading -->
   <section id="reading-section" style="display:none">
     <h2>Currently Reading</h2>
@@ -38,6 +121,167 @@
 <script>
 document.getElementById('nav').innerHTML = navHTML('books');
 initSettings();
+
+// ── Quick Add ─────────────────────────────────────────
+let bqaRating = null;
+
+document.getElementById('bqa-search-btn').addEventListener('click', bqaSearch);
+document.getElementById('bqa-title').addEventListener('keydown', e => { if (e.key === 'Enter') bqaSearch(); });
+
+document.getElementById('bqa-rating-row').addEventListener('click', e => {
+  const btn = e.target.closest('.bqa-rating-pill');
+  if (!btn) return;
+  bqaRating = bqaRating === Number(btn.dataset.val) ? null : Number(btn.dataset.val);
+  document.querySelectorAll('.bqa-rating-pill').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.val) === bqaRating);
+  });
+});
+
+document.getElementById('bqa-copy-btn').addEventListener('click', () => {
+  const title    = document.getElementById('bqa-f-title').value.trim();
+  const author   = document.getElementById('bqa-f-author').value.trim();
+  const isbn     = document.getElementById('bqa-f-isbn').value.trim();
+  const coverUrl = document.getElementById('bqa-f-coverurl').value.trim();
+  const status   = document.getElementById('bqa-f-status').value;
+  const tags     = [...document.querySelectorAll('.bqa-tag-chip input:checked')].map(i => i.value);
+  const rating   = bqaRating ? '"' + '*'.repeat(bqaRating) + '"' : '';
+  const tagsYaml = tags.length ? '\ntags:\n' + tags.map(t => `  - ${t}`).join('\n') : '\ntags:';
+
+  const yaml = `---\ntitle: ${title}\nauthor: ${author}\nstatus: ${status}\nrating: ${rating}\nstarted:\nfinished:\nisbn: ${isbn}\ncover_url: ${coverUrl}${tagsYaml}\n---\n`;
+
+  navigator.clipboard.writeText(yaml).then(() => {
+    const btn = document.getElementById('bqa-copy-btn');
+    btn.textContent = 'Copied ✓';
+    btn.style.background = 'var(--accent)';
+    setTimeout(() => { btn.textContent = 'Copy frontmatter'; btn.style.background = ''; }, 2500);
+  });
+});
+
+async function bqaSearch() {
+  const title  = document.getElementById('bqa-title').value.trim();
+  const author = document.getElementById('bqa-author').value.trim();
+  const statusEl = document.getElementById('bqa-status');
+  if (!title) { statusEl.innerHTML = '<p class="error" style="margin-top:6px">Enter a book title.</p>'; return; }
+
+  statusEl.innerHTML = '<p class="loading" style="margin-top:6px">Searching Open Library…</p>';
+  document.getElementById('bqa-editions').classList.add('hidden');
+  document.getElementById('bqa-fields').classList.add('hidden');
+
+  try {
+    const t = encodeURIComponent(title);
+    const a = author ? `&author=${encodeURIComponent(author)}` : '';
+    const r = await fetch(`https://openlibrary.org/search.json?title=${t}${a}&limit=4&fields=key,title,author_name,cover_i`);
+    const { docs = [] } = await r.json();
+
+    if (!docs.length) { statusEl.innerHTML = '<p class="error" style="margin-top:6px">No results found — try a shorter title.</p>'; return; }
+
+    statusEl.innerHTML = '<p class="loading" style="margin-top:6px">Loading editions…</p>';
+
+    // Fetch editions from top 3 matching works in parallel
+    const groups = await Promise.allSettled(
+      docs.slice(0, 3).map(work => {
+        const key = work.key.replace('/works/', '');
+        return fetch(`https://openlibrary.org/works/${key}/editions.json?limit=20`)
+          .then(r => r.json())
+          .then(d => (d.entries || []).map(e => ({
+            ...e,
+            _workTitle:   work.title,
+            _workAuthors: work.author_name || [],
+            _workCoverId: work.cover_i,
+          })));
+      })
+    );
+
+    const allEditions = groups
+      .filter(g => g.status === 'fulfilled')
+      .flatMap(g => g.value)
+      .filter(e => (e.isbn_13 || e.isbn_10 || []).length)   // must have an ISBN
+      .sort((a, b) => {
+        const ya = parseInt((a.publish_date || '').match(/\d{4}/)?.[0] || '0');
+        const yb = parseInt((b.publish_date || '').match(/\d{4}/)?.[0] || '0');
+        return yb - ya;  // newest first
+      });
+
+    if (!allEditions.length) {
+      statusEl.innerHTML = '<p class="error" style="margin-top:6px">Found the book but no editions with ISBNs. Try adding ISBN manually.</p>';
+      return;
+    }
+
+    statusEl.innerHTML = '';
+    bqaShowEditions(allEditions);
+  } catch(e) {
+    statusEl.innerHTML = '<p class="error" style="margin-top:6px">Search failed — check connection.</p>';
+  }
+}
+
+function bqaShowEditions(editions) {
+  const grid = document.getElementById('bqa-ed-grid');
+  grid.innerHTML = editions.map((ed, i) => {
+    const coverId  = (ed.covers || [])[0] || ed._workCoverId;
+    const coverSrc = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : '';
+    const isbn     = (ed.isbn_13 || ed.isbn_10 || [])[0] || '';
+    const year     = (ed.publish_date || '').match(/\d{4}/)?.[0] || '';
+    const pub      = (ed.publishers || [])[0] || '';
+    const initial  = (ed._workTitle || '?')[0].toUpperCase();
+
+    return `
+      <div class="bqa-ed-card" data-idx="${i}">
+        ${coverSrc ? `<img class="bqa-ed-cover" src="${escHtml(coverSrc)}"
+             alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : ''}
+        <div class="bqa-ed-cover-ph" style="${coverSrc ? 'display:none' : ''}">${initial}</div>
+        ${year ? `<div class="bqa-ed-year">${year}</div>` : ''}
+        ${pub  ? `<div class="bqa-ed-pub">${escHtml(pub.length > 22 ? pub.slice(0,20) + '…' : pub)}</div>` : ''}
+        ${isbn ? `<div class="bqa-ed-isbn">${escHtml(isbn)}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  document.getElementById('bqa-editions').classList.remove('hidden');
+
+  grid.querySelectorAll('.bqa-ed-card').forEach(card => {
+    card.addEventListener('click', () => {
+      grid.querySelectorAll('.bqa-ed-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      bqaSelectEdition(editions[parseInt(card.dataset.idx)]);
+    });
+  });
+}
+
+function bqaSelectEdition(ed) {
+  const coverId  = (ed.covers || [])[0] || ed._workCoverId;
+  const isbn     = (ed.isbn_13 || ed.isbn_10 || [])[0] || '';
+  const year     = (ed.publish_date || '').match(/\d{4}/)?.[0] || '';
+  const title    = ed._workTitle || '';
+  const author   = ed._workAuthors.join(', ');
+  const coverUrl = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg` : '';
+  const pub      = (ed.publishers || [])[0] || '';
+
+  const coverHtml = coverUrl
+    ? `<img class="bqa-preview-cover" src="${escHtml(coverUrl)}" alt="${escHtml(title)}">`
+    : `<div class="bqa-preview-cover-ph">${escHtml(title[0]?.toUpperCase() || '?')}</div>`;
+
+  document.getElementById('bqa-preview-wrap').innerHTML = `
+    <div class="bqa-preview">
+      ${coverHtml}
+      <div class="bqa-preview-meta">
+        <div class="bqa-preview-title">${escHtml(title)}</div>
+        <div class="bqa-preview-sub">${escHtml(author)}</div>
+        ${year ? `<div class="bqa-preview-sub">${year}${pub ? ' · ' + escHtml(pub) : ''}</div>` : ''}
+        ${isbn ? `<div class="bqa-preview-sub" style="font-family:monospace;font-size:11px">ISBN ${escHtml(isbn)}</div>` : ''}
+      </div>
+    </div>`;
+
+  document.getElementById('bqa-f-title').value    = title;
+  document.getElementById('bqa-f-author').value   = author;
+  document.getElementById('bqa-f-isbn').value     = isbn;
+  document.getElementById('bqa-f-coverurl').value = coverUrl;
+  bqaRating = null;
+  document.querySelectorAll('.bqa-rating-pill').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bqa-tag-chip input').forEach(i => { i.checked = false; });
+
+  const fields = document.getElementById('bqa-fields');
+  fields.classList.remove('hidden');
+  setTimeout(() => fields.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
 
 const COVER_COLORS = [
   '#b04820','#2a7a50','#2c5fa0','#7040a8','#c07808',

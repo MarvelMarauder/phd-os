@@ -2860,6 +2860,136 @@ a.db-article-title:hover { text-decoration: underline; color: var(--blue); }
 .btn:hover { box-shadow: var(--shadow-sm); }
 .btn:active { transform: scale(0.96) !important; }
 
+/* ── Books Quick Add ─────────────────────────────────── */
+.book-search-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.book-search-row .form-input { flex: 1; min-width: 140px; }
+
+.bqa-step-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-subtle);
+  margin: 16px 0 10px;
+}
+
+.bqa-ed-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+
+.bqa-ed-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 8px;
+  width: 98px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.18s;
+  text-align: center;
+}
+.bqa-ed-card:hover { border-color: var(--brand); transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+.bqa-ed-card.selected { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-dim), var(--shadow-sm); }
+
+.bqa-ed-cover {
+  width: 58px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 2px 5px 5px 2px;
+  box-shadow: 1px 2px 6px rgba(0,0,0,0.22);
+  display: block;
+}
+.bqa-ed-cover-ph {
+  width: 58px;
+  height: 86px;
+  border-radius: 2px 5px 5px 2px;
+  background: var(--brand-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--brand);
+}
+.bqa-ed-year { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+.bqa-ed-pub  { font-size: 9.5px; color: var(--text-subtle); line-height: 1.3; }
+.bqa-ed-isbn { font-size: 8.5px; font-family: 'SF Mono','Fira Code',monospace; color: var(--text-subtle); }
+
+.bqa-preview {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 18px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.bqa-preview-cover {
+  width: 72px;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 3px 6px 6px 3px;
+  box-shadow: 2px 4px 12px rgba(0,0,0,0.22);
+  flex-shrink: 0;
+}
+.bqa-preview-cover-ph {
+  width: 72px;
+  aspect-ratio: 2/3;
+  border-radius: 3px 6px 6px 3px;
+  background: var(--brand-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--brand);
+  flex-shrink: 0;
+}
+.bqa-preview-meta { flex: 1; min-width: 0; }
+.bqa-preview-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.bqa-preview-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.bqa-rating-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.bqa-rating-pill {
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.bqa-rating-pill:hover { border-color: var(--gold); color: var(--gold); }
+.bqa-rating-pill.active { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+
+.bqa-tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.bqa-tag-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.bqa-tag-chip:has(input:checked) {
+  background: var(--brand-dim);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.bqa-tag-chip input { display: none; }
+
 /* ── Easter egg: confetti pieces ─────────────────────── */
 .confetti-piece {
   position: fixed;
