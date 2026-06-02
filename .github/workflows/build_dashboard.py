@@ -222,17 +222,11 @@ def build_books():
         title  = post.get("title") or os.path.splitext(os.path.basename(filepath))[0]
         author = post.get("author", "")
 
-        # Cover: explicit cover_url > Google Books (ISBN or title) > Open Library fallback
+        # Cover: use manually-set cover_url from frontmatter only.
+        # Client-side JS (books.html / index.html) fetches covers dynamically
+        # from Google Books API, always getting the newest edition.
         cover_url = str(post.get("cover_url", "") or "").strip()
         isbn      = str(post.get("isbn", "") or "").strip()
-        if not cover_url:
-            cover_url = _fetch_gb_cover(isbn, title, author)
-            if cover_url:
-                time.sleep(0.4)
-            elif not cover_url:
-                cover_url = _fetch_ol_cover(title, author)
-                if cover_url:
-                    time.sleep(0.3)
 
         books.append({
             "title":     title,

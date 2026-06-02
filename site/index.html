@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PhD OS</title>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="style.css">
   <script async defer src="https://accounts.google.com/gsi/client" onload="gcalInit()"></script>
 </head>
@@ -188,22 +189,35 @@ async function loadReading() {
     if (!reading.length) { el.innerHTML = '<p class="empty">No book marked as currently reading.</p>'; return; }
 
     const b = reading[0];
-    const safeUrl = (() => {
-      if (!b.cover_url) return '';
-      try { const u = new URL(b.cover_url); return (u.protocol==='https:'||u.protocol==='http:') ? b.cover_url : ''; } catch { return ''; }
-    })();
+    const color   = b.title ? b.title.charCodeAt(0) % 7 : 0;
+    const initial = (b.title || '?')[0].toUpperCase();
 
     el.innerHTML = `
       <div class="db-reading-inner">
-        ${safeUrl
-          ? `<img class="db-reading-cover" src="${escHtml(safeUrl)}" alt="${escHtml(b.title)}">`
-          : `<div class="db-reading-cover-ph">${escHtml((b.title||'?')[0].toUpperCase())}</div>`}
+        <div class="db-reading-cover-ph" id="db-cover-ph">${escHtml(initial)}</div>
         <div class="db-reading-info">
           <div class="db-reading-title">${escHtml(b.title)}</div>
           <div class="db-reading-author">${escHtml(b.author || '')}</div>
           ${reading.length > 1 ? `<div class="db-reading-more">+${reading.length-1} more</div>` : ''}
         </div>
       </div>`;
+
+    // Fetch cover async — replace placeholder when ready
+    const coverUrl = await fetchBookCover(b.isbn || '', b.title, b.author || '');
+    if (coverUrl) {
+      const ph = document.getElementById('db-cover-ph');
+      if (ph) {
+        const img = document.createElement('img');
+        img.className = 'db-reading-cover';
+        img.alt = b.title;
+        img.style.opacity = '0';
+        img.style.transition = 'opacity 0.4s ease';
+        img.addEventListener('load',  () => { img.style.opacity = '1'; });
+        img.addEventListener('error', () => img.replaceWith(ph));
+        img.src = coverUrl;
+        ph.replaceWith(img);
+      }
+    }
   } catch(e) {
     el.innerHTML = '<p class="error">Could not load books.json.</p>';
   }
