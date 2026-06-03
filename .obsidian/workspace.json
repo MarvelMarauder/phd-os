@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "400 Personal/Books/John Dies at the End.md",
+                "file": "000 Dashboard/Home.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "John Dies at the End"
+              "title": "Home"
             }
           }
         ]
@@ -188,10 +188,10 @@
   },
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
+    "400 Personal/Books/John Dies at the End.md",
     "site/theme.js",
     "400 Personal/Books/Gilead.md",
     "400 Personal/Books/_template.md",
-    "400 Personal/Books/John Dies at the End.md",
     "000 Dashboard/Home.md",
     "100 Research/Source Papers/_dismissed.md",
     "scripts/import_refs.py.tmp.77863.539c61615bac",
@@ -222,7 +222,6 @@
     "scripts/References/AIrefs",
     "scripts/References/mgmtrefs.txt",
     "scripts/References",
-    "scripts/email_pipeline.py.tmp.63879.97cd1e74bf60",
-    "scripts/email_pipeline.py.tmp.63879.59f2c15ae737"
+    "scripts/email_pipeline.py.tmp.63879.97cd1e74bf60"
   ]
 }
