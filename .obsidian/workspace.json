@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "000 Dashboard/Home.md",
+                "file": "400 Personal/Books/Dungeon Crawler Carl.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Home"
+              "title": "Dungeon Crawler Carl"
             }
           }
         ]
@@ -189,10 +189,12 @@
   "active": "e7a7b303c61786dc",
   "lastOpenFiles": [
     "400 Personal/Books/John Dies at the End.md",
-    "site/theme.js",
+    "400 Personal/Books/Dungeon Crawler Carl.md",
+    "400 Personal/Books/Golden Sun.md",
     "400 Personal/Books/Gilead.md",
     "400 Personal/Books/_template.md",
     "000 Dashboard/Home.md",
+    "site/theme.js",
     "100 Research/Source Papers/_dismissed.md",
     "scripts/import_refs.py.tmp.77863.539c61615bac",
     "scripts/import_refs.py.tmp.77863.192c418e39da",
@@ -214,8 +216,6 @@
     "100 Research/Source Papers/The risk of algorithm transparency How algorithm complexity drives the effects on the use of advice.md",
     "100 Research/Source Papers/The rise of robots increases job insecurity and maladaptive workplace behaviors Multimethod evidence.md",
     "100 Research/Source Papers/The Power of Brand Selfies.md",
-    "100 Research/Source Papers/The Persuasive Power of Algorithmic and Crowdsourced Advice.md",
-    "100 Research/Source Papers/The Paradoxical Role of Humanness in Aggression Toward Conversational Agents.md",
     "scripts/References/AIrefs.txt.sb-5e5498f9-bmkxiz",
     "scripts/References/AIrefs.txt.sb-5e5498f9-DaaCvE",
     "scripts/References/AIrefs.txt",

@@ -1,15 +1,14 @@
 ---
 title: John Dies at the End
-author: Jason Pargin
-status: currently-reading
-rating:
-started: true
-finished: false
-isbn:
-cover_url:
+author: David Wong
+status: read
+rating: "***"
+started:
+finished:
+isbn: 9781250257581
+cover_url: https://covers.openlibrary.org/b/id/10263920-L.jpg
 tags:
   - fiction
   - horror
 ---
-
-Write your thoughts and review here. The first paragraph shows up as a snippet on the Books page, so lead with your overall take. Subsequent paragraphs can go deeper.
+Honestly I didn't love this one too much. It has some really cool horror concepts and a couple surprising twists, but it was buried in poop, fart, and penis jokes. And those jokes can make me laugh, but if those jokes are literally constantly on every single page... Tough. And the plot was super hard to follow as well. 
