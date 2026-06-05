@@ -2,7 +2,7 @@
 title: Gilead
 author: Marilynne Robinson
 status: read
-rating: "*****"
+rating: "5"
 started: true
 finished: true
 isbn:

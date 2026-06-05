@@ -2,7 +2,7 @@
 title: Dungeon Crawler Carl
 author: Matt Dinniman
 status: read
-rating: "****"
+rating: "4"
 started: true
 finished: true
 isbn: 9798232923594

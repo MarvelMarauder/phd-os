@@ -2,7 +2,7 @@
 title: John Dies at the End
 author: David Wong
 status: read
-rating: "***"
+rating: "3"
 started:
 finished:
 isbn: 9781250257581
