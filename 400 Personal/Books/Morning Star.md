@@ -5,10 +5,11 @@ status: currently-reading
 rating:
 started: true
 finished:
-isbn: 9788491879572
-cover_url: https://covers.openlibrary.org/b/id/14212120-L.jpg
+isbn: 9781473646827
+cover_url: https://covers.openlibrary.org/b/id/8566174-L.jpg
 tags:
   - fiction
   - science-fiction
 ---
+
 

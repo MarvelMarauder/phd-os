@@ -17,10 +17,6 @@
     {
       "folder": "100 Research/My Papers",
       "template": "900 Templates/Template - My Paper.md"
-    },
-    {
-      "folder": "400 Personal/Books",
-      "template": "400 Personal/Books/_template.md"
     }
   ],
   "enable_file_templates": false,
